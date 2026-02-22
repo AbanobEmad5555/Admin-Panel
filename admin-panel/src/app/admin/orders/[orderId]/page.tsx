@@ -63,6 +63,10 @@ type OrderItem = {
 
 type OrderDetail = {
   id?: number | string;
+  userId?: number | string | null;
+  user_id?: number | string | null;
+  customerId?: number | string | null;
+  customer_id?: number | string | null;
   status?: string | null;
   createdAt?: string | null;
   created_at?: string | null;
@@ -71,6 +75,7 @@ type OrderDetail = {
   totalAmount?: number | string | null;
   totalPrice?: number | string | null;
   user?: {
+    id?: number | string | null;
     fullName?: string | null;
     full_name?: string | null;
     name?: string | null;
@@ -78,6 +83,7 @@ type OrderDetail = {
     phone?: string | null;
   } | null;
   customer?: {
+    id?: number | string | null;
     fullName?: string | null;
     full_name?: string | null;
     name?: string | null;
@@ -113,6 +119,14 @@ type ApiResponse<T> = {
   success?: boolean;
   data?: T;
   message?: string;
+};
+
+type UserLookupRecord = {
+  id?: number | string | null;
+};
+
+type UsersLookupPayload = {
+  users?: UserLookupRecord[] | null;
 };
 
 const STATUS_OPTIONS = [
@@ -211,6 +225,47 @@ const resolveCustomerPhone = (order: OrderDetail) =>
   parseAddress(order.address)?.phone ||
   parseAddress(order.shippingAddress)?.phone ||
   "-";
+
+const resolveCustomerId = (order: OrderDetail) =>
+  order.user?.id ??
+  order.customer?.id ??
+  order.userId ??
+  order.user_id ??
+  order.customerId ??
+  order.customer_id ??
+  null;
+
+const extractUsersList = (payload: unknown): UserLookupRecord[] => {
+  if (typeof payload !== "object" || payload === null) {
+    return [];
+  }
+
+  const root = payload as {
+    users?: unknown;
+    data?: unknown;
+  };
+
+  if (Array.isArray(root.users)) {
+    return root.users as UserLookupRecord[];
+  }
+
+  if (typeof root.data === "object" && root.data !== null) {
+    const nested = root.data as {
+      users?: unknown;
+      data?: unknown;
+    };
+
+    if (Array.isArray(nested.users)) {
+      return nested.users as UserLookupRecord[];
+    }
+
+    if (Array.isArray(nested.data)) {
+      return nested.data as UserLookupRecord[];
+    }
+  }
+
+  return [];
+};
 
 const resolveShippingAddress = (order: OrderDetail) =>
   order.shippingAddress || parseAddress(order.address);
@@ -319,6 +374,9 @@ export default function OrderDetailsPage() {
   const [toastMessage, setToastMessage] = useState("");
   const [toastError, setToastError] = useState("");
   const [statusInput, setStatusInput] = useState<string>("");
+  const [resolvedCustomerId, setResolvedCustomerId] = useState<
+    number | string | null
+  >(null);
 
   const items = useMemo(() => resolveItems(order ?? {}), [order]);
   const shippingAddress = useMemo(
@@ -345,6 +403,7 @@ export default function OrderDetailsPage() {
           response.data;
         setOrder(payload ?? null);
         setStatusInput(payload?.status ?? "");
+        setResolvedCustomerId(resolveCustomerId(payload ?? {}));
       } catch (err) {
         setError(getErrorMessage(err));
       } finally {
@@ -365,6 +424,58 @@ export default function OrderDetailsPage() {
     }, 5000);
     return () => window.clearTimeout(timeout);
   }, [toastMessage, toastError]);
+
+  useEffect(() => {
+    const directId = resolveCustomerId(order ?? {});
+    if (directId) {
+      setResolvedCustomerId(directId);
+      return;
+    }
+
+    const email = resolveCustomerEmail(order ?? {}).trim();
+    const phone = resolveCustomerPhone(order ?? {}).trim();
+
+    if ((!email || email === "-") && (!phone || phone === "-")) {
+      setResolvedCustomerId(null);
+      return;
+    }
+
+    let isActive = true;
+
+    const loadCustomerId = async () => {
+      try {
+        const params = new URLSearchParams();
+        params.set("page", "1");
+        params.set("limit", "1");
+        if (email && email !== "-") {
+          params.set("email", email);
+        } else if (phone && phone !== "-") {
+          params.set("phone", phone);
+        }
+
+        const response = await api.get<ApiResponse<UsersLookupPayload>>(
+          `/admin/users?${params.toString()}`
+        );
+
+        const users = extractUsersList(response.data);
+        const firstUserId = users[0]?.id ?? null;
+
+        if (isActive) {
+          setResolvedCustomerId(firstUserId);
+        }
+      } catch {
+        if (isActive) {
+          setResolvedCustomerId(null);
+        }
+      }
+    };
+
+    void loadCustomerId();
+
+    return () => {
+      isActive = false;
+    };
+  }, [order]);
 
   const handleStatusUpdate = async () => {
     if (!order || !statusInput) {
@@ -400,6 +511,8 @@ export default function OrderDetailsPage() {
     order?.totalAmount ?? order?.totalPrice
   );
   const statusLabel = order?.status ?? "UNKNOWN";
+  const customerId = resolvedCustomerId;
+  const customerName = order ? resolveCustomerName(order) : "Unknown";
 
   return (
     <AdminLayout>
@@ -497,9 +610,16 @@ export default function OrderDetailsPage() {
                 <div className="mt-3 space-y-2 text-sm text-slate-600">
                   <div className="flex items-center justify-between">
                     <span>Full Name</span>
-                    <span className="text-slate-900">
-                      {resolveCustomerName(order)}
-                    </span>
+                    {customerId ? (
+                      <Link
+                        href={`/admin/users/${customerId}`}
+                        className="cursor-pointer font-medium text-blue-700 underline decoration-blue-300 underline-offset-2 transition hover:text-blue-800 hover:decoration-blue-500"
+                      >
+                        {customerName}
+                      </Link>
+                    ) : (
+                      <span className="text-slate-900">{customerName}</span>
+                    )}
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Email</span>
@@ -592,7 +712,7 @@ export default function OrderDetailsPage() {
                               {resolveProductId(item) ? (
                                 <Link
                                   href={`/admin/products/${resolveProductId(item)}`}
-                                  className="text-slate-900 hover:underline"
+                                  className="cursor-pointer font-medium text-blue-700 underline decoration-blue-300 underline-offset-2 transition hover:text-blue-800 hover:decoration-blue-500"
                                 >
                                   {resolveItemName(item)}
                                 </Link>

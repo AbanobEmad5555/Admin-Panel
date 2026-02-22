@@ -48,7 +48,7 @@ const modules: ModuleItem[] = [
   },
 ];
 
-export default function HomePage() {
+export default function AdminModulesPage() {
   return (
     <main className="min-h-screen bg-slate-50/80 px-6 py-10 md:px-10 lg:px-14">
       <div className="mx-auto w-full max-w-7xl">
