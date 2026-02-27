@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const getApiUrl = () => process.env.NEXT_PUBLIC_API_URL || "";
+const getApiUrl = () => process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 export async function PATCH(request: Request) {
   const apiUrl = getApiUrl();

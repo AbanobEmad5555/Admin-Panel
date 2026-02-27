@@ -1,4 +1,5 @@
 import Link from "next/link";
+import HomeAuthAction from "@/components/layout/HomeAuthAction";
 import {
   BarChart3,
   Boxes,
@@ -52,6 +53,10 @@ export default function HomePage() {
   return (
     <main className="min-h-screen bg-slate-50/80 px-6 py-10 md:px-10 lg:px-14">
       <div className="mx-auto w-full max-w-7xl">
+        <div className="mb-6 flex justify-end">
+          <HomeAuthAction />
+        </div>
+
         <header className="mb-10 text-center">
           <h1 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
             Admin Modules

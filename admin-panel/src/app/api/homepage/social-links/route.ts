@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const getApiUrl = () => process.env.NEXT_PUBLIC_API_URL || "";
+const getApiUrl = () => process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 const SOCIAL_PLATFORMS = ["facebook", "instagram", "x", "snapchat"] as const;
 
 export async function GET() {

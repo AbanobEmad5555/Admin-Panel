@@ -115,7 +115,7 @@ const resolveImageUrl = (raw: string) => {
   if (raw.startsWith("http://") || raw.startsWith("https://")) {
     return raw;
   }
-  const base = process.env.NEXT_PUBLIC_API_URL || "";
+  const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
   return `${base.replace(/\/$/, "")}/${raw.replace(/^\//, "")}`;
 };
 

@@ -29,6 +29,8 @@ const navSections: NavSection[] = [
     items: [
       { href: "/admin/orders", label: "Orders" },
       { href: "/admin/crm/pipeline", label: "CRM Pipeline" },
+      { href: "/admin/crm/leads", label: "Leads" },
+      { href: "/admin/crm/leads/pipeline", label: "Leads Pipeline" },
       { href: "/admin/users", label: "Users" },
     ],
   },
@@ -81,7 +83,9 @@ export default function Sidebar() {
       pathname === "/admin/orders" ||
       pathname.startsWith("/admin/orders/") ||
       pathname === "/admin/crm/pipeline" ||
-      pathname.startsWith("/admin/crm/pipeline/")
+      pathname.startsWith("/admin/crm/pipeline/") ||
+      pathname === "/admin/crm/leads" ||
+      pathname.startsWith("/admin/crm/leads/")
     ) {
       return "CRM";
     }

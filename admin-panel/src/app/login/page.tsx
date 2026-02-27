@@ -52,7 +52,7 @@ export default function LoginPage() {
       }
 
       setAdminToken(token);
-      router.replace("/dashboard");
+      router.replace("/");
     } catch (err) {
       setError("Login failed. Check your credentials.");
     } finally {

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import AppProviders from "@/components/providers/AppProviders";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -42,7 +43,7 @@ export default function RootLayout({
         className="min-h-screen bg-slate-100 text-slate-900 antialiased"
         suppressHydrationWarning
       >
-        {children}
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   );
