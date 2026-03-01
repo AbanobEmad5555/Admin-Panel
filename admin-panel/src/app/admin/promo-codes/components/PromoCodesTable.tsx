@@ -2,6 +2,7 @@
 
 import Button from "@/components/ui/Button";
 import type { PromoCodeRecord } from "@/services/promoCodesApi";
+import { formatEGP } from "@/lib/currency";
 
 type PromoCodesTableProps = {
   promoCodes: PromoCodeRecord[];
@@ -25,11 +26,7 @@ const formatDate = (value?: string) => {
   return date.toISOString().split("T")[0];
 };
 
-const formatNumber = (value: number) =>
-  new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(value);
+const formatNumber = (value: number) => formatEGP(value);
 
 const selectNumber = (
   first: number | null | undefined,

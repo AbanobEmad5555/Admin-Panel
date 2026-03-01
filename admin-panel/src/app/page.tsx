@@ -3,6 +3,8 @@ import HomeAuthAction from "@/components/layout/HomeAuthAction";
 import {
   BarChart3,
   Boxes,
+  CreditCard,
+  FileText,
   Globe,
   ShoppingCart,
   Tag,
@@ -34,6 +36,18 @@ const modules: ModuleItem[] = [
     description: "View and manage customer orders.",
     href: "/admin/crm/pipeline",
     icon: ShoppingCart,
+  },
+  {
+    title: "POS",
+    description: "Retail sales & cash register.",
+    href: "/admin/pos",
+    icon: CreditCard,
+  },
+  {
+    title: "Invoices",
+    description: "Manage customer invoices, payments & credit notes",
+    href: "/admin/invoices",
+    icon: FileText,
   },
   {
     title: "Website",

@@ -1,6 +1,7 @@
 import { Draggable, Droppable } from "@hello-pangea/dnd";
 import LeadCard from "@/features/leads/components/LeadCard";
 import type { Lead, LeadStatus } from "@/features/leads/types";
+import { formatEGP } from "@/lib/currency";
 
 type PipelineColumnProps = {
   status: LeadStatus;
@@ -10,10 +11,7 @@ type PipelineColumnProps = {
 };
 
 const formatBudget = (value: number) => {
-  return new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
+  return formatEGP(value);
 };
 
 export default function PipelineColumn({

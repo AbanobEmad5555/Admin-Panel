@@ -116,6 +116,8 @@ export default function LeadDetailsPage() {
                 users={users}
                 submitting={updateLead.isPending}
                 onSubmit={handleSubmit}
+                showCustomerLinking={false}
+                showStatusField={false}
               />
             ) : (
               <div className="rounded-xl bg-white p-6 shadow">

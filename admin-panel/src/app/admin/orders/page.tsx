@@ -74,6 +74,18 @@ type TempOrder = {
   createdAt?: string | null;
 };
 
+type PosOrderRow = {
+  id: string | number;
+  tempOrderId?: string | number | null;
+  customerName?: string | null;
+  customerMobileNumber?: string | null;
+  total?: number | string | null;
+  paymentMethod?: string | null;
+  paymentStatus?: string | null;
+  status?: string | null;
+  createdAt?: string | null;
+};
+
 const STATUS_OPTIONS = [
   "PENDING",
   "CONFIRMED",
@@ -95,6 +107,7 @@ const TEMP_STATUS_FLOW = [
 const TEMP_STATUS_DROPDOWN = TEMP_STATUS_FLOW.filter(
   (status) => status !== "TEMP" && status !== "PENDING"
 ) as Array<(typeof TEMP_STATUS_FLOW)[number]>;
+const SECONDARY_TABLE_PAGE_SIZE = 10;
 
 const formatCurrency = (value: number) =>
   `${new Intl.NumberFormat("en-EG", {
@@ -178,6 +191,17 @@ const getTempOrderDisplayName = (order: TempOrder) =>
 
 const getTempOrderAmount = (order: TempOrder) => {
   const value = toNumberValue(order.totalAmount ?? order.totalPrice);
+  if (value === null) {
+    return "-";
+  }
+  return formatCurrency(Number(value));
+};
+
+const getPosOrderCustomerName = (order: PosOrderRow) =>
+  order.customerName ?? "Walk-in Customer";
+
+const getPosOrderAmount = (order: PosOrderRow) => {
+  const value = toNumberValue(order.total);
   if (value === null) {
     return "-";
   }
@@ -333,6 +357,11 @@ export default function AdminOrdersPage() {
   const [tempRowLoading, setTempRowLoading] = useState<Record<string, boolean>>(
     {}
   );
+  const [tempOrdersPage, setTempOrdersPage] = useState(1);
+  const [posOrders, setPosOrders] = useState<PosOrderRow[]>([]);
+  const [isPosOrdersLoading, setIsPosOrdersLoading] = useState(true);
+  const [posOrdersError, setPosOrdersError] = useState("");
+  const [posOrdersPage, setPosOrdersPage] = useState(1);
 
   useEffect(() => {
     fetchOrders(1, true);
@@ -355,6 +384,34 @@ export default function AdminOrdersPage() {
     () => new Set(activeProductIds),
     [activeProductIds]
   );
+  const tempOrdersTotalPages = Math.max(
+    1,
+    Math.ceil(tempOrders.length / SECONDARY_TABLE_PAGE_SIZE)
+  );
+  const posOrdersTotalPages = Math.max(
+    1,
+    Math.ceil(posOrders.length / SECONDARY_TABLE_PAGE_SIZE)
+  );
+  const pagedTempOrders = useMemo(() => {
+    const start = (tempOrdersPage - 1) * SECONDARY_TABLE_PAGE_SIZE;
+    return tempOrders.slice(start, start + SECONDARY_TABLE_PAGE_SIZE);
+  }, [tempOrders, tempOrdersPage]);
+  const pagedPosOrders = useMemo(() => {
+    const start = (posOrdersPage - 1) * SECONDARY_TABLE_PAGE_SIZE;
+    return posOrders.slice(start, start + SECONDARY_TABLE_PAGE_SIZE);
+  }, [posOrders, posOrdersPage]);
+
+  useEffect(() => {
+    if (tempOrdersPage > tempOrdersTotalPages) {
+      setTempOrdersPage(tempOrdersTotalPages);
+    }
+  }, [tempOrdersPage, tempOrdersTotalPages]);
+
+  useEffect(() => {
+    if (posOrdersPage > posOrdersTotalPages) {
+      setPosOrdersPage(posOrdersTotalPages);
+    }
+  }, [posOrdersPage, posOrdersTotalPages]);
 
   const fetchOrders = async (page: number, initial = false) => {
     if (initial) {
@@ -484,11 +541,50 @@ export default function AdminOrdersPage() {
             [];
       const data = Array.isArray(raw) ? raw : [];
       setTempOrders(data as TempOrder[]);
+      setTempOrdersPage(1);
     } catch (err) {
       setTempOrders([]);
       setTempOrdersError(getErrorMessage(err));
     } finally {
       setIsTempOrdersLoading(false);
+    }
+  }, []);
+
+  const fetchPosOrders = useCallback(async () => {
+    setIsPosOrdersLoading(true);
+    setPosOrdersError("");
+    try {
+      const endpoints = ["/api/pos/order", "/api/pos/orders", "/admin/pos/orders"];
+      let lastError: unknown = null;
+
+      for (const endpoint of endpoints) {
+        try {
+          const response = await api.get<ApiListResponse<unknown>>(`${endpoint}?page=1&limit=1000`);
+          const payload = response.data?.data ?? response.data ?? {};
+          const record = payload as Record<string, unknown>;
+          const raw =
+            Array.isArray(payload)
+              ? payload
+              : record.orders ??
+                record.posOrders ??
+                record.items ??
+                record.data ??
+                [];
+          const rows = Array.isArray(raw) ? (raw as PosOrderRow[]) : [];
+          setPosOrders(rows);
+          setPosOrdersPage(1);
+          setIsPosOrdersLoading(false);
+          return;
+        } catch (error) {
+          lastError = error;
+        }
+      }
+
+      throw lastError ?? new Error("Failed to load POS orders.");
+    } catch (error) {
+      setPosOrders([]);
+      setPosOrdersError(getErrorMessage(error));
+      setIsPosOrdersLoading(false);
     }
   }, []);
 
@@ -499,6 +595,10 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     fetchTempOrders();
   }, [fetchTempOrders]);
+
+  useEffect(() => {
+    fetchPosOrders();
+  }, [fetchPosOrders]);
 
   const resetTempOrderForm = () => {
     setTempUserName("");
@@ -1035,7 +1135,7 @@ export default function AdminOrdersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 text-slate-700">
-                {tempOrders.map((order) => (
+                {pagedTempOrders.map((order) => (
                   <tr key={String(order.orderId) + order.createdAt}>
                     <td className="py-3 pr-4">{order.orderId ?? "-"}</td>
                     <td className="py-3 pr-4">
@@ -1099,6 +1199,161 @@ export default function AdminOrdersPage() {
             </table>
           )}
         </div>
+        {!isTempOrdersLoading && !tempOrdersError && tempOrders.length > 0 ? (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => setTempOrdersPage((prev) => Math.max(1, prev - 1))}
+              disabled={tempOrdersPage === 1}
+              className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 transition disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Previous
+            </button>
+            <div className="flex flex-wrap gap-2">
+              {Array.from({ length: tempOrdersTotalPages }, (_, index) => index + 1).map(
+                (page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() => setTempOrdersPage(page)}
+                    className={`rounded-md px-3 py-2 text-sm transition ${
+                      page === tempOrdersPage
+                        ? "bg-slate-900 text-white"
+                        : "border border-slate-300 text-slate-700 hover:bg-slate-100"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                )
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                setTempOrdersPage((prev) => Math.min(tempOrdersTotalPages, prev + 1))
+              }
+              disabled={tempOrdersPage === tempOrdersTotalPages}
+              className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 transition disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Next
+            </button>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-slate-900">POS Orders</h2>
+            <p className="text-sm text-slate-500">
+              All orders created from POS terminal.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              onClick={fetchPosOrders}
+              disabled={isPosOrdersLoading}
+            >
+              {isPosOrdersLoading ? "Refreshing..." : "Refresh"}
+            </Button>
+          </div>
+        </div>
+
+        <div className="mt-4 overflow-x-auto">
+          {isPosOrdersLoading ? (
+            <div className="space-y-3">
+              <div className="h-8 w-full animate-pulse rounded bg-slate-200" />
+              <div className="h-8 w-full animate-pulse rounded bg-slate-200" />
+            </div>
+          ) : posOrdersError ? (
+            <p className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+              {posOrdersError}
+            </p>
+          ) : posOrders.length === 0 ? (
+            <p className="text-sm text-slate-500">No POS orders found.</p>
+          ) : (
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-slate-200 text-slate-500">
+                <tr>
+                  <th className="py-2 pr-4 font-medium">POS Order ID</th>
+                  <th className="py-2 pr-4 font-medium">Temp Order ID</th>
+                  <th className="py-2 pr-4 font-medium">Customer Name</th>
+                  <th className="py-2 pr-4 font-medium">Mobile</th>
+                  <th className="py-2 pr-4 font-medium">Total Amount</th>
+                  <th className="py-2 pr-4 font-medium">Payment Method</th>
+                  <th className="py-2 pr-4 font-medium">Payment Status</th>
+                  <th className="py-2 pr-4 font-medium">Current Status</th>
+                  <th className="py-2 pr-4 font-medium">Created At</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 text-slate-700">
+                {pagedPosOrders.map((order, index) => (
+                  <tr key={`${order.id}-${order.createdAt ?? index}`}>
+                    <td className="py-3 pr-4">
+                      <Link
+                        href={`/admin/pos/orders/${order.id}`}
+                        className="text-slate-900 hover:underline"
+                      >
+                        {order.id ?? "-"}
+                      </Link>
+                    </td>
+                    <td className="py-3 pr-4">{order.tempOrderId ?? "-"}</td>
+                    <td className="py-3 pr-4">{getPosOrderCustomerName(order)}</td>
+                    <td className="py-3 pr-4">{order.customerMobileNumber ?? "-"}</td>
+                    <td className="py-3 pr-4">{getPosOrderAmount(order)}</td>
+                    <td className="py-3 pr-4">{order.paymentMethod ?? "-"}</td>
+                    <td className="py-3 pr-4">{order.paymentStatus ?? "-"}</td>
+                    <td className="py-3 pr-4">{order.status ?? "-"}</td>
+                    <td className="py-3 pr-4">
+                      {order.createdAt ? formatDate(order.createdAt) : "-"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+        {!isPosOrdersLoading && !posOrdersError && posOrders.length > 0 ? (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => setPosOrdersPage((prev) => Math.max(1, prev - 1))}
+              disabled={posOrdersPage === 1}
+              className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 transition disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Previous
+            </button>
+            <div className="flex flex-wrap gap-2">
+              {Array.from({ length: posOrdersTotalPages }, (_, index) => index + 1).map(
+                (page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() => setPosOrdersPage(page)}
+                    className={`rounded-md px-3 py-2 text-sm transition ${
+                      page === posOrdersPage
+                        ? "bg-slate-900 text-white"
+                        : "border border-slate-300 text-slate-700 hover:bg-slate-100"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                )
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                setPosOrdersPage((prev) => Math.min(posOrdersTotalPages, prev + 1))
+              }
+              disabled={posOrdersPage === posOrdersTotalPages}
+              className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 transition disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Next
+            </button>
+          </div>
+        ) : null}
       </div>
 
       <Modal

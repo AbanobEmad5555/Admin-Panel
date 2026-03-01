@@ -31,6 +31,7 @@ export const leadSchema = z
       .refine((value) => !value || !Number.isNaN(new Date(value).getTime()), {
         message: "Invalid follow up date",
       }),
+    skipCustomerLinkValidation: z.boolean().optional(),
     customerLinkType: z.enum(["existing", "temp"]),
     userId: z.coerce.number().int().positive().optional(),
     tempName: z.string().trim().optional(),
@@ -46,6 +47,10 @@ export const leadSchema = z
         path: ["tag"],
         message: "Tag is required when override is enabled",
       });
+    }
+
+    if (values.skipCustomerLinkValidation) {
+      return;
     }
 
     if (values.customerLinkType === "existing" && !values.userId) {

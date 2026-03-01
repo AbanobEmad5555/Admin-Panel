@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { KanbanSquare, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import AdminLayout from "@/components/layout/AdminLayout";
 import FilterBar from "@/features/leads/components/FilterBar";
 import PriorityBadge from "@/features/leads/components/PriorityBadge";
@@ -163,12 +163,6 @@ export default function LeadsListPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Link
-              href="/admin/crm/leads/pipeline"
-              className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
-            >
-              <KanbanSquare className="h-4 w-4" /> Pipeline
-            </Link>
             <Link
               href="/admin/crm/leads/new"
               className="inline-flex items-center gap-2 rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-800"

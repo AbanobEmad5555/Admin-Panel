@@ -17,6 +17,12 @@ const navSections: NavSection[] = [
     ],
   },
   {
+    module: "Finance",
+    items: [
+      { href: "/admin/invoices", label: "Invoices" },
+    ],
+  },
+  {
     module: "Inventory",
     items: [
       { href: "/admin/products", label: "Products" },
@@ -30,7 +36,6 @@ const navSections: NavSection[] = [
       { href: "/admin/orders", label: "Orders" },
       { href: "/admin/crm/pipeline", label: "CRM Pipeline" },
       { href: "/admin/crm/leads", label: "Leads" },
-      { href: "/admin/crm/leads/pipeline", label: "Leads Pipeline" },
       { href: "/admin/users", label: "Users" },
     ],
   },
@@ -47,6 +52,15 @@ const navSections: NavSection[] = [
     module: "Promo Codes",
     items: [{ href: "/admin/promo-codes", label: "Promo Codes" }],
   },
+  {
+    module: "POS",
+    items: [
+      { href: "/admin/pos", label: "POS Terminal" },
+      { href: "/admin/pos/daily-report", label: "Daily Report" },
+      { href: "/admin/pos/session-report", label: "Session Report" },
+      { href: "/admin/pos/top-products", label: "Top Products" },
+    ],
+  },
 ];
 
 export default function Sidebar() {
@@ -58,6 +72,14 @@ export default function Sidebar() {
   const getSectionByPath = () => {
     if (pathname === "/dashboard" || pathname.startsWith("/admin/sales")) {
       return "Dashboards";
+    }
+
+    if (pathname === "/admin/sales" || pathname.startsWith("/admin/sales/")) {
+      return "Dashboards";
+    }
+
+    if (pathname === "/admin/invoices" || pathname.startsWith("/admin/invoices/")) {
+      return "Finance";
     }
 
     if (
@@ -108,6 +130,13 @@ export default function Sidebar() {
       pathname.startsWith("/admin/promo-codes/")
     ) {
       return "Promo Codes";
+    }
+
+    if (
+      pathname === "/admin/pos" ||
+      pathname.startsWith("/admin/pos/")
+    ) {
+      return "POS";
     }
 
     return null;

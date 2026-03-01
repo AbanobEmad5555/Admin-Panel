@@ -1,4 +1,5 @@
 import { leadsApiClient } from "@/features/leads/api/client";
+import axios from "axios";
 import type {
   ApiEnvelope,
   Lead,
@@ -11,6 +12,7 @@ import type {
   PipelineColumn,
   User,
 } from "@/features/leads/types";
+import { LEAD_STATUS_ORDER } from "@/features/leads/types";
 
 const toNumber = (value: unknown): number | undefined => {
   if (typeof value === "number" && Number.isFinite(value)) {
@@ -246,6 +248,36 @@ const toListQueryParams = (params: LeadListParams) => {
   return query;
 };
 
+const buildPipelineFromLeads = (leads: Lead[]): PipelineColumn[] => {
+  return LEAD_STATUS_ORDER.map((status) => ({
+    status,
+    leads: leads.filter((lead) => lead.status === status),
+  }));
+};
+
+const normalizePipelinePayload = (payload: unknown): PipelineColumn[] => {
+  if (Array.isArray(payload)) {
+    return payload.map((column) => {
+      const value = (column ?? {}) as Record<string, unknown>;
+
+      return {
+        status: String(value.status ?? "New") as LeadStatus,
+        leads: normalizeLeadList(value.leads),
+      };
+    });
+  }
+
+  if (payload && typeof payload === "object") {
+    const map = payload as Record<string, unknown>;
+    return Object.entries(map).map(([status, leads]) => ({
+      status: status as LeadStatus,
+      leads: normalizeLeadList(leads),
+    }));
+  }
+
+  return [];
+};
+
 export const leadsApi = {
   async getLeadsList(params: LeadListParams): Promise<LeadsListResult> {
     const response = await leadsApiClient.get<ApiEnvelope<unknown>>("/api/leads", {
@@ -302,29 +334,30 @@ export const leadsApi = {
   },
 
   async getPipeline(): Promise<PipelineColumn[]> {
-    const response = await leadsApiClient.get<ApiEnvelope<unknown>>("/api/leads/pipeline");
-    const payload = response.data?.data;
+    try {
+      const response = await leadsApiClient.get<ApiEnvelope<unknown>>("/api/leads/pipeline");
+      const pipeline = normalizePipelinePayload(response.data?.data);
+      if (pipeline.length > 0) {
+        return pipeline;
+      }
+    } catch (error) {
+      if (!axios.isAxiosError(error)) {
+        throw error;
+      }
 
-    if (Array.isArray(payload)) {
-      return payload.map((column) => {
-        const value = (column ?? {}) as Record<string, unknown>;
-
-        return {
-          status: String(value.status ?? "New") as LeadStatus,
-          leads: normalizeLeadList(value.leads),
-        };
-      });
+      const status = error.response?.status;
+      if (status && ![404, 405].includes(status)) {
+        throw error;
+      }
     }
 
-    if (payload && typeof payload === "object") {
-      const map = payload as Record<string, unknown>;
-      return Object.entries(map).map(([status, leads]) => ({
-        status: status as LeadStatus,
-        leads: normalizeLeadList(leads),
-      }));
-    }
+    const fallback = await leadsApiClient.get<ApiEnvelope<unknown>>("/api/leads", {
+      params: { page: 1, limit: 500 },
+    });
 
-    return [];
+    const fallbackData = (fallback.data?.data ?? {}) as Record<string, unknown>;
+    const leads = normalizeLeadList(fallbackData.leads ?? fallback.data?.data);
+    return buildPipelineFromLeads(leads);
   },
 
   async createLead(payload: LeadPayload): Promise<Lead> {

@@ -19,6 +19,8 @@ type LeadFormProps = {
   users: User[];
   submitting: boolean;
   onSubmit: (payload: LeadPayload) => Promise<void>;
+  showCustomerLinking?: boolean;
+  showStatusField?: boolean;
 };
 
 const toDateInput = (value?: string) => {
@@ -39,6 +41,8 @@ export default function LeadForm({
   users,
   submitting,
   onSubmit,
+  showCustomerLinking = true,
+  showStatusField = true,
 }: LeadFormProps) {
   const defaultValues: LeadFormValues = useMemo(
     () => ({
@@ -52,7 +56,12 @@ export default function LeadForm({
       budget: initialLead?.budget,
       notes: initialLead?.notes ?? "",
       followUpDate: toDateInput(initialLead?.followUpDate),
-      customerLinkType: initialLead?.userId ? "existing" : "temp",
+      skipCustomerLinkValidation: !showCustomerLinking,
+      customerLinkType: showCustomerLinking
+        ? initialLead?.userId
+          ? "existing"
+          : "temp"
+        : "existing",
       userId: initialLead?.userId,
       tempName: "",
       tempPhone: "",
@@ -60,7 +69,7 @@ export default function LeadForm({
       tagOverride: initialLead?.tagOverride ?? false,
       tag: initialLead?.tag,
     }),
-    [initialLead]
+    [initialLead, showCustomerLinking]
   );
 
   const {
@@ -90,16 +99,19 @@ export default function LeadForm({
       followUpDate: values.followUpDate || undefined,
       tagOverride: values.tagOverride,
       tag: values.tagOverride ? values.tag : undefined,
-      userId: values.customerLinkType === "existing" ? values.userId : undefined,
-      tempUser:
+    };
+
+    if (showCustomerLinking) {
+      payload.userId = values.customerLinkType === "existing" ? values.userId : undefined;
+      payload.tempUser =
         values.customerLinkType === "temp"
           ? {
               tempName: values.tempName?.trim() || "",
               tempPhone: values.tempPhone?.trim() || "",
               tempEmail: values.tempEmail?.trim() || undefined,
             }
-          : undefined,
-    };
+          : undefined;
+    }
 
     await onSubmit(payload);
   };
@@ -157,19 +169,21 @@ export default function LeadForm({
           </select>
         </div>
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Status</label>
-          <select
-            {...register("status")}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-          >
-            {LEAD_STATUS_ORDER.map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
-            ))}
-          </select>
-        </div>
+        {showStatusField ? (
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">Status</label>
+            <select
+              {...register("status")}
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            >
+              {LEAD_STATUS_ORDER.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
 
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700">Assigned Admin</label>
@@ -223,70 +237,72 @@ export default function LeadForm({
         />
       </div>
 
-      <div className="rounded-lg border border-slate-200 p-4">
-        <p className="mb-3 text-sm font-semibold text-slate-900">Customer Linking</p>
+      {showCustomerLinking ? (
+        <div className="rounded-lg border border-slate-200 p-4">
+          <p className="mb-3 text-sm font-semibold text-slate-900">Customer Linking</p>
 
-        <div className="mb-4 flex flex-wrap gap-4">
-          <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-            <input type="radio" value="existing" {...register("customerLinkType")} />
-            Select Existing User
-          </label>
-          <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-            <input type="radio" value="temp" {...register("customerLinkType")} />
-            Create Temp User
-          </label>
+          <div className="mb-4 flex flex-wrap gap-4">
+            <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+              <input type="radio" value="existing" {...register("customerLinkType")} />
+              Select Existing User
+            </label>
+            <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+              <input type="radio" value="temp" {...register("customerLinkType")} />
+              Create Temp User
+            </label>
+          </div>
+
+          {customerLinkType === "existing" ? (
+            <div>
+              <select
+                {...register("userId", {
+                  setValueAs: (value) => (value ? Number(value) : undefined),
+                })}
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              >
+                <option value="">Select user</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name}
+                  </option>
+                ))}
+              </select>
+              {errors.userId ? <p className="mt-1 text-xs text-rose-600">{errors.userId.message}</p> : null}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div>
+                <input
+                  {...register("tempName")}
+                  placeholder="Temp Name"
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                />
+                {errors.tempName ? <p className="mt-1 text-xs text-rose-600">{errors.tempName.message}</p> : null}
+              </div>
+              <div>
+                <input
+                  {...register("tempPhone")}
+                  placeholder="Temp Phone"
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                />
+                {errors.tempPhone ? (
+                  <p className="mt-1 text-xs text-rose-600">{errors.tempPhone.message}</p>
+                ) : null}
+              </div>
+              <div>
+                <input
+                  {...register("tempEmail")}
+                  placeholder="Temp Email"
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                />
+                {errors.tempEmail ? (
+                  <p className="mt-1 text-xs text-rose-600">{errors.tempEmail.message}</p>
+                ) : null}
+              </div>
+            </div>
+          )}
         </div>
-
-        {customerLinkType === "existing" ? (
-          <div>
-            <select
-              {...register("userId", {
-                setValueAs: (value) => (value ? Number(value) : undefined),
-              })}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-            >
-              <option value="">Select user</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name}
-                </option>
-              ))}
-            </select>
-            {errors.userId ? <p className="mt-1 text-xs text-rose-600">{errors.userId.message}</p> : null}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            <div>
-              <input
-                {...register("tempName")}
-                placeholder="Temp Name"
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-              />
-              {errors.tempName ? <p className="mt-1 text-xs text-rose-600">{errors.tempName.message}</p> : null}
-            </div>
-            <div>
-              <input
-                {...register("tempPhone")}
-                placeholder="Temp Phone"
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-              />
-              {errors.tempPhone ? (
-                <p className="mt-1 text-xs text-rose-600">{errors.tempPhone.message}</p>
-              ) : null}
-            </div>
-            <div>
-              <input
-                {...register("tempEmail")}
-                placeholder="Temp Email"
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-              />
-              {errors.tempEmail ? (
-                <p className="mt-1 text-xs text-rose-600">{errors.tempEmail.message}</p>
-              ) : null}
-            </div>
-          </div>
-        )}
-      </div>
+      ) : null}
 
       <div className="rounded-lg border border-slate-200 p-4">
         <p className="mb-3 text-sm font-semibold text-slate-900">Tag</p>
