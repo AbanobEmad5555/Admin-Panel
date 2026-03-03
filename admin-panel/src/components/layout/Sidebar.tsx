@@ -26,6 +26,7 @@ const navSections: NavSection[] = [
     module: "Inventory",
     items: [
       { href: "/admin/products", label: "Products" },
+      { href: "/admin/ratings", label: "Ratings" },
       { href: "/categories", label: "Categories" },
       { href: "/variants", label: "Variants" },
     ],
@@ -90,7 +91,9 @@ export default function Sidebar() {
       pathname === "/variants" ||
       pathname.startsWith("/variants/") ||
       pathname === "/admin/products" ||
-      pathname.startsWith("/admin/products/")
+      pathname.startsWith("/admin/products/") ||
+      pathname === "/admin/ratings" ||
+      pathname.startsWith("/admin/ratings/")
     ) {
       return "Inventory";
     }
