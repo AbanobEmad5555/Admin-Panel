@@ -6,6 +6,7 @@ import AdminLayout from "@/components/layout/AdminLayout";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
+import { assignOrderDeliveryDateForOutForDelivery } from "@/lib/deliveryScheduling";
 import api from "@/services/api";
 
 type Order = {
@@ -765,6 +766,14 @@ export default function AdminOrdersPage() {
         await api.put(`/orders/${order.id}/confirm`);
       } else if (nextStatus === "OUT_FOR_DELIVERY") {
         await api.put(`/orders/${order.id}/out-for-delivery`);
+        const assignment = await assignOrderDeliveryDateForOutForDelivery(order.id);
+        if (!assignment.success) {
+          setToastError(
+            "Order moved to Out For Delivery, but assigning delivery date failed.",
+          );
+        } else {
+          setToastMessage("Order status updated and delivery date assigned.");
+        }
       } else if (nextStatus === "DELIVERED") {
         await api.put(`/orders/${order.id}/delivered`);
       } else if (nextStatus === "COMPLETED") {
@@ -772,7 +781,9 @@ export default function AdminOrdersPage() {
       } else {
         await api.patch(`/orders/${order.id}/status`, { status: nextStatus });
       }
-      setToastMessage("Order status updated.");
+      if (nextStatus !== "OUT_FOR_DELIVERY") {
+        setToastMessage("Order status updated.");
+      }
       await fetchOrders(currentPage);
     } catch (err) {
       setOrders((prev) =>

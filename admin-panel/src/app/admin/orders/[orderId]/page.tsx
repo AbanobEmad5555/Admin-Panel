@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import AdminLayout from "@/components/layout/AdminLayout";
 import Button from "@/components/ui/Button";
+import { assignOrderDeliveryDateForOutForDelivery } from "@/lib/deliveryScheduling";
 import api from "@/services/api";
 
 type OrderItem = {
@@ -489,6 +490,16 @@ export default function OrderDetailsPage() {
         await api.put(`/orders/${orderId}/confirm`);
       } else if (statusInput === "OUT_FOR_DELIVERY") {
         await api.put(`/orders/${orderId}/out-for-delivery`);
+        const assignment = await assignOrderDeliveryDateForOutForDelivery(
+          String(orderId),
+        );
+        if (!assignment.success) {
+          setToastError(
+            "Order moved to Out For Delivery, but assigning delivery date failed.",
+          );
+        } else {
+          setToastMessage("Order status updated and delivery date assigned.");
+        }
       } else if (statusInput === "DELIVERED") {
         await api.put(`/orders/${orderId}/delivered`);
       } else if (statusInput === "COMPLETED") {
@@ -499,7 +510,9 @@ export default function OrderDetailsPage() {
         });
       }
       setOrder((prev) => (prev ? { ...prev, status: statusInput } : prev));
-      setToastMessage("Order status updated.");
+      if (statusInput !== "OUT_FOR_DELIVERY") {
+        setToastMessage("Order status updated.");
+      }
     } catch (err) {
       setToastError(getErrorMessage(err));
     } finally {

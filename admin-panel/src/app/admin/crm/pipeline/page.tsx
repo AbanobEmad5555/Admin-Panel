@@ -9,6 +9,7 @@ import {
   type DropResult,
 } from "@hello-pangea/dnd";
 import AdminLayout from "@/components/layout/AdminLayout";
+import { assignOrderDeliveryDateForOutForDelivery } from "@/lib/deliveryScheduling";
 import api from "@/services/api";
 
 type OrderStatus =
@@ -267,32 +268,37 @@ const getStatusTheme = (status: OrderStatus) => {
   }
 };
 
-const updateOrderStatus = async (orderId: number, status: OrderStatus) => {
+const updateOrderStatus = async (
+  orderId: number,
+  status: OrderStatus,
+): Promise<{ deliveryDateAssigned: boolean }> => {
   const apiStatus = STATUS_TO_API[status];
 
   if (apiStatus === "CONFIRMED") {
     await api.put(`/orders/${orderId}/confirm`);
-    return;
+    return { deliveryDateAssigned: false };
   }
 
   if (apiStatus === "OUT_FOR_DELIVERY") {
     await api.put(`/orders/${orderId}/out-for-delivery`);
-    return;
+    const assignment = await assignOrderDeliveryDateForOutForDelivery(orderId);
+    return { deliveryDateAssigned: assignment.success };
   }
 
   if (apiStatus === "DELIVERED") {
     await api.put(`/orders/${orderId}/delivered`);
-    return;
+    return { deliveryDateAssigned: false };
   }
 
   if (apiStatus === "COMPLETED") {
     await api.put(`/orders/${orderId}/complete`);
-    return;
+    return { deliveryDateAssigned: false };
   }
 
   await api.patch(`/orders/${orderId}/status`, {
     status: apiStatus,
   });
+  return { deliveryDateAssigned: false };
 };
 
 export default function CrmPipelinePage() {
@@ -401,7 +407,15 @@ export default function CrmPipelinePage() {
       setError("");
 
       try {
-        await updateOrderStatus(movedOrder.id, destinationStatus);
+        const result = await updateOrderStatus(movedOrder.id, destinationStatus);
+        if (
+          destinationStatus === "Out For Delivery" &&
+          !result.deliveryDateAssigned
+        ) {
+          setError(
+            "Order moved to Out For Delivery, but assigning delivery date failed.",
+          );
+        }
       } catch (err) {
         setColumns(previousColumns);
         setError(getErrorMessage(err) || "Failed to update order status.");

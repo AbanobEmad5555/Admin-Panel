@@ -3,6 +3,7 @@ import HomeAuthAction from "@/components/layout/HomeAuthAction";
 import {
   BarChart3,
   Boxes,
+  CalendarDays,
   CreditCard,
   FileText,
   Globe,
@@ -36,6 +37,12 @@ const modules: ModuleItem[] = [
     description: "View and manage customer orders.",
     href: "/admin/crm/pipeline",
     icon: ShoppingCart,
+  },
+  {
+    title: "Calendar",
+    description: "Manage delivery schedules and operational events.",
+    href: "/calendar",
+    icon: CalendarDays,
   },
   {
     title: "POS",

@@ -41,6 +41,12 @@ const navSections: NavSection[] = [
     ],
   },
   {
+    module: "Admin Panel",
+    items: [
+      { href: "/calendar", label: "Calendar" },
+    ],
+  },
+  {
     module: "Website",
     items: [
       { href: "/admin/homepage-control", label: "HomePage Control" },
@@ -96,6 +102,13 @@ export default function Sidebar() {
       pathname.startsWith("/admin/ratings/")
     ) {
       return "Inventory";
+    }
+
+    if (
+      pathname === "/calendar" ||
+      pathname.startsWith("/calendar/")
+    ) {
+      return "Admin Panel";
     }
 
     if (
