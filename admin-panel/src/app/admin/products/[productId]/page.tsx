@@ -6,6 +6,8 @@ import { useParams, useRouter } from "next/navigation";
 import AdminLayout from "@/components/layout/AdminLayout";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
+import PurchaseStatusBadge from "@/components/purchases/PurchaseStatusBadge";
+import { productPurchaseHistorySeed } from "@/components/purchases/mock-data";
 import api from "@/services/api";
 
 type Product = {
@@ -229,6 +231,7 @@ export default function ProductDetailsPage() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"overview" | "purchases">("overview");
 
   const [nameInput, setNameInput] = useState("");
   const [priceBeforeInput, setPriceBeforeInput] = useState("");
@@ -590,6 +593,33 @@ export default function ProductDetailsPage() {
           </div>
         ) : null}
 
+        <div className="rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveTab("overview")}
+              className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+                activeTab === "overview"
+                  ? "bg-slate-900 text-white"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              }`}
+            >
+              Overview
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("purchases")}
+              className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+                activeTab === "purchases"
+                  ? "bg-slate-900 text-white"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              }`}
+            >
+              Purchases
+            </button>
+          </div>
+        </div>
+
         {isLoading ? (
           <div className="space-y-3">
             <div className="h-10 w-full animate-pulse rounded bg-slate-200" />
@@ -601,162 +631,202 @@ export default function ProductDetailsPage() {
         ) : !product ? (
           <p className="text-sm text-slate-500">Product not found.</p>
         ) : (
-          <div className="space-y-6">
-            <div className="grid gap-4 lg:grid-cols-3">
-              <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                <h2 className="text-base font-semibold text-slate-900">
-                  Product Overview
-                </h2>
-                <div className="mt-3 space-y-2 text-sm text-slate-600">
-                  <div className="flex items-center justify-between">
-                    <span>Product Name</span>
-                    <span className="font-medium text-slate-900">
-                      {product.name ?? "-"}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Status</span>
-                    <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${resolveStatusBadge(
-                        product
-                      )}`}
-                    >
-                      {resolveStatusLabel(product)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Category</span>
-                    <span className="text-slate-900">
-                      {product.category?.name ?? "-"}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Created At</span>
-                    <span className="text-slate-900">
-                      {formatDate(product.createdAt ?? product.created_at)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                <h2 className="text-base font-semibold text-slate-900">
-                  Pricing & Stock
-                </h2>
-                <div className="mt-3 space-y-2 text-sm text-slate-600">
-                  <div className="flex items-center justify-between">
-                    <span>Price Before Discount</span>
-                    <span className="text-slate-900">
-                      {priceBefore !== null ? formatCurrency(priceBefore) : "-"}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Price After Discount</span>
-                    <span className="text-slate-900">
-                      {priceAfter !== null ? formatCurrency(priceAfter) : "-"}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Stock</span>
-                    <span className="text-slate-900">
-                      {stockValue !== null ? stockValue : "-"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                <h2 className="text-base font-semibold text-slate-900">
-                  Variant Details
-                </h2>
-                <div className="mt-3 space-y-2 text-sm text-slate-600">
-                  <div className="flex items-center justify-between">
-                    <span>SKU</span>
-                    <span className="text-slate-900">{variantDetails.sku}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Size</span>
-                    <span className="text-slate-900">{variantDetails.size}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Color</span>
-                    <span className="flex items-center gap-2 text-slate-900">
-                      <span
-                        className="h-3 w-3 rounded-full border border-slate-200"
-                        style={{ backgroundColor: variantDetails.color ?? "#000000" }}
-                      />
-                      {variantDetails.color}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Material</span>
-                    <span className="text-slate-900">
-                      {variantDetails.material}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Variant Status</span>
-                    <span className="text-slate-900">
-                      {variantDetails.status}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid gap-4 lg:grid-cols-[2fr,1fr]">
-              <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                <h2 className="text-base font-semibold text-slate-900">
-                  Product Images
-                </h2>
-                {images.length === 0 ? (
-                  <p className="mt-3 text-sm text-slate-500">
-                    No images available.
-                  </p>
-                ) : (
-                  <div className="mt-3 space-y-3">
-                    <img
-                      src={selectedImage ?? images[0]}
-                      alt={product.name ?? "Product"}
-                      className="h-64 w-full rounded-lg object-contain bg-slate-50"
-                    />
-                    {images.length > 1 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {images.map((image) => (
-                          <button
-                            key={image}
-                            type="button"
-                            onClick={() => setSelectedImage(image)}
-                            className={`rounded-md border px-1 py-1 transition ${
-                              selectedImage === image
-                                ? "border-slate-900"
-                                : "border-slate-200 hover:border-slate-400"
-                            }`}
-                          >
-                            <img
-                              src={image}
-                              alt={product.name ?? "Product"}
-                              className="h-16 w-16 rounded-md object-contain bg-slate-50"
-                            />
-                          </button>
-                        ))}
+          <>
+            {activeTab === "overview" ? (
+              <div className="space-y-6">
+                <div className="grid gap-4 lg:grid-cols-3">
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <h2 className="text-base font-semibold text-slate-900">
+                      Product Overview
+                    </h2>
+                    <div className="mt-3 space-y-2 text-sm text-slate-600">
+                      <div className="flex items-center justify-between">
+                        <span>Product Name</span>
+                        <span className="font-medium text-slate-900">
+                          {product.name ?? "-"}
+                        </span>
                       </div>
-                    ) : null}
+                      <div className="flex items-center justify-between">
+                        <span>Status</span>
+                        <span
+                          className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${resolveStatusBadge(
+                            product
+                          )}`}
+                        >
+                          {resolveStatusLabel(product)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Category</span>
+                        <span className="text-slate-900">
+                          {product.category?.name ?? "-"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Created At</span>
+                        <span className="text-slate-900">
+                          {formatDate(product.createdAt ?? product.created_at)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
 
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <h2 className="text-base font-semibold text-slate-900">
+                      Pricing & Stock
+                    </h2>
+                    <div className="mt-3 space-y-2 text-sm text-slate-600">
+                      <div className="flex items-center justify-between">
+                        <span>Price Before Discount</span>
+                        <span className="text-slate-900">
+                          {priceBefore !== null ? formatCurrency(priceBefore) : "-"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Price After Discount</span>
+                        <span className="text-slate-900">
+                          {priceAfter !== null ? formatCurrency(priceAfter) : "-"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Stock</span>
+                        <span className="text-slate-900">
+                          {stockValue !== null ? stockValue : "-"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <h2 className="text-base font-semibold text-slate-900">
+                      Variant Details
+                    </h2>
+                    <div className="mt-3 space-y-2 text-sm text-slate-600">
+                      <div className="flex items-center justify-between">
+                        <span>SKU</span>
+                        <span className="text-slate-900">{variantDetails.sku}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Size</span>
+                        <span className="text-slate-900">{variantDetails.size}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Color</span>
+                        <span className="flex items-center gap-2 text-slate-900">
+                          <span
+                            className="h-3 w-3 rounded-full border border-slate-200"
+                            style={{ backgroundColor: variantDetails.color ?? "#000000" }}
+                          />
+                          {variantDetails.color}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Material</span>
+                        <span className="text-slate-900">
+                          {variantDetails.material}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Variant Status</span>
+                        <span className="text-slate-900">
+                          {variantDetails.status}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 lg:grid-cols-[2fr,1fr]">
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <h2 className="text-base font-semibold text-slate-900">
+                      Product Images
+                    </h2>
+                    {images.length === 0 ? (
+                      <p className="mt-3 text-sm text-slate-500">
+                        No images available.
+                      </p>
+                    ) : (
+                      <div className="mt-3 space-y-3">
+                        <img
+                          src={selectedImage ?? images[0]}
+                          alt={product.name ?? "Product"}
+                          className="h-64 w-full rounded-lg object-contain bg-slate-50"
+                        />
+                        {images.length > 1 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {images.map((image) => (
+                              <button
+                                key={image}
+                                type="button"
+                                onClick={() => setSelectedImage(image)}
+                                className={`rounded-md border px-1 py-1 transition ${
+                                  selectedImage === image
+                                    ? "border-slate-900"
+                                    : "border-slate-200 hover:border-slate-400"
+                                }`}
+                              >
+                                <img
+                                  src={image}
+                                  alt={product.name ?? "Product"}
+                                  className="h-16 w-16 rounded-md object-contain bg-slate-50"
+                                />
+                              </button>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <h2 className="text-base font-semibold text-slate-900">
+                      Product Description
+                    </h2>
+                    <p className="mt-3 text-sm text-slate-600">
+                      {product.description ?? "No description provided."}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
               <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                 <h2 className="text-base font-semibold text-slate-900">
-                  Product Description
+                  Product Purchase History
                 </h2>
-                <p className="mt-3 text-sm text-slate-600">
-                  {product.description ?? "No description provided."}
+                <p className="mt-1 text-sm text-slate-500">
+                  Track purchase orders and supplier deliveries for this product.
                 </p>
+                <div className="mt-4 overflow-x-auto">
+                  <table className="min-w-[720px] w-full text-left text-sm">
+                    <thead className="bg-slate-50 text-slate-600">
+                      <tr>
+                        <th className="px-4 py-3 font-semibold">Purchase ID</th>
+                        <th className="px-4 py-3 font-semibold">Supplier</th>
+                        <th className="px-4 py-3 font-semibold">Quantity</th>
+                        <th className="px-4 py-3 font-semibold">Unit Cost</th>
+                        <th className="px-4 py-3 font-semibold">Arrival Date</th>
+                        <th className="px-4 py-3 font-semibold">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200">
+                      {productPurchaseHistorySeed.map((entry) => (
+                        <tr key={entry.purchaseId} className="text-slate-700">
+                          <td className="px-4 py-3">{entry.purchaseId}</td>
+                          <td className="px-4 py-3">{entry.supplier}</td>
+                          <td className="px-4 py-3">{entry.quantity}</td>
+                          <td className="px-4 py-3">{formatCurrency(entry.unitCost)}</td>
+                          <td className="px-4 py-3">{entry.arrivalDate}</td>
+                          <td className="px-4 py-3">
+                            <PurchaseStatusBadge status={entry.status} />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
-
-          </div>
+            )}
+          </>
         )}
       </div>
 

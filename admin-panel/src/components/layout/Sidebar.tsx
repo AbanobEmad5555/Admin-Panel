@@ -23,6 +23,14 @@ const navSections: NavSection[] = [
     ],
   },
   {
+    module: "Purchases",
+    items: [
+      { href: "/purchases", label: "Purchases" },
+      { href: "/purchases/costs", label: "Operational Costs" },
+      { href: "/purchases/summary", label: "Summary" },
+    ],
+  },
+  {
     module: "Inventory",
     items: [
       { href: "/admin/products", label: "Products" },
@@ -44,6 +52,12 @@ const navSections: NavSection[] = [
     module: "Admin Panel",
     items: [
       { href: "/calendar", label: "Calendar" },
+    ],
+  },
+  {
+    module: "Team",
+    items: [
+      { href: "/admin/team", label: "Team" },
     ],
   },
   {
@@ -73,8 +87,25 @@ const navSections: NavSection[] = [
 export default function Sidebar() {
   const pathname = usePathname();
 
-  const isRouteActive = (href: string) =>
-    pathname === href || pathname.startsWith(`${href}/`);
+  const isRouteActive = (href: string) => {
+    if (pathname === href) {
+      return true;
+    }
+    if (!pathname.startsWith(`${href}/`)) {
+      return false;
+    }
+
+    const hasMoreSpecificMatch = navSections.some((section) =>
+      section.items.some(
+        (item) =>
+          item.href !== href &&
+          item.href.startsWith(`${href}/`) &&
+          (pathname === item.href || pathname.startsWith(`${item.href}/`))
+      )
+    );
+
+    return !hasMoreSpecificMatch;
+  };
 
   const getSectionByPath = () => {
     if (pathname === "/dashboard" || pathname.startsWith("/admin/sales")) {
@@ -85,8 +116,18 @@ export default function Sidebar() {
       return "Dashboards";
     }
 
-    if (pathname === "/admin/invoices" || pathname.startsWith("/admin/invoices/")) {
+    if (
+      pathname === "/admin/invoices" ||
+      pathname.startsWith("/admin/invoices/")
+    ) {
       return "Finance";
+    }
+
+    if (
+      pathname === "/purchases" ||
+      pathname.startsWith("/purchases/")
+    ) {
+      return "Purchases";
     }
 
     if (
@@ -109,6 +150,13 @@ export default function Sidebar() {
       pathname.startsWith("/calendar/")
     ) {
       return "Admin Panel";
+    }
+
+    if (
+      pathname === "/admin/team" ||
+      pathname.startsWith("/admin/team/")
+    ) {
+      return "Team";
     }
 
     if (

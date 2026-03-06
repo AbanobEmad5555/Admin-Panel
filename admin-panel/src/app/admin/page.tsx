@@ -1,5 +1,6 @@
 import Link from "next/link";
 import HomeAuthAction from "@/components/layout/HomeAuthAction";
+import TeamModuleCard from "@/features/team/components/TeamModuleCard";
 import {
   BarChart3,
   Boxes,
@@ -7,6 +8,7 @@ import {
   CreditCard,
   FileText,
   Globe,
+  PackageCheck,
   ShoppingCart,
   Tag,
   type LucideIcon,
@@ -55,6 +57,12 @@ const modules: ModuleItem[] = [
     description: "Manage customer invoices, payments & credit notes",
     href: "/admin/invoices",
     icon: FileText,
+  },
+  {
+    title: "Purchases",
+    description: "Manage product purchases, suppliers, and operational costs.",
+    href: "/purchases",
+    icon: PackageCheck,
   },
   {
     title: "Website",
@@ -107,6 +115,7 @@ export default function AdminModulesPage() {
               </Link>
             );
           })}
+          <TeamModuleCard />
         </section>
       </div>
     </main>

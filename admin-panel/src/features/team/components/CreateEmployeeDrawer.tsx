@@ -1,0 +1,27 @@
+"use client";
+
+import Modal from "@/components/ui/Modal";
+import EmployeeForm from "@/features/team/components/EmployeeForm";
+import type { EmployeeFormValues } from "@/features/team/schemas/employee.schema";
+
+type CreateEmployeeDrawerProps = {
+  open: boolean;
+  pending?: boolean;
+  onClose: () => void;
+  onSubmit: (values: EmployeeFormValues) => void;
+};
+
+export default function CreateEmployeeDrawer({
+  open,
+  pending = false,
+  onClose,
+  onSubmit,
+}: CreateEmployeeDrawerProps) {
+  return (
+    <Modal title="Add Employee" isOpen={open} onClose={onClose}>
+      <div className="max-h-[75vh] overflow-y-auto pr-1">
+        <EmployeeForm mode="create" pending={pending} onCancel={onClose} onSubmit={onSubmit} />
+      </div>
+    </Modal>
+  );
+}

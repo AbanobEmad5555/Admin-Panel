@@ -1,0 +1,180 @@
+import type {
+  CostCategory,
+  CostRow,
+  PurchaseRow,
+  PurchaseStatus,
+} from "@/components/purchases/types";
+
+export const purchaseStatuses: PurchaseStatus[] = [
+  "ORDERED",
+  "IN_TRANSIT",
+  "DELIVERED",
+  "CANCELLED",
+];
+
+export const costCategories: CostCategory[] = [
+  "Rent",
+  "Utilities",
+  "Salary",
+  "Marketing",
+  "Shipping",
+  "Miscellaneous",
+];
+
+export const purchaseRowsSeed: PurchaseRow[] = [
+  {
+    id: "1",
+    productName: "Classic Hoodie - Black / L",
+    purchaseId: "PO-10231",
+    supplier: "Nile Textile Co.",
+    quantity: 120,
+    unitCost: 180,
+    totalCost: 21600,
+    expectedArrival: "2026-04-01",
+    delivered: false,
+    status: "ORDERED",
+  },
+  {
+    id: "2",
+    productName: "Denim Jacket - Blue / M",
+    purchaseId: "PO-10232",
+    supplier: "Delta Apparel",
+    quantity: 80,
+    unitCost: 280,
+    totalCost: 22400,
+    expectedArrival: "2026-03-20",
+    delivered: false,
+    status: "IN_TRANSIT",
+  },
+  {
+    id: "3",
+    productName: "Sneakers Pro - White / 42",
+    purchaseId: "PO-10233",
+    supplier: "Cairo Footwear",
+    quantity: 60,
+    unitCost: 450,
+    totalCost: 27000,
+    expectedArrival: "2026-03-10",
+    delivered: true,
+    status: "DELIVERED",
+  },
+  {
+    id: "4",
+    productName: "Everyday Tee - Gray / XL",
+    purchaseId: "PO-10234",
+    supplier: "Nile Textile Co.",
+    quantity: 220,
+    unitCost: 95,
+    totalCost: 20900,
+    expectedArrival: "2026-03-29",
+    delivered: false,
+    status: "ORDERED",
+    pendingApproval: true,
+  },
+  {
+    id: "5",
+    productName: "Wool Scarf - Brown",
+    purchaseId: "PO-10235",
+    supplier: "Winterline Supplies",
+    quantity: 40,
+    unitCost: 140,
+    totalCost: 5600,
+    expectedArrival: "2026-03-01",
+    delivered: false,
+    status: "CANCELLED",
+  },
+];
+
+export const costsSeed: CostRow[] = [
+  {
+    id: "c1",
+    name: "Warehouse Rent - Downtown",
+    category: "Rent",
+    amount: 35000,
+    date: "2026-03-01",
+    notes: "Monthly contract",
+  },
+  {
+    id: "c2",
+    name: "Electricity + Water",
+    category: "Utilities",
+    amount: 8200,
+    date: "2026-03-02",
+    notes: "Main branch",
+  },
+  {
+    id: "c3",
+    name: "Operations Team Payroll",
+    category: "Salary",
+    amount: 56000,
+    date: "2026-03-03",
+    notes: "March payroll batch",
+  },
+  {
+    id: "c4",
+    name: "Meta Ads",
+    category: "Marketing",
+    amount: 16000,
+    date: "2026-03-04",
+    notes: "Retargeting campaign",
+  },
+  {
+    id: "c5",
+    name: "Express Shipment",
+    category: "Shipping",
+    amount: 4900,
+    date: "2026-03-04",
+    notes: "Supplier urgent delivery",
+  },
+  {
+    id: "c6",
+    name: "Office Supplies",
+    category: "Miscellaneous",
+    amount: 2100,
+    date: "2026-03-05",
+    notes: "Printers and labels",
+  },
+];
+
+export const productPurchaseHistorySeed = [
+  {
+    purchaseId: "PO-10233",
+    supplier: "Cairo Footwear",
+    quantity: 60,
+    unitCost: 450,
+    arrivalDate: "2026-03-10",
+    status: "DELIVERED" as PurchaseStatus,
+  },
+  {
+    purchaseId: "PO-10218",
+    supplier: "Cairo Footwear",
+    quantity: 55,
+    unitCost: 420,
+    arrivalDate: "2026-02-12",
+    status: "DELIVERED" as PurchaseStatus,
+  },
+  {
+    purchaseId: "PO-10194",
+    supplier: "Delta Apparel",
+    quantity: 48,
+    unitCost: 430,
+    arrivalDate: "2026-01-21",
+    status: "DELIVERED" as PurchaseStatus,
+  },
+];
+
+export const summarySeries = {
+  labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+  purchases: [120000, 142000, 131000, 158000, 149000, 166000],
+  revenue: [190000, 205000, 198000, 226000, 218000, 245000],
+  grossProfit: [70000, 75000, 71000, 84000, 79000, 89000],
+  netProfit: [42000, 47000, 41000, 54000, 50000, 61000],
+  costBreakdown: [
+    { label: "Rent", value: 35000, color: "#334155" },
+    { label: "Salary", value: 56000, color: "#0f766e" },
+    { label: "Utilities", value: 8200, color: "#0369a1" },
+    { label: "Marketing", value: 16000, color: "#7c3aed" },
+    { label: "Shipping", value: 4900, color: "#ca8a04" },
+    { label: "Misc", value: 2100, color: "#475569" },
+  ],
+};
