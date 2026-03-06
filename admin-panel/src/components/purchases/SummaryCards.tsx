@@ -3,6 +3,7 @@ import { formatEGP } from "@/lib/currency";
 
 type SummaryCardsProps = {
   totalPurchases: number;
+  totalOperationalCosts: number;
   totalCosts: number;
   revenue: number;
   grossProfit: number;
@@ -16,6 +17,7 @@ const cardBase =
 
 export default function SummaryCards({
   totalPurchases,
+  totalOperationalCosts,
   totalCosts,
   revenue,
   grossProfit,
@@ -25,7 +27,8 @@ export default function SummaryCards({
 }: SummaryCardsProps) {
   const items = [
     { label: "Total Purchases", value: formatEGP(totalPurchases), icon: Package },
-    { label: "Total Costs", value: formatEGP(totalCosts), icon: Wallet },
+    { label: "Operational Costs", value: formatEGP(totalOperationalCosts), icon: Wallet },
+    { label: "Total Expenses", value: formatEGP(totalCosts), icon: Wallet },
     { label: "Revenue", value: formatEGP(revenue), icon: CircleDollarSign },
     { label: "Gross Profit", value: formatEGP(grossProfit), icon: TrendingUp },
     { label: "Net Profit", value: formatEGP(netProfit), icon: Banknote },

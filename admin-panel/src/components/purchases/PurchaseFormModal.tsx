@@ -1,15 +1,35 @@
 "use client";
 
 import { useState } from "react";
+import { purchaseStatuses } from "@/components/purchases/constants";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import type { PurchaseFormValue, PurchaseRow, PurchaseStatus } from "@/components/purchases/types";
 
+type ProductOption = {
+  id: number;
+  label: string;
+};
+
+type CategoryOption = {
+  id: number;
+  name: string;
+};
+
+type VariantOption = {
+  id: number;
+  label: string;
+};
+
 type PurchaseFormModalProps = {
   open: boolean;
   mode: "create" | "edit";
   initial?: PurchaseRow | null;
+  existingProducts: ProductOption[];
+  categories: CategoryOption[];
+  variants: VariantOption[];
+  catalogLoading?: boolean;
   onClose: () => void;
   onSubmit: (payload: PurchaseFormValue) => void;
 };
@@ -18,7 +38,9 @@ const initialForm: PurchaseFormValue = {
   productMode: "existing",
   existingProductId: "",
   productName: "",
+  selectedCategoryId: "",
   category: "",
+  selectedVariantId: "",
   variant: "",
   priceBeforeDiscount: "",
   priceAfterDiscount: "",
@@ -32,9 +54,7 @@ const initialForm: PurchaseFormValue = {
   status: "ORDERED",
 };
 
-const statuses: PurchaseStatus[] = ["ORDERED", "IN_TRANSIT", "DELIVERED", "CANCELLED"];
-const categories = ["Hoodies", "Jackets", "Shoes", "Accessories", "T-Shirts"];
-const variants = ["S", "M", "L", "XL", "42", "43"];
+const statuses: PurchaseStatus[] = purchaseStatuses;
 
 const toFormValue = (initial?: PurchaseRow | null): PurchaseFormValue => {
   if (!initial) {
@@ -43,19 +63,21 @@ const toFormValue = (initial?: PurchaseRow | null): PurchaseFormValue => {
 
   return {
     productMode: "existing",
-    existingProductId: initial.productName,
+    existingProductId: initial.productId ? String(initial.productId) : "",
     productName: initial.productName,
-    category: "",
-    variant: "",
+    selectedCategoryId: initial.categoryId ? String(initial.categoryId) : "",
+    category: initial.categoryName ?? "",
+    selectedVariantId: initial.variantId ? String(initial.variantId) : "",
+    variant: initial.variantName ?? "",
     priceBeforeDiscount: "",
     priceAfterDiscount: "",
-    supplierName: initial.supplier,
-    supplierContact: "",
-    supplierEmail: "",
-    supplierPhone: "",
+    supplierName: initial.supplierName,
+    supplierContact: initial.supplierContact ?? "",
+    supplierEmail: initial.supplierEmail ?? "",
+    supplierPhone: initial.supplierPhone ?? "",
     quantity: String(initial.quantity),
     unitCost: String(initial.unitCost),
-    expectedArrivalDate: initial.expectedArrival,
+    expectedArrivalDate: initial.expectedArrivalDate,
     status: initial.status,
   };
 };
@@ -64,6 +86,10 @@ export default function PurchaseFormModal({
   open,
   mode,
   initial,
+  existingProducts,
+  categories,
+  variants,
+  catalogLoading = false,
   onClose,
   onSubmit,
 }: PurchaseFormModalProps) {
@@ -111,16 +137,20 @@ export default function PurchaseFormModal({
                 setForm((prev) => ({
                   ...prev,
                   existingProductId: event.target.value,
-                  productName: event.target.value,
                 }))
               }
               className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
             >
               <option value="">Select product</option>
-              <option value="Classic Hoodie - Black / L">Classic Hoodie - Black / L</option>
-              <option value="Denim Jacket - Blue / M">Denim Jacket - Blue / M</option>
-              <option value="Sneakers Pro - White / 42">Sneakers Pro - White / 42</option>
+              {existingProducts.map((product) => (
+                <option key={product.id} value={String(product.id)}>
+                  {product.label}
+                </option>
+              ))}
             </select>
+            {!catalogLoading && existingProducts.length === 0 ? (
+              <p className="text-xs text-slate-500">No products found.</p>
+            ) : null}
           </div>
         ) : (
           <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
@@ -131,30 +161,54 @@ export default function PurchaseFormModal({
             />
             <div className="grid gap-3 sm:grid-cols-2">
               <select
-                value={form.category}
-                onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
+                value={form.selectedCategoryId}
+                onChange={(event) => {
+                  const selected = categories.find(
+                    (category) => String(category.id) === event.target.value
+                  );
+                  setForm((prev) => ({
+                    ...prev,
+                    selectedCategoryId: event.target.value,
+                    category: selected?.name ?? "",
+                  }));
+                }}
                 className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
               >
                 <option value="">Select category</option>
                 {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
+                  <option key={category.id} value={String(category.id)}>
+                    {category.name}
                   </option>
                 ))}
               </select>
               <select
-                value={form.variant}
-                onChange={(event) => setForm((prev) => ({ ...prev, variant: event.target.value }))}
+                value={form.selectedVariantId}
+                onChange={(event) => {
+                  const selected = variants.find(
+                    (variant) => String(variant.id) === event.target.value
+                  );
+                  setForm((prev) => ({
+                    ...prev,
+                    selectedVariantId: event.target.value,
+                    variant: selected?.label ?? "",
+                  }));
+                }}
                 className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
               >
                 <option value="">Select variant</option>
                 {variants.map((variant) => (
-                  <option key={variant} value={variant}>
-                    {variant}
+                  <option key={variant.id} value={String(variant.id)}>
+                    {variant.label}
                   </option>
                 ))}
               </select>
             </div>
+            {!catalogLoading && categories.length === 0 ? (
+              <p className="text-xs text-slate-500">No categories found.</p>
+            ) : null}
+            {!catalogLoading && variants.length === 0 ? (
+              <p className="text-xs text-slate-500">No variants found.</p>
+            ) : null}
             <div className="grid gap-3 sm:grid-cols-2">
               <Input
                 type="number"

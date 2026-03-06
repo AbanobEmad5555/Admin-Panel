@@ -1,27 +1,30 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { AxiosError } from "axios";
 import { Download, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import AdminLayout from "@/components/layout/AdminLayout";
+import { costBreakdownPalette } from "@/components/purchases/constants";
 import CostsBreakdownChart from "@/components/purchases/CostsBreakdownChart";
 import ProfitTrendChart from "@/components/purchases/ProfitTrendChart";
 import PurchasesModuleNav from "@/components/purchases/PurchasesModuleNav";
 import PurchasesRevenueChart from "@/components/purchases/PurchasesRevenueChart";
 import SummaryCards from "@/components/purchases/SummaryCards";
-import { summarySeries } from "@/components/purchases/mock-data";
-import { getPurchasesStorageEventName, loadCostRows, loadPurchaseRows } from "@/components/purchases/storage";
-import api from "@/services/api";
-import type { CostRow, PurchaseRow } from "@/components/purchases/types";
+import { purchasesSummaryApi, type SummaryPeriod } from "@/features/purchases/api/purchases.api";
 
 type Period = "Day" | "Month" | "Quarter" | "Year";
-type PeriodSeries = {
-  labels: string[];
-  keys: string[];
+
+const periodMap: Record<Period, SummaryPeriod> = {
+  Day: "day",
+  Month: "month",
+  Quarter: "quarter",
+  Year: "year",
 };
 
-const buildSeries = (period: Period): PeriodSeries => {
+const buildSeries = (period: Period) => {
   const now = new Date();
+
   if (period === "Day") {
     return { labels: ["Today"], keys: ["today"] };
   }
@@ -46,256 +49,80 @@ const buildSeries = (period: Period): PeriodSeries => {
   return { labels, keys: labels.map((label) => label.toLowerCase()) };
 };
 
-const toDate = (value?: string) => {
-  if (!value) {
-    return null;
+const resolveBucketValue = (buckets: Record<string, number>, key: string) => {
+  if (Object.prototype.hasOwnProperty.call(buckets, key)) {
+    return buckets[key];
   }
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+
+  const normalizedKey = key.trim().toLowerCase();
+  const match = Object.entries(buckets).find(
+    ([bucketKey]) => bucketKey.trim().toLowerCase() === normalizedKey
+  );
+  return match?.[1] ?? 0;
 };
 
-const inRange = (date: Date, start: Date, end: Date) =>
-  date.getTime() >= start.getTime() && date.getTime() <= end.getTime();
+const resolveCostSlices = (buckets: Record<string, number>) =>
+  costBreakdownPalette
+    .map((item) => ({
+      label: item.label,
+      color: item.color,
+      value: Math.round(resolveBucketValue(buckets, item.key)),
+    }))
+    .filter((item) => item.value > 0);
 
-const monthShort = (date: Date) =>
-  date.toLocaleDateString("en-US", { month: "short" }).toLowerCase();
-
-const getRange = (period: Period) => {
-  const now = new Date();
-  const end = new Date(now);
-  end.setHours(23, 59, 59, 999);
-
-  if (period === "Day") {
-    const start = new Date(now);
-    start.setHours(0, 0, 0, 0);
-    return { start, end };
-  }
-
-  if (period === "Month") {
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    return { start, end };
-  }
-
-  if (period === "Quarter") {
-    const quarterStartMonth = Math.floor(now.getMonth() / 3) * 3;
-    const start = new Date(now.getFullYear(), quarterStartMonth, 1);
-    return { start, end };
-  }
-
-  const start = new Date(now.getFullYear(), 0, 1);
-  return { start, end };
-};
-
-const getBucketKey = (date: Date, period: Period): string => {
-  if (period === "Day") {
-    return "today";
-  }
-  if (period === "Month") {
-    return String(date.getDate());
-  }
-  return monthShort(date);
-};
-
-const extractSalesPayload = (payload: unknown) => {
-  const record = (payload ?? {}) as Record<string, unknown>;
-  const safeNumber = (value: unknown) => {
-    if (typeof value === "number") {
-      return value;
-    }
-    if (typeof value === "string" && value.trim()) {
-      const parsed = Number(value);
-      return Number.isNaN(parsed) ? 0 : parsed;
-    }
-    return 0;
-  };
-  return {
-    revenue: safeNumber(
-      record.totalSales ?? record.total ?? record.amount ?? record.sales ?? record.value
-    ),
-    orders: safeNumber(
-      record.totalOrders ?? record.orders ?? record.orderCount ?? record.count
-    ),
-  };
-};
-
-const salesEndpointMap: Record<Period, string> = {
-  Day: "/sales/today",
-  Month: "/sales/this-month",
-  Quarter: "/sales/this-quarter",
-  Year: "/sales/this-year",
-};
+const getApiErrorMessage = (error: unknown, fallback: string) =>
+  ((error as AxiosError<{ message?: string }>)?.response?.data?.message ?? fallback);
 
 export default function PurchasesSummaryPage() {
   const [period, setPeriod] = useState<Period>("Month");
   const activeSeries = useMemo(() => buildSeries(period), [period]);
-  const [purchaseRows, setPurchaseRows] = useState<PurchaseRow[]>([]);
-  const [costRows, setCostRows] = useState<CostRow[]>([]);
-  const [salesTotals, setSalesTotals] = useState({ revenue: 0, orders: 0 });
-  const [salesLoading, setSalesLoading] = useState(false);
-  const [salesError, setSalesError] = useState("");
-
-  useEffect(() => {
-    const reload = () => {
-      setPurchaseRows(loadPurchaseRows());
-      setCostRows(loadCostRows());
-    };
-    reload();
-
-    const eventName = getPurchasesStorageEventName();
-    const onStorage = (event: StorageEvent) => {
-      if (!event.key || event.key.includes("purchases_module_")) {
-        reload();
-      }
-    };
-
-    window.addEventListener(eventName, reload);
-    window.addEventListener("storage", onStorage);
-    window.addEventListener("focus", reload);
-    return () => {
-      window.removeEventListener(eventName, reload);
-      window.removeEventListener("storage", onStorage);
-      window.removeEventListener("focus", reload);
-    };
-  }, []);
+  const [summary, setSummary] = useState<Awaited<ReturnType<typeof purchasesSummaryApi.get>> | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     let mounted = true;
-    const fetchSales = async () => {
-      setSalesLoading(true);
-      setSalesError("");
+    const fetchSummary = async () => {
+      setIsLoading(true);
+      setError("");
       try {
-        const response = await api.get(salesEndpointMap[period]);
+        const data = await purchasesSummaryApi.get(periodMap[period]);
         if (!mounted) {
           return;
         }
-        const payload = response.data?.data ?? response.data;
-        setSalesTotals(extractSalesPayload(payload));
-      } catch {
+        setSummary(data);
+      } catch (requestError) {
         if (!mounted) {
           return;
         }
-        setSalesTotals({ revenue: 0, orders: 0 });
-        setSalesError("Unable to load sales totals for selected period.");
+        setSummary(null);
+        setError(getApiErrorMessage(requestError, "Unable to load purchases summary."));
       } finally {
         if (mounted) {
-          setSalesLoading(false);
+          setIsLoading(false);
         }
       }
     };
-    void fetchSales();
+
+    void fetchSummary();
     return () => {
       mounted = false;
     };
   }, [period]);
 
-  const { purchasesByBucket, costsByBucket, filteredCosts } = useMemo(() => {
-    const keys = new Set(activeSeries.keys);
-    const init = () =>
-      Object.fromEntries(activeSeries.keys.map((key) => [key, 0])) as Record<string, number>;
-    const purchasesMap = init();
-    const costsMap = init();
-    const range = getRange(period);
-
-    const costs: CostRow[] = [];
-
-    purchaseRows.forEach((row) => {
-      const date = toDate(row.expectedArrival);
-      if (!date || !inRange(date, range.start, range.end)) {
-        return;
-      }
-      const bucket = getBucketKey(date, period);
-      if (!keys.has(bucket)) {
-        return;
-      }
-      purchasesMap[bucket] += Number(row.totalCost || 0);
-    });
-
-    costRows.forEach((row) => {
-      const date = toDate(row.date);
-      if (!date || !inRange(date, range.start, range.end)) {
-        return;
-      }
-      const bucket = getBucketKey(date, period);
-      if (!keys.has(bucket)) {
-        return;
-      }
-      costsMap[bucket] += Number(row.amount || 0);
-      costs.push(row);
-    });
-
-    return {
-      purchasesByBucket: purchasesMap,
-      costsByBucket: costsMap,
-      filteredCosts: costs,
-    };
-  }, [activeSeries.keys, costRows, period, purchaseRows]);
-
-  const revenueByBucket = useMemo(() => {
-    const map = Object.fromEntries(activeSeries.keys.map((key) => [key, 0])) as Record<string, number>;
-    const purchaseValues = activeSeries.keys.map((key) => purchasesByBucket[key]);
-    const purchaseTotal = purchaseValues.reduce((sum, value) => sum + value, 0);
-    if (activeSeries.keys.length === 0) {
-      return map;
-    }
-
-    if (purchaseTotal > 0) {
-      activeSeries.keys.forEach((key) => {
-        const ratio = purchasesByBucket[key] / purchaseTotal;
-        map[key] = salesTotals.revenue * ratio;
-      });
-    } else {
-      const evenShare = salesTotals.revenue / activeSeries.keys.length;
-      activeSeries.keys.forEach((key) => {
-        map[key] = evenShare;
-      });
-    }
-    return map;
-  }, [activeSeries.keys, purchasesByBucket, salesTotals.revenue]);
-
-  const stats = useMemo(() => {
-    const purchases = activeSeries.keys.map((key) => purchasesByBucket[key]);
-    const costs = activeSeries.keys.map((key) => costsByBucket[key]);
-    const totalPurchases = purchases.reduce((sum, value) => sum + value, 0);
-    const totalCosts = costs.reduce((sum, value) => sum + value, 0);
-    const revenue = salesTotals.revenue;
-    const grossProfit = revenue - totalPurchases;
-    const netProfit = grossProfit - totalCosts;
-    const purchaseCount = purchases.filter((value) => value > 0).length;
-    return {
-      totalPurchases,
-      totalCosts,
-      revenue,
-      grossProfit,
-      netProfit,
-      avgPurchaseCost: purchaseCount > 0 ? totalPurchases / purchaseCount : 0,
-      totalOrders: salesTotals.orders,
-    };
-  }, [activeSeries.keys, costsByBucket, purchasesByBucket, salesTotals.orders, salesTotals.revenue]);
-
-  const costSlices = useMemo(
-    () => {
-      const categories = new Map<string, number>();
-      filteredCosts.forEach((cost) => {
-        categories.set(cost.category, (categories.get(cost.category) ?? 0) + cost.amount);
-      });
-      const baseColors = summarySeries.costBreakdown;
-      return baseColors
-        .map((item) => ({
-          label: item.label,
-          color: item.color,
-          value: Math.round(categories.get(item.label) ?? categories.get(item.label === "Misc" ? "Miscellaneous" : item.label) ?? 0),
-        }))
-        .filter((item) => item.value > 0);
-    },
-    [filteredCosts]
+  const purchasesSeries = activeSeries.keys.map((key) =>
+    resolveBucketValue(summary?.purchasesByBucket ?? {}, key)
   );
-
-  const purchasesSeries = activeSeries.keys.map((key) => purchasesByBucket[key]);
-  const revenueSeries = activeSeries.keys.map((key) => revenueByBucket[key]);
-  const grossProfitSeries = activeSeries.keys.map((key) => revenueByBucket[key] - purchasesByBucket[key]);
-  const netProfitSeries = activeSeries.keys.map(
-    (key) => revenueByBucket[key] - purchasesByBucket[key] - costsByBucket[key]
+  const revenueSeries = activeSeries.keys.map((key) =>
+    resolveBucketValue(summary?.revenueByBucket ?? {}, key)
   );
+  const grossProfitSeries = activeSeries.keys.map((key) =>
+    resolveBucketValue(summary?.grossProfitByBucket ?? {}, key)
+  );
+  const netProfitSeries = activeSeries.keys.map((key) =>
+    resolveBucketValue(summary?.netProfitByBucket ?? {}, key)
+  );
+  const costSlices = resolveCostSlices(summary?.costBreakdownByCategory ?? {});
 
   return (
     <AdminLayout>
@@ -340,36 +167,50 @@ export default function PurchasesSummaryPage() {
 
         <PurchasesModuleNav />
 
-        <SummaryCards
-          totalPurchases={stats.totalPurchases}
-          totalCosts={stats.totalCosts}
-          revenue={stats.revenue}
-          grossProfit={stats.grossProfit}
-          netProfit={stats.netProfit}
-          avgPurchaseCost={stats.avgPurchaseCost}
-          totalOrders={stats.totalOrders}
-        />
+        {error ? (
+          <div className="rounded-xl border border-rose-200 bg-rose-50 p-5 text-sm text-rose-700 shadow-sm">
+            {error}
+          </div>
+        ) : (
+          <>
+            <SummaryCards
+              totalPurchases={summary?.totalPurchases ?? 0}
+              totalOperationalCosts={summary?.totalOperationalCosts ?? 0}
+              totalCosts={summary?.totalExpenses ?? 0}
+              revenue={summary?.revenue ?? 0}
+              grossProfit={summary?.grossProfit ?? 0}
+              netProfit={summary?.netProfit ?? 0}
+              avgPurchaseCost={summary?.avgPurchaseCost ?? 0}
+              totalOrders={summary?.totalOrders ?? 0}
+            />
 
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-          <PurchasesRevenueChart
-            labels={activeSeries.labels}
-            purchases={purchasesSeries}
-            revenue={revenueSeries}
-          />
-          <CostsBreakdownChart slices={costSlices.length > 0 ? costSlices : summarySeries.costBreakdown.map((item) => ({ ...item, value: 0 }))} />
-        </div>
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+              <PurchasesRevenueChart
+                labels={activeSeries.labels}
+                purchases={purchasesSeries}
+                revenue={revenueSeries}
+              />
+              <CostsBreakdownChart
+                slices={
+                  costSlices.length > 0
+                    ? costSlices
+                    : costBreakdownPalette.map((item) => ({ label: item.label, color: item.color, value: 0 }))
+                }
+              />
+            </div>
 
-        <ProfitTrendChart
-          labels={activeSeries.labels}
-          grossProfit={grossProfitSeries}
-          netProfit={netProfitSeries}
-        />
+            <ProfitTrendChart
+              labels={activeSeries.labels}
+              grossProfit={grossProfitSeries}
+              netProfit={netProfitSeries}
+            />
+          </>
+        )}
 
         <p className="text-xs text-slate-500">
           Viewing analytics for: <span className="font-semibold text-slate-700">{period}</span>
         </p>
-        {salesLoading ? <p className="text-xs text-slate-500">Loading sales totals...</p> : null}
-        {salesError ? <p className="text-xs text-rose-600">{salesError}</p> : null}
+        {isLoading ? <p className="text-xs text-slate-500">Loading summary...</p> : null}
       </section>
     </AdminLayout>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { AxiosError } from "axios";
 import { Download, FileSpreadsheet, Plus } from "lucide-react";
 import { toast } from "sonner";
 import AdminLayout from "@/components/layout/AdminLayout";
@@ -8,18 +9,21 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import ConfirmDeleteModal from "@/components/purchases/ConfirmDeleteModal";
 import CostFormModal from "@/components/purchases/CostFormModal";
+import { costCategories, costCategoryLabels } from "@/components/purchases/constants";
 import CostsTable from "@/components/purchases/CostsTable";
 import PurchasesModuleNav from "@/components/purchases/PurchasesModuleNav";
-import { costCategories } from "@/components/purchases/mock-data";
-import { loadCostRows, saveCostRows } from "@/components/purchases/storage";
 import type { CostFormValue, CostRow } from "@/components/purchases/types";
+import { purchaseCostsApi } from "@/features/purchases/api/purchases.api";
 
 const PAGE_SIZE = 20;
+
+const getApiErrorMessage = (error: unknown, fallback: string) =>
+  ((error as AxiosError<{ message?: string }>)?.response?.data?.message ?? fallback);
 
 export default function PurchasesCostsPage() {
   const [rows, setRows] = useState<CostRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isError, setIsError] = useState(false);
+  const [error, setError] = useState("");
   const [page, setPage] = useState(1);
   const [draftNameFilter, setDraftNameFilter] = useState("");
   const [draftCategoryFilter, setDraftCategoryFilter] = useState<CostRow["category"] | "ALL">("ALL");
@@ -34,24 +38,22 @@ export default function PurchasesCostsPage() {
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [rowToDelete, setRowToDelete] = useState<CostRow | null>(null);
-  const [isHydrated, setIsHydrated] = useState(false);
 
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setRows(loadCostRows());
+  const refreshCosts = async () => {
+    setError("");
+    try {
+      const data = await purchaseCostsApi.list();
+      setRows(data);
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, "Failed to load operational costs."));
+    } finally {
       setIsLoading(false);
-      setIsHydrated(true);
-    }, 600);
-
-    return () => window.clearTimeout(timer);
-  }, []);
+    }
+  };
 
   useEffect(() => {
-    if (!isHydrated) {
-      return;
-    }
-    saveCostRows(rows);
-  }, [rows, isHydrated]);
+    void refreshCosts();
+  }, []);
 
   const filteredRows = useMemo(() => {
     const query = nameFilter.trim().toLowerCase();
@@ -70,44 +72,45 @@ export default function PurchasesCostsPage() {
     [filteredRows, currentPage]
   );
 
-  const handleSubmit = (payload: CostFormValue) => {
+  const handleSubmit = async (payload: CostFormValue) => {
     const amount = Number(payload.amount || 0);
     if (!payload.name.trim() || amount <= 0 || !payload.date) {
       toast.error("Please complete required fields.");
       return;
     }
 
-    if (formMode === "create") {
-      const next: CostRow = {
-        id: `${Date.now()}`,
-        name: payload.name.trim(),
-        category: payload.category,
-        amount,
-        date: payload.date,
-        notes: payload.notes.trim(),
-      };
-      setRows((prev) => [next, ...prev]);
-      toast.success("Cost added.");
-    } else if (selectedRow) {
-      setRows((prev) =>
-        prev.map((row) =>
-          row.id === selectedRow.id
-            ? {
-                ...row,
-                name: payload.name.trim(),
-                category: payload.category,
-                amount,
-                date: payload.date,
-                notes: payload.notes.trim(),
-              }
-            : row
+    try {
+      if (formMode === "create") {
+        await purchaseCostsApi.create({
+          name: payload.name.trim(),
+          category: payload.category,
+          amount,
+          date: payload.date,
+          notes: payload.notes.trim() || undefined,
+        });
+        toast.success("Cost added.");
+      } else if (selectedRow) {
+        await purchaseCostsApi.update(selectedRow.id, {
+          name: payload.name.trim(),
+          category: payload.category,
+          amount,
+          date: payload.date,
+          notes: payload.notes.trim() || undefined,
+        });
+        toast.success("Cost updated.");
+      }
+
+      await refreshCosts();
+      setFormOpen(false);
+      setSelectedRow(null);
+    } catch (requestError) {
+      toast.error(
+        getApiErrorMessage(
+          requestError,
+          formMode === "create" ? "Failed to create cost." : "Failed to update cost."
         )
       );
-      toast.success("Cost updated.");
     }
-
-    setFormOpen(false);
-    setSelectedRow(null);
   };
 
   return (
@@ -175,7 +178,7 @@ export default function PurchasesCostsPage() {
               <option value="ALL">All categories</option>
               {costCategories.map((category) => (
                 <option key={category} value={category}>
-                  {category}
+                  {costCategoryLabels[category]}
                 </option>
               ))}
             </select>
@@ -224,14 +227,14 @@ export default function PurchasesCostsPage() {
           </div>
         ) : null}
 
-        {isError ? (
+        {error ? (
           <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 shadow-sm">
-            Failed to load operational costs.
+            {error}
             <button
               type="button"
               onClick={() => {
-                setIsError(false);
-                setRows(loadCostRows());
+                setIsLoading(true);
+                void refreshCosts();
               }}
               className="ml-2 font-semibold underline"
             >
@@ -240,7 +243,7 @@ export default function PurchasesCostsPage() {
           </div>
         ) : null}
 
-        {!isLoading && !isError && filteredRows.length === 0 ? (
+        {!isLoading && !error && filteredRows.length === 0 ? (
           <div className="rounded-xl border border-slate-200 bg-white p-10 text-center shadow-sm">
             <h2 className="text-lg font-semibold text-slate-900">No costs found</h2>
             <p className="mt-1 text-sm text-slate-500">
@@ -261,7 +264,7 @@ export default function PurchasesCostsPage() {
           </div>
         ) : null}
 
-        {!isLoading && !isError && filteredRows.length > 0 ? (
+        {!isLoading && !error && filteredRows.length > 0 ? (
           <>
             <CostsTable
               rows={pagedRows}
@@ -309,7 +312,9 @@ export default function PurchasesCostsPage() {
           mode={formMode}
           initial={selectedRow}
           onClose={() => setFormOpen(false)}
-          onSubmit={handleSubmit}
+          onSubmit={(payload) => {
+            void handleSubmit(payload);
+          }}
         />
       ) : null}
 
@@ -322,9 +327,17 @@ export default function PurchasesCostsPage() {
           if (!rowToDelete) {
             return;
           }
-          setRows((prev) => prev.filter((row) => row.id !== rowToDelete.id));
-          setDeleteOpen(false);
-          toast.success("Cost deleted.");
+          void purchaseCostsApi
+            .remove(rowToDelete.id)
+            .then(async () => {
+              await refreshCosts();
+              setDeleteOpen(false);
+              toast.success("Cost deleted.");
+            })
+            .catch((requestError: unknown) => {
+              toast.error(getApiErrorMessage(requestError, "Failed to delete cost."));
+            })
+            .finally(() => undefined);
         }}
       />
     </AdminLayout>

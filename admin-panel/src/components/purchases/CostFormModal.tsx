@@ -4,7 +4,7 @@ import { useState } from "react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
-import { costCategories } from "@/components/purchases/mock-data";
+import { costCategories, costCategoryLabels } from "@/components/purchases/constants";
 import type { CostFormValue, CostRow } from "@/components/purchases/types";
 
 type CostFormModalProps = {
@@ -17,7 +17,7 @@ type CostFormModalProps = {
 
 const emptyForm: CostFormValue = {
   name: "",
-  category: "Miscellaneous",
+  category: "MISCELLANEOUS",
   amount: "",
   date: "",
   notes: "",
@@ -63,7 +63,7 @@ export default function CostFormModal({
           >
             {costCategories.map((category) => (
               <option key={category} value={category}>
-                {category}
+                {costCategoryLabels[category]}
               </option>
             ))}
           </select>

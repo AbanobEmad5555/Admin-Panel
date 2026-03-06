@@ -40,7 +40,7 @@ export default function PurchasesTable({
               <tr key={row.id} className="text-slate-700">
                 <td className="px-4 py-3 font-medium text-slate-900">{row.productName}</td>
                 <td className="px-4 py-3">{row.purchaseId}</td>
-                <td className="px-4 py-3">{row.supplier}</td>
+                <td className="px-4 py-3">{row.supplierName}</td>
                 <td className="px-4 py-3">{row.quantity}</td>
                 <td className="px-4 py-3">{formatEGP(row.unitCost)}</td>
                 <td className="px-4 py-3">{formatEGP(row.totalCost)}</td>
@@ -50,7 +50,7 @@ export default function PurchasesTable({
                       Delivered
                     </span>
                   ) : row.status === "IN_TRANSIT" ? (
-                    <span className="text-slate-600">Expected: {row.expectedArrival || "-"}</span>
+                    <span className="text-slate-600">Expected: {row.expectedArrivalDate || "-"}</span>
                   ) : (
                     <span className="text-slate-400">-</span>
                   )}

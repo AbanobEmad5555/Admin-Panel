@@ -7,7 +7,8 @@ import AdminLayout from "@/components/layout/AdminLayout";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import PurchaseStatusBadge from "@/components/purchases/PurchaseStatusBadge";
-import { productPurchaseHistorySeed } from "@/components/purchases/mock-data";
+import type { PurchaseRow } from "@/components/purchases/types";
+import { purchasesApi } from "@/features/purchases/api/purchases.api";
 import api from "@/services/api";
 
 type Product = {
@@ -221,6 +222,7 @@ export default function ProductDetailsPage() {
     : params?.productId;
 
   const [product, setProduct] = useState<Product | null>(null);
+  const [purchaseRows, setPurchaseRows] = useState<PurchaseRow[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [variants, setVariants] = useState<Variant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -267,6 +269,44 @@ export default function ProductDetailsPage() {
     () => resolveVariantDetails(product ?? {}),
     [product]
   );
+
+  const productPurchaseHistory = useMemo(() => {
+    const numericProductId = Number(product?.id);
+    const productName = product?.name?.trim().toLowerCase();
+    if (!productName && Number.isNaN(numericProductId)) {
+      return [];
+    }
+    return purchaseRows.filter((row) => {
+      if (!Number.isNaN(numericProductId) && row.productId === numericProductId) {
+        return true;
+      }
+      const purchaseName = row.productName.trim().toLowerCase();
+      return purchaseName === productName || purchaseName.startsWith(`${productName} - `);
+    });
+  }, [product?.id, product?.name, purchaseRows]);
+
+  useEffect(() => {
+    if (!productId) {
+      return;
+    }
+    let mounted = true;
+    const loadPurchases = async () => {
+      try {
+        const rows = await purchasesApi.listByProduct(String(productId));
+        if (mounted) {
+          setPurchaseRows(rows);
+        }
+      } catch {
+        if (mounted) {
+          setPurchaseRows([]);
+        }
+      }
+    };
+    void loadPurchases();
+    return () => {
+      mounted = false;
+    };
+  }, [productId]);
 
   useEffect(() => {
     if (!productId) {
@@ -809,18 +849,26 @@ export default function ProductDetailsPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200">
-                      {productPurchaseHistorySeed.map((entry) => (
-                        <tr key={entry.purchaseId} className="text-slate-700">
-                          <td className="px-4 py-3">{entry.purchaseId}</td>
-                          <td className="px-4 py-3">{entry.supplier}</td>
-                          <td className="px-4 py-3">{entry.quantity}</td>
-                          <td className="px-4 py-3">{formatCurrency(entry.unitCost)}</td>
-                          <td className="px-4 py-3">{entry.arrivalDate}</td>
-                          <td className="px-4 py-3">
-                            <PurchaseStatusBadge status={entry.status} />
+                      {productPurchaseHistory.length > 0 ? (
+                        productPurchaseHistory.map((entry) => (
+                          <tr key={entry.purchaseId} className="text-slate-700">
+                            <td className="px-4 py-3">{entry.purchaseId}</td>
+                            <td className="px-4 py-3">{entry.supplierName}</td>
+                            <td className="px-4 py-3">{entry.quantity}</td>
+                            <td className="px-4 py-3">{formatCurrency(entry.unitCost)}</td>
+                            <td className="px-4 py-3">{entry.expectedArrivalDate || "-"}</td>
+                            <td className="px-4 py-3">
+                              <PurchaseStatusBadge status={entry.status} />
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td className="px-4 py-6 text-sm text-slate-500" colSpan={6}>
+                            No purchase history found for this product.
                           </td>
                         </tr>
-                      ))}
+                      )}
                     </tbody>
                   </table>
                 </div>

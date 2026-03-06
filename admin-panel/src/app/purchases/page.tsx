@@ -12,10 +12,61 @@ import PurchaseFilters, { type PurchaseFiltersValue } from "@/components/purchas
 import PurchaseFormModal from "@/components/purchases/PurchaseFormModal";
 import PurchasesModuleNav from "@/components/purchases/PurchasesModuleNav";
 import PurchasesTable from "@/components/purchases/PurchasesTable";
-import { loadPurchaseRows, savePurchaseRows } from "@/components/purchases/storage";
 import type { PurchaseFormValue, PurchaseRow } from "@/components/purchases/types";
+import { purchasesApi } from "@/features/purchases/api/purchases.api";
+import api from "@/services/api";
 
 const PAGE_SIZE = 10;
+
+type CatalogProduct = {
+  id: number;
+  name?: string | null;
+  categoryId?: number | null;
+  category?: { id?: number | null; name?: string | null } | null;
+  variantId?: number | null;
+  variant?:
+    | {
+        id?: number | null;
+        sku?: string | null;
+        name?: string | null;
+        attributes?: {
+          size?: string | null;
+          color?: string | null;
+          material?: string | null;
+        } | null;
+      }
+    | null;
+  variantAttributes?: {
+    size?: string | null;
+    color?: string | null;
+    material?: string | null;
+  } | null;
+  status?: string | null;
+  isActive?: boolean | null;
+};
+
+type CategoryOption = {
+  id: number;
+  name: string;
+};
+
+type VariantOption = {
+  id: number;
+  label?: string;
+  sku?: string | null;
+  name?: string | null;
+  attributes?: {
+    size?: string | null;
+    color?: string | null;
+    material?: string | null;
+  } | null;
+};
+
+type ApiListResponse<T> = {
+  success?: boolean;
+  data?: T | { data?: T; items?: T; list?: T; products?: T };
+  message?: string;
+};
 
 const defaultFilters: PurchaseFiltersValue = {
   search: "",
@@ -32,12 +83,62 @@ const nextStatusMap: Record<PurchaseRow["status"], PurchaseRow["status"]> = {
   CANCELLED: "CANCELLED",
 };
 
+const toText = (value: unknown) => (typeof value === "string" ? value.trim() : "");
+
+const extractList = <T,>(payload: unknown): T[] => {
+  if (Array.isArray(payload)) {
+    return payload as T[];
+  }
+  if (!payload || typeof payload !== "object") {
+    return [];
+  }
+  const record = payload as Record<string, unknown>;
+  const candidates = [record.data, record.items, record.list, record.products, record.results, record.rows];
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) {
+      return candidate as T[];
+    }
+  }
+  return [];
+};
+
+const formatVariantLabel = (variant?: VariantOption | CatalogProduct["variant"], fallback = "") => {
+  const attributes =
+    variant && typeof variant === "object" && "attributes" in variant ? variant.attributes : null;
+  const color = toText(attributes?.color);
+  const size = toText(attributes?.size);
+  const material = toText(attributes?.material);
+  const sku = toText(variant && typeof variant === "object" && "sku" in variant ? variant.sku : "");
+  const name = toText(variant && typeof variant === "object" && "name" in variant ? variant.name : "");
+  const parts = [color, size, material].filter(Boolean);
+  if (parts.length > 0) {
+    return parts.join(" / ");
+  }
+  return sku || name || fallback;
+};
+
+const formatProductLabel = (product: CatalogProduct) => {
+  const name = toText(product.name) || `Product #${product.id}`;
+  const variantLabel =
+    formatVariantLabel(product.variant) ||
+    formatVariantLabel(
+      product.variantAttributes
+        ? { id: product.variantId ?? 0, attributes: product.variantAttributes }
+        : undefined
+    );
+  return variantLabel ? `${name} - ${variantLabel}` : name;
+};
+
 export default function PurchasesPage() {
   const [rows, setRows] = useState<PurchaseRow[]>([]);
+  const [products, setProducts] = useState<CatalogProduct[]>([]);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const [variants, setVariants] = useState<VariantOption[]>([]);
   const [draftFilters, setDraftFilters] = useState<PurchaseFiltersValue>(defaultFilters);
   const [appliedFilters, setAppliedFilters] = useState<PurchaseFiltersValue>(defaultFilters);
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
+  const [catalogLoading, setCatalogLoading] = useState(true);
   const [page, setPage] = useState(1);
 
   const [formOpen, setFormOpen] = useState(false);
@@ -49,26 +150,95 @@ export default function PurchasesPage() {
   const [arrivalDateModalOpen, setArrivalDateModalOpen] = useState(false);
   const [rowForStatusUpdate, setRowForStatusUpdate] = useState<PurchaseRow | null>(null);
   const [arrivalDateInput, setArrivalDateInput] = useState("");
-  const [isHydrated, setIsHydrated] = useState(false);
+
+  const refreshPurchases = async () => {
+    setIsError(false);
+    try {
+      const data = await purchasesApi.list();
+      setRows(data);
+    } catch {
+      setIsError(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setRows(loadPurchaseRows());
-      setIsLoading(false);
-      setIsHydrated(true);
-    }, 700);
-    return () => window.clearTimeout(timer);
+    void refreshPurchases();
   }, []);
 
   useEffect(() => {
-    if (!isHydrated) {
-      return;
-    }
-    savePurchaseRows(rows);
-  }, [rows, isHydrated]);
+    let mounted = true;
+    const fetchCatalog = async () => {
+      setCatalogLoading(true);
+      try {
+        const [productsResponse, categoriesResponse, variantsResponse] = await Promise.all([
+          api.get<ApiListResponse<CatalogProduct[]>>("/products?page=1&limit=1000"),
+          api.get<ApiListResponse<CategoryOption[]>>("/categories"),
+          api.get<ApiListResponse<VariantOption[]>>("/variants"),
+        ]);
+
+        if (!mounted) {
+          return;
+        }
+
+        const productRows = extractList<CatalogProduct>(
+          productsResponse.data?.data ?? productsResponse.data
+        ).filter((product) => {
+          if (typeof product.isActive === "boolean") {
+            return product.isActive;
+          }
+          const status = toText(product.status).toLowerCase();
+          return status ? status === "active" : true;
+        });
+
+        setProducts(productRows);
+        setCategories(extractList<CategoryOption>(categoriesResponse.data?.data ?? categoriesResponse.data));
+        setVariants(extractList<VariantOption>(variantsResponse.data?.data ?? variantsResponse.data));
+      } catch {
+        if (!mounted) {
+          return;
+        }
+        setProducts([]);
+        setCategories([]);
+        setVariants([]);
+      } finally {
+        if (mounted) {
+          setCatalogLoading(false);
+        }
+      }
+    };
+
+    void fetchCatalog();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const existingProducts = useMemo(
+    () =>
+      products
+        .map((product) => ({
+          id: product.id,
+          label: formatProductLabel(product),
+        }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [products]
+  );
+
+  const variantOptions = useMemo(
+    () =>
+      variants
+        .map((variant) => ({
+          id: variant.id,
+          label: formatVariantLabel(variant, `Variant #${variant.id}`),
+        }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [variants]
+  );
 
   const suppliers = useMemo(
-    () => Array.from(new Set(rows.map((row) => row.supplier))).sort(),
+    () => Array.from(new Set(rows.map((row) => row.supplierName))).sort(),
     [rows]
   );
 
@@ -80,11 +250,11 @@ export default function PurchasesPage() {
         row.productName.toLowerCase().includes(query) ||
         row.purchaseId.toLowerCase().includes(query);
       const matchesSupplier =
-        appliedFilters.supplier === "ALL" || row.supplier === appliedFilters.supplier;
+        appliedFilters.supplier === "ALL" || row.supplierName === appliedFilters.supplier;
       const matchesStatus =
         appliedFilters.status === "ALL" || row.status === appliedFilters.status;
       const matchesDate =
-        appliedFilters.arrivalDate.length === 0 || row.expectedArrival === appliedFilters.arrivalDate;
+        appliedFilters.arrivalDate.length === 0 || row.expectedArrivalDate === appliedFilters.arrivalDate;
       return matchesSearch && matchesSupplier && matchesStatus && matchesDate;
     });
 
@@ -96,9 +266,9 @@ export default function PurchasesPage() {
         return b.totalCost - a.totalCost;
       }
       if (appliedFilters.sort === "arrival_asc") {
-        return a.expectedArrival.localeCompare(b.expectedArrival);
+        return a.expectedArrivalDate.localeCompare(b.expectedArrivalDate);
       }
-      return b.expectedArrival.localeCompare(a.expectedArrival);
+      return b.expectedArrivalDate.localeCompare(a.expectedArrivalDate);
     });
   }, [rows, appliedFilters]);
 
@@ -106,62 +276,112 @@ export default function PurchasesPage() {
   const currentPage = Math.min(page, totalPages);
   const pagedRows = filteredRows.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
-  const handleSavePurchase = (payload: PurchaseFormValue) => {
+  const buildMutationPayload = (payload: PurchaseFormValue, fallback?: PurchaseRow | null) => {
     const quantity = Number(payload.quantity || 0);
     const unitCost = Number(payload.unitCost || 0);
-    const productName = payload.productMode === "existing" ? payload.existingProductId : payload.productName;
+    const selectedProduct =
+      payload.productMode === "existing"
+        ? products.find((product) => String(product.id) === payload.existingProductId)
+        : null;
+    const selectedCategory =
+      payload.productMode === "new"
+        ? categories.find((category) => String(category.id) === payload.selectedCategoryId)
+        : null;
+    const selectedVariant =
+      payload.productMode === "new"
+        ? variants.find((variant) => String(variant.id) === payload.selectedVariantId)
+        : null;
 
-    if (!productName || !payload.supplierName || quantity <= 0 || unitCost <= 0) {
+    const productName =
+      payload.productMode === "existing"
+        ? selectedProduct
+          ? formatProductLabel(selectedProduct)
+          : ""
+        : [payload.productName.trim(), payload.variant.trim()].filter(Boolean).join(" - ");
+
+    return {
+      quantity,
+      unitCost,
+      productName,
+      mutation: {
+        productId: selectedProduct?.id,
+        productName,
+        categoryId:
+          selectedProduct?.categoryId ??
+          selectedProduct?.category?.id ??
+          selectedCategory?.id ??
+          undefined,
+        categoryName:
+          selectedProduct?.category?.name ??
+          selectedCategory?.name ??
+          payload.category.trim() ??
+          fallback?.categoryName,
+        variantId: selectedProduct?.variantId ?? selectedVariant?.id ?? undefined,
+        variantName:
+          formatVariantLabel(selectedProduct?.variant) ||
+          formatVariantLabel(selectedVariant, payload.variant.trim()) ||
+          fallback?.variantName,
+        supplierName: payload.supplierName.trim(),
+        supplierContact: payload.supplierContact.trim() || undefined,
+        supplierEmail: payload.supplierEmail.trim() || undefined,
+        supplierPhone: payload.supplierPhone.trim() || undefined,
+        quantity,
+        unitCost,
+        status: payload.status,
+        expectedArrivalDate: payload.expectedArrivalDate || undefined,
+        pendingApproval: fallback?.pendingApproval ?? false,
+      },
+    };
+  };
+
+  const handleSavePurchase = async (payload: PurchaseFormValue) => {
+    const { quantity, unitCost, productName, mutation } = buildMutationPayload(payload, selectedRow);
+
+    if (!productName || !mutation.supplierName || quantity <= 0 || unitCost <= 0) {
       toast.error("Please complete required fields.");
       return;
     }
 
-    if (formMode === "create") {
-      const nextId = `${Date.now()}`;
-      const purchaseId = `PO-${String(rows.length + 10240).padStart(5, "0")}`;
-      const next: PurchaseRow = {
-        id: nextId,
-        productName,
-        purchaseId,
-        supplier: payload.supplierName,
-        quantity,
-        unitCost,
-        totalCost: quantity * unitCost,
-        expectedArrival:
-          payload.status === "IN_TRANSIT"
-            ? payload.expectedArrivalDate || new Date().toISOString().slice(0, 10)
-            : "",
-        delivered: payload.status === "DELIVERED",
-        status: payload.status,
-      };
-      setRows((prev) => [next, ...prev]);
-      toast.success("Purchase created.");
-    } else if (selectedRow) {
-      setRows((prev) =>
-        prev.map((row) =>
-          row.id === selectedRow.id
-            ? {
-                ...row,
-                productName,
-                supplier: payload.supplierName,
-                quantity,
-                unitCost,
-                totalCost: quantity * unitCost,
-                expectedArrival:
-                  payload.status === "IN_TRANSIT"
-                    ? payload.expectedArrivalDate || row.expectedArrival
-                    : "",
-                status: payload.status,
-                delivered: payload.status === "DELIVERED",
-              }
-            : row
-        )
-      );
-      toast.success("Purchase updated.");
+    try {
+      if (formMode === "create") {
+        await purchasesApi.create(mutation);
+        toast.success("Purchase created.");
+      } else if (selectedRow) {
+        await purchasesApi.update(selectedRow.id, mutation);
+        toast.success("Purchase updated.");
+      }
+      await refreshPurchases();
+      setFormOpen(false);
+      setSelectedRow(null);
+    } catch {
+      toast.error(formMode === "create" ? "Failed to create purchase." : "Failed to update purchase.");
     }
+  };
 
-    setFormOpen(false);
-    setSelectedRow(null);
+  const handleApproveProduct = async (row: PurchaseRow) => {
+    try {
+      await purchasesApi.update(row.id, {
+        productId: row.productId ?? undefined,
+        productName: row.productName,
+        categoryId: row.categoryId ?? undefined,
+        categoryName: row.categoryName,
+        variantId: row.variantId ?? undefined,
+        variantName: row.variantName,
+        supplierName: row.supplierName,
+        supplierContact: row.supplierContact,
+        supplierEmail: row.supplierEmail,
+        supplierPhone: row.supplierPhone,
+        quantity: row.quantity,
+        unitCost: row.unitCost,
+        status: row.status,
+        expectedArrivalDate: row.expectedArrivalDate || undefined,
+        pendingApproval: false,
+      });
+      await refreshPurchases();
+      toast.success("Product approved.");
+    } catch {
+      toast.error("Failed to approve product.");
+    }
   };
 
   return (
@@ -223,6 +443,7 @@ export default function PurchasesPage() {
             setAppliedFilters(defaultFilters);
             setPage(1);
           }}
+          disabled={isLoading}
         />
 
         {isLoading ? (
@@ -239,12 +460,8 @@ export default function PurchasesPage() {
             <button
               type="button"
               onClick={() => {
-                setIsError(false);
                 setIsLoading(true);
-                window.setTimeout(() => {
-                  setRows(loadPurchaseRows());
-                  setIsLoading(false);
-                }, 500);
+                void refreshPurchases();
               }}
               className="ml-2 font-semibold underline"
             >
@@ -262,6 +479,7 @@ export default function PurchasesPage() {
                 type="button"
                 onClick={() => {
                   setFormMode("create");
+                  setSelectedRow(null);
                   setFormOpen(true);
                 }}
               >
@@ -292,30 +510,20 @@ export default function PurchasesPage() {
                   return;
                 }
 
-                setRows((prev) =>
-                  prev.map((entry) =>
-                    entry.id === row.id
-                      ? {
-                          ...entry,
-                          status: nextStatusMap[entry.status],
-                          delivered: nextStatusMap[entry.status] === "DELIVERED",
-                          expectedArrival:
-                            nextStatusMap[entry.status] === "IN_TRANSIT"
-                              ? entry.expectedArrival
-                              : "",
-                        }
-                      : entry
-                  )
-                );
-                toast.success("Purchase status updated.");
+                const nextStatus = nextStatusMap[row.status];
+                void purchasesApi
+                  .patchStatus(row.id, nextStatus)
+                  .then(async () => {
+                    await refreshPurchases();
+                    toast.success("Purchase status updated.");
+                  })
+                  .catch(() => {
+                    toast.error("Failed to update purchase status.");
+                  })
+                  .finally(() => undefined);
               }}
               onApproveProduct={(row) => {
-                setRows((prev) =>
-                  prev.map((entry) =>
-                    entry.id === row.id ? { ...entry, pendingApproval: false } : entry
-                  )
-                );
-                toast.success("Product approved.");
+                void handleApproveProduct(row);
               }}
             />
 
@@ -351,8 +559,14 @@ export default function PurchasesPage() {
           open={formOpen}
           mode={formMode}
           initial={selectedRow}
+          existingProducts={existingProducts}
+          categories={categories}
+          variants={variantOptions}
+          catalogLoading={catalogLoading}
           onClose={() => setFormOpen(false)}
-          onSubmit={handleSavePurchase}
+          onSubmit={(payload) => {
+            void handleSavePurchase(payload);
+          }}
         />
       ) : null}
 
@@ -365,9 +579,17 @@ export default function PurchasesPage() {
           if (!rowToDelete) {
             return;
           }
-          setRows((prev) => prev.filter((row) => row.id !== rowToDelete.id));
-          setDeleteOpen(false);
-          toast.success("Purchase deleted.");
+          void purchasesApi
+            .remove(rowToDelete.id)
+            .then(async () => {
+              await refreshPurchases();
+              setDeleteOpen(false);
+              toast.success("Purchase deleted.");
+            })
+            .catch(() => {
+              toast.error("Failed to delete purchase.");
+            })
+            .finally(() => undefined);
         }}
       />
 
@@ -403,21 +625,18 @@ export default function PurchasesPage() {
                   toast.error("Please select expected arrival date.");
                   return;
                 }
-                setRows((prev) =>
-                  prev.map((entry) =>
-                    entry.id === rowForStatusUpdate.id
-                      ? {
-                          ...entry,
-                          status: "IN_TRANSIT",
-                          expectedArrival: arrivalDateInput,
-                          delivered: false,
-                        }
-                      : entry
-                  )
-                );
-                setArrivalDateModalOpen(false);
-                setRowForStatusUpdate(null);
-                toast.success("Status updated to IN_TRANSIT.");
+                void purchasesApi
+                  .patchStatus(rowForStatusUpdate.id, "IN_TRANSIT", arrivalDateInput)
+                  .then(async () => {
+                    await refreshPurchases();
+                    setArrivalDateModalOpen(false);
+                    setRowForStatusUpdate(null);
+                    toast.success("Status updated to IN_TRANSIT.");
+                  })
+                  .catch(() => {
+                    toast.error("Failed to update purchase status.");
+                  })
+                  .finally(() => undefined);
               }}
             >
               Confirm

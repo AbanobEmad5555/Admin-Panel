@@ -6,7 +6,10 @@ import api from "@/services/api";
 
 type SalesSnapshotData = {
   totalSales: number;
+  totalOrders: number;
   rangeLabel: string;
+  startDate?: string;
+  endDate?: string;
 };
 
 type BestSellerData = {
@@ -42,7 +45,6 @@ type KpiFrame = {
   key: string;
   title: string;
   endpoint: string;
-  fallbackLabel: string;
 };
 
 type BestSellerFrame = {
@@ -50,6 +52,8 @@ type BestSellerFrame = {
   label: string;
   endpoint: string;
 };
+
+type UnknownRecord = Record<string, unknown>;
 
 const TOP_PRODUCTS_PER_PAGE = 10;
 
@@ -71,12 +75,6 @@ const formatCurrency = (value: number) => {
   return `${formatted} EGP`;
 };
 
-const formatMonthLabel = (date: Date) =>
-  date.toLocaleDateString("en-US", {
-    month: "short",
-    year: "numeric",
-  });
-
 const formatShortDate = (value: string) => {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) {
@@ -88,38 +86,25 @@ const formatShortDate = (value: string) => {
   });
 };
 
-const deduceRangeLabel = (payload: any, fallback: string) => {
+const deduceRangeLabel = (payload: unknown) => {
   if (!payload) {
-    return fallback;
+    return "";
   }
+  const record = payload as UnknownRecord;
 
-  const stringCandidate = [
-    payload?.rangeLabel,
-    payload?.label,
-    payload?.period,
-    payload?.periodLabel,
-    payload?.monthLabel,
-    payload?.month,
-  ].find(
-    (value) => typeof value === "string" && value.trim().length > 0
-  ) as string | undefined;
+  const stringCandidate =
+    typeof record.rangeLabel === "string" && record.rangeLabel.trim().length > 0
+      ? record.rangeLabel.trim()
+      : undefined;
 
   if (stringCandidate) {
     return stringCandidate;
   }
 
-  const yearValue = payload?.year ?? payload?.yearLabel;
-  if (typeof yearValue === "number" || typeof yearValue === "string") {
-    const normalizedYear =
-      typeof yearValue === "number" ? yearValue.toString() : yearValue;
-    if (payload?.month && typeof payload.month === "string") {
-      return `${payload.month} ${normalizedYear}`;
-    }
-    return normalizedYear;
-  }
-
-  const startDate = payload?.startDate ?? payload?.start_date;
-  const endDate = payload?.endDate ?? payload?.end_date;
+  const startDateCandidate = record.startDate ?? record.start_date;
+  const endDateCandidate = record.endDate ?? record.end_date;
+  const startDate = typeof startDateCandidate === "string" ? startDateCandidate : undefined;
+  const endDate = typeof endDateCandidate === "string" ? endDateCandidate : undefined;
 
   if (startDate && endDate) {
     const startLabel = formatShortDate(startDate);
@@ -138,7 +123,7 @@ const deduceRangeLabel = (payload: any, fallback: string) => {
     return formatShortDate(endDate);
   }
 
-  return fallback;
+  return "";
 };
 
 const createSnapshotState = (frames: KpiFrame[]) =>
@@ -153,99 +138,86 @@ const createBestSellerState = (frames: BestSellerFrame[]) =>
     return acc;
   }, {} as Record<string, BestSellerState>);
 
-const normalizeSnapshotPayload = (
-  payload: any,
-  fallbackLabel: string
-): SalesSnapshotData => ({
-  totalSales: safeNumber(
-    payload?.totalSales ??
-      payload?.total ??
-      payload?.amount ??
-      payload?.sum ??
-      payload?.sales ??
-      payload?.value ??
-      payload?.grandTotal ??
-      payload?.totalAmount
-  ),
-  rangeLabel: deduceRangeLabel(payload, fallbackLabel),
-});
+const normalizeSnapshotPayload = (payload: unknown): SalesSnapshotData => {
+  const record = (payload ?? {}) as UnknownRecord;
+  return {
+    totalSales: safeNumber(record.totalSales),
+    totalOrders: safeNumber(record.totalOrders),
+    rangeLabel: deduceRangeLabel(record),
+    startDate: typeof record.startDate === "string" ? record.startDate : undefined,
+    endDate: typeof record.endDate === "string" ? record.endDate : undefined,
+  };
+};
 
-const normalizeBestSellerPayload = (payload: any): BestSellerData => ({
-  productName:
-    payload?.product?.name ??
-    payload?.name ??
-    payload?.title ??
-    payload?.productName ??
-    payload?.product_title ??
-    null,
-  quantity: safeNumber(
-    payload?.quantity ??
-      payload?.qty ??
-      payload?.soldQuantity ??
-      payload?.totalQuantity ??
-      payload?.total ??
-      payload?.count ??
-      payload?.amount ??
-      payload?.value
-  ),
-});
+const normalizeBestSellerPayload = (payload: unknown): BestSellerData => {
+  const record = (payload ?? {}) as UnknownRecord;
+  const product = (record.product ?? {}) as UnknownRecord;
+  return {
+    productName:
+      (typeof product.name === "string" ? product.name : null) ??
+      (typeof record.name === "string" ? record.name : null) ??
+      (typeof record.title === "string" ? record.title : null) ??
+      (typeof record.productName === "string" ? record.productName : null) ??
+      (typeof record.product_title === "string" ? record.product_title : null),
+    quantity: safeNumber(
+      record.quantity ??
+        record.qty ??
+        record.soldQuantity ??
+        record.totalQuantity ??
+        record.total ??
+        record.count ??
+        record.amount ??
+        record.value
+    ),
+  };
+};
 
-const normalizeTopProductItem = (item: any, index: number): TopProduct => ({
-  id: String(item?.id ?? item?.productId ?? item?.sku ?? index),
-  name:
-    item?.name ??
-    item?.productName ??
-    item?.title ??
-    item?.label ??
-    item?.product_title ??
-    "Unnamed product",
-  quantity: safeNumber(
-    item?.quantity ??
-      item?.qty ??
-      item?.soldQuantity ??
-      item?.totalQuantity ??
-      item?.total ??
-      item?.count ??
-      item?.amount ??
-      item?.value
-  ),
-});
+const normalizeTopProductItem = (item: unknown, index: number): TopProduct => {
+  const record = (item ?? {}) as UnknownRecord;
+  return {
+    id: String(record.id ?? record.productId ?? record.sku ?? index),
+    name:
+      (typeof record.name === "string" ? record.name : "") ||
+      (typeof record.productName === "string" ? record.productName : "") ||
+      (typeof record.title === "string" ? record.title : "") ||
+      (typeof record.label === "string" ? record.label : "") ||
+      (typeof record.product_title === "string" ? record.product_title : "") ||
+      "Unnamed product",
+    quantity: safeNumber(
+      record.quantity ??
+        record.qty ??
+        record.soldQuantity ??
+        record.totalQuantity ??
+        record.total ??
+        record.count ??
+        record.amount ??
+        record.value
+    ),
+  };
+};
 
 export default function SalesDashboardPage() {
   const kpiTimeframes = useMemo<KpiFrame[]>(() => {
-    const now = new Date();
-    const thisMonthLabel = formatMonthLabel(
-      new Date(now.getFullYear(), now.getMonth(), 1)
-    );
-    const lastMonthLabel = formatMonthLabel(
-      new Date(now.getFullYear(), now.getMonth() - 1, 1)
-    );
-    const thisYearLabel = now.getFullYear().toString();
-
     return [
       {
         key: "today",
         title: "Today",
         endpoint: "/sales/today",
-        fallbackLabel: "Today",
       },
       {
         key: "thisMonth",
         title: "This Month",
         endpoint: "/sales/this-month",
-        fallbackLabel: thisMonthLabel,
       },
       {
-        key: "lastMonth",
-        title: "Last Month",
-        endpoint: "/sales/last-month",
-        fallbackLabel: lastMonthLabel,
+        key: "thisQuarter",
+        title: "This Quarter",
+        endpoint: "/sales/this-quarter",
       },
       {
         key: "thisYear",
         title: "This Year",
         endpoint: "/sales/this-year",
-        fallbackLabel: thisYearLabel,
       },
     ];
   }, []);
@@ -326,10 +298,7 @@ export default function SalesDashboardPage() {
             return;
           }
           const payload = response.data?.data ?? response.data;
-          const normalized = normalizeSnapshotPayload(
-            payload,
-            frame.fallbackLabel
-          );
+          const normalized = normalizeSnapshotPayload(payload);
 
           if (!isMounted) {
             return;
@@ -343,7 +312,7 @@ export default function SalesDashboardPage() {
               error: "",
             },
           }));
-        } catch (error) {
+        } catch {
           if (!isMounted) {
             return;
           }
@@ -379,13 +348,13 @@ export default function SalesDashboardPage() {
           return;
         }
         const payload = response.data?.data ?? response.data;
-        const normalized = normalizeSnapshotPayload(payload, lastYearLabel);
+        const normalized = normalizeSnapshotPayload(payload);
 
         if (!isMounted) {
           return;
         }
         setLastYearState({ data: normalized, loading: false, error: "" });
-      } catch (error) {
+      } catch {
         if (!isMounted) {
           return;
         }
@@ -439,7 +408,7 @@ export default function SalesDashboardPage() {
               error: "",
             },
           }));
-        } catch (error) {
+        } catch {
           if (!isMounted) {
             return;
           }
@@ -476,7 +445,7 @@ export default function SalesDashboardPage() {
           return;
         }
         const payload = response.data?.data ?? response.data;
-        let rawList: any[] = [];
+        let rawList: unknown[] = [];
 
         if (Array.isArray(payload)) {
           rawList = payload;
@@ -501,7 +470,7 @@ export default function SalesDashboardPage() {
           loading: false,
           error: "",
         });
-      } catch (error) {
+      } catch {
         if (!isMounted) {
           return;
         }
@@ -533,24 +502,15 @@ export default function SalesDashboardPage() {
     return list;
   }, [topProductsState.data, sortDirection, sortKey]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [topProductsState.data]);
-
   const totalPages = Math.max(
     1,
     Math.ceil(sortedProducts.length / TOP_PRODUCTS_PER_PAGE)
   );
-
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    }
-  }, [currentPage, totalPages]);
+  const effectiveCurrentPage = Math.min(currentPage, totalPages);
 
   const paginatedProducts = sortedProducts.slice(
-    (currentPage - 1) * TOP_PRODUCTS_PER_PAGE,
-    currentPage * TOP_PRODUCTS_PER_PAGE
+    (effectiveCurrentPage - 1) * TOP_PRODUCTS_PER_PAGE,
+    effectiveCurrentPage * TOP_PRODUCTS_PER_PAGE
   );
 
   const maxQuantity = sortedProducts.reduce(
@@ -594,7 +554,8 @@ export default function SalesDashboardPage() {
           {kpiTimeframes.map((frame) => {
             const state = kpiState[frame.key];
             const total = state?.data?.totalSales ?? 0;
-            const rangeLabel = state?.data?.rangeLabel ?? frame.fallbackLabel;
+            const rangeLabel = state?.data?.rangeLabel || "Range unavailable";
+            const totalOrders = state?.data?.totalOrders ?? 0;
 
             return (
               <article
@@ -624,6 +585,9 @@ export default function SalesDashboardPage() {
                 <p className="mt-2 text-xs uppercase tracking-wide text-slate-500">
                   {rangeLabel}
                 </p>
+                {!state?.loading && !state?.error ? (
+                  <p className="mt-1 text-xs text-slate-500">{totalOrders} orders</p>
+                ) : null}
 
                 {state?.error && (
                   <p className="mt-3 text-xs text-rose-600">
@@ -842,13 +806,13 @@ export default function SalesDashboardPage() {
                 </div>
                 <div className="flex flex-col gap-3 border-t border-slate-100 px-6 py-3 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-xs uppercase tracking-wide text-slate-500">
-                    Page {currentPage} of {totalPages}
+                    Page {effectiveCurrentPage} of {totalPages}
                   </p>
                   <div className="flex gap-2">
                     <button
                       type="button"
                       onClick={handlePrevPage}
-                      disabled={currentPage === 1}
+                      disabled={effectiveCurrentPage === 1}
                       className="rounded-lg border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Prev
@@ -856,7 +820,7 @@ export default function SalesDashboardPage() {
                     <button
                       type="button"
                       onClick={handleNextPage}
-                      disabled={currentPage === totalPages}
+                      disabled={effectiveCurrentPage === totalPages}
                       className="rounded-lg border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Next

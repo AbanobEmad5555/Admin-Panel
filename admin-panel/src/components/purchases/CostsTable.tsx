@@ -1,5 +1,6 @@
 import { Pencil, Trash2 } from "lucide-react";
 import { formatEGP } from "@/lib/currency";
+import { costCategoryLabels } from "@/components/purchases/constants";
 import type { CostRow } from "@/components/purchases/types";
 
 type CostsTableProps = {
@@ -27,7 +28,7 @@ export default function CostsTable({ rows, onEdit, onDelete }: CostsTableProps) 
             {rows.map((row) => (
               <tr key={row.id} className="text-slate-700">
                 <td className="px-4 py-3 font-medium text-slate-900">{row.name}</td>
-                <td className="px-4 py-3">{row.category}</td>
+                <td className="px-4 py-3">{costCategoryLabels[row.category]}</td>
                 <td className="px-4 py-3">{formatEGP(row.amount)}</td>
                 <td className="px-4 py-3">{row.date}</td>
                 <td className="px-4 py-3">{row.notes || "-"}</td>
