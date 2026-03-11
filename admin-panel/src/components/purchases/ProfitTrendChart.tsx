@@ -1,3 +1,7 @@
+"use client";
+
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
+
 type ProfitTrendChartProps = {
   labels: string[];
   grossProfit: number[];
@@ -29,6 +33,7 @@ export default function ProfitTrendChart({
   grossProfit,
   netProfit,
 }: ProfitTrendChartProps) {
+  const { language } = useLocalization();
   const width = 560;
   const height = 220;
   const maxValue = Math.max(...grossProfit, ...netProfit, 1);
@@ -36,15 +41,17 @@ export default function ProfitTrendChart({
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-900">Profit Trend</h3>
+        <h3 className="text-sm font-semibold text-slate-900">
+          {language === "ar" ? "اتجاه الربح" : "Profit Trend"}
+        </h3>
         <div className="flex items-center gap-4 text-xs text-slate-500">
           <span className="inline-flex items-center gap-1">
             <span className="h-2 w-2 rounded-full bg-sky-600" />
-            Gross Profit
+            {language === "ar" ? "إجمالي الربح" : "Gross Profit"}
           </span>
           <span className="inline-flex items-center gap-1">
             <span className="h-2 w-2 rounded-full bg-emerald-600" />
-            Net Profit
+            {language === "ar" ? "صافي الربح" : "Net Profit"}
           </span>
         </div>
       </div>

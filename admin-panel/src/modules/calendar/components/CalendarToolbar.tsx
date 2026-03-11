@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import Link from "next/link";
 import { CalendarDays, ChevronLeft, ChevronRight, GitBranch, Plus, Settings2 } from "lucide-react";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import type { CalendarViewMode } from "@/modules/calendar/types/calendar.types";
 
 type CalendarToolbarProps = {
@@ -43,8 +44,37 @@ export default function CalendarToolbar({
   onOpenSettings,
   onViewChange,
 }: CalendarToolbarProps) {
+  const { language } = useLocalization();
   const monthInputRef = useRef<HTMLInputElement | null>(null);
   const dateInputRef = useRef<HTMLInputElement | null>(null);
+  const text =
+    language === "ar"
+      ? {
+          today: "اليوم",
+          previous: "الفترة السابقة",
+          next: "الفترة التالية",
+          monthLabel: "الشهر",
+          jumpTo: "الانتقال إلى",
+          monthView: "شهر",
+          weekView: "أسبوع",
+          addEvent: "إضافة حدث",
+          deliverySettings: "إعدادات التوصيل",
+          orderPipeline: "مسار الطلبات",
+          loading: "جارٍ تحميل بيانات التقويم...",
+        }
+      : {
+          today: "Today",
+          previous: "Previous period",
+          next: "Next period",
+          monthLabel: "Month",
+          jumpTo: "Jump To",
+          monthView: "Month",
+          weekView: "Week",
+          addEvent: "Add Event",
+          deliverySettings: "Delivery Settings",
+          orderPipeline: "Order Pipeline",
+          loading: "Loading calendar data...",
+        };
 
   const openNativePicker = (input: HTMLInputElement | null) => {
     if (!input) {
@@ -66,14 +96,14 @@ export default function CalendarToolbar({
             onClick={onToday}
             className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 transition hover:bg-slate-100"
           >
-            Today
+            {text.today}
           </button>
 
           <button
             type="button"
             onClick={onPrev}
             className="rounded-md border border-slate-300 bg-white p-1.5 text-slate-700 transition hover:bg-slate-100"
-            aria-label="Previous period"
+            aria-label={text.previous}
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -82,7 +112,7 @@ export default function CalendarToolbar({
             type="button"
             onClick={onNext}
             className="rounded-md border border-slate-300 bg-white p-1.5 text-slate-700 transition hover:bg-slate-100"
-            aria-label="Next period"
+            aria-label={text.next}
           >
             <ChevronRight className="h-4 w-4" />
           </button>
@@ -98,7 +128,7 @@ export default function CalendarToolbar({
             className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs font-medium text-slate-600"
             onClick={() => openNativePicker(monthInputRef.current)}
           >
-            Month
+            {text.monthLabel}
             <input
               ref={monthInputRef}
               type="month"
@@ -113,7 +143,7 @@ export default function CalendarToolbar({
             className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs font-medium text-slate-600"
             onClick={() => openNativePicker(dateInputRef.current)}
           >
-            Jump To
+            {text.jumpTo}
             <input
               ref={dateInputRef}
               type="date"
@@ -129,14 +159,14 @@ export default function CalendarToolbar({
             onClick={() => onViewChange("dayGridMonth")}
             className={viewButtonClass(currentView === "dayGridMonth")}
           >
-            Month
+            {text.monthView}
           </button>
           <button
             type="button"
             onClick={() => onViewChange("timeGridWeek")}
             className={viewButtonClass(currentView === "timeGridWeek")}
           >
-            Week
+            {text.weekView}
           </button>
           <button
             type="button"
@@ -144,7 +174,7 @@ export default function CalendarToolbar({
             className="inline-flex items-center gap-2 rounded-md bg-emerald-700 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-emerald-600"
           >
             <Plus className="h-4 w-4" />
-            Add Event
+            {text.addEvent}
           </button>
           <button
             type="button"
@@ -152,20 +182,20 @@ export default function CalendarToolbar({
             className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
           >
             <Settings2 className="h-4 w-4" />
-            Delivery Settings
+            {text.deliverySettings}
           </button>
           <Link
             href="/admin/crm/pipeline"
             className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
           >
             <GitBranch className="h-4 w-4" />
-            Order Pipeline
+            {text.orderPipeline}
           </Link>
         </div>
       </div>
 
       {isLoading ? (
-        <p className="mt-3 text-xs text-slate-500">Loading calendar data...</p>
+        <p className="mt-3 text-xs text-slate-500">{text.loading}</p>
       ) : null}
     </div>
   );

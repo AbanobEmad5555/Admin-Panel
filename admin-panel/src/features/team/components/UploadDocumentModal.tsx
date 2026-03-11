@@ -9,6 +9,7 @@ import {
   uploadDocumentSchema,
   type UploadDocumentValues,
 } from "@/features/team/schemas/employee.schema";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 export type UploadDocumentSubmitPayload =
   | { sourceMode: "link"; values: UploadDocumentValues[] }
@@ -35,6 +36,7 @@ export default function UploadDocumentModal({
   onClose,
   onSubmit,
 }: UploadDocumentModalProps) {
+  const { language } = useLocalization();
   const form = useForm<UploadDocumentValues>({
     resolver: zodResolver(uploadDocumentSchema),
     defaultValues: uploadDocumentInitialValues,
@@ -53,7 +55,7 @@ export default function UploadDocumentModal({
   }, [form, open]);
 
   return (
-    <Modal title="Upload Document" isOpen={open} onClose={onClose}>
+    <Modal title={language === "ar" ? "رفع مستند" : "Upload Document"} isOpen={open} onClose={onClose}>
       <form
         className="space-y-4 text-slate-950"
         onSubmit={form.handleSubmit(async (values) => {
@@ -61,7 +63,7 @@ export default function UploadDocumentModal({
           let nextValues = values;
           if (sourceMode === "file") {
             if (selectedFiles.length === 0) {
-              setFileInputError("Please choose at least one file.");
+              setFileInputError(language === "ar" ? "يرجى اختيار ملف واحد على الأقل." : "Please choose at least one file.");
               return;
             }
             const withFiles = selectedFiles.map((file) => {
@@ -79,7 +81,10 @@ export default function UploadDocumentModal({
             });
             return;
           } else if (!values.fileUrl) {
-            form.setError("fileUrl", { type: "manual", message: "File URL is required." });
+            form.setError("fileUrl", {
+              type: "manual",
+              message: language === "ar" ? "رابط الملف مطلوب." : "File URL is required.",
+            });
             return;
           }
           const customType = values.type === "OTHER" ? values.otherTypeLabel?.trim() : "";
@@ -92,7 +97,7 @@ export default function UploadDocumentModal({
         })}
       >
         <div>
-          <label className="text-sm font-medium text-slate-950">Type</label>
+          <label className="text-sm font-medium text-slate-950">{language === "ar" ? "النوع" : "Type"}</label>
           <select
             {...form.register("type")}
             className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-950"
@@ -104,7 +109,7 @@ export default function UploadDocumentModal({
           </select>
         </div>
         <div>
-          <label className="text-sm font-medium text-slate-950">Title</label>
+          <label className="text-sm font-medium text-slate-950">{language === "ar" ? "العنوان" : "Title"}</label>
           <input
             {...form.register("title")}
             className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-950 placeholder:text-slate-500"
@@ -113,31 +118,31 @@ export default function UploadDocumentModal({
         </div>
         {form.watch("type") === "OTHER" ? (
           <div>
-            <label className="text-sm font-medium text-slate-950">Other Type Name</label>
+            <label className="text-sm font-medium text-slate-950">{language === "ar" ? "اسم النوع الآخر" : "Other Type Name"}</label>
             <input
               {...form.register("otherTypeLabel")}
-              placeholder="e.g. NDA, Visa, Insurance"
+              placeholder={language === "ar" ? "مثل: تأشيرة، تأمين، اتفاقية" : "e.g. NDA, Visa, Insurance"}
               className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-950 placeholder:text-slate-500"
             />
             <p className="mt-1 text-xs text-rose-600">{form.formState.errors.otherTypeLabel?.message}</p>
           </div>
         ) : null}
         <div>
-          <label className="text-sm font-medium text-slate-950">Document Source</label>
+          <label className="text-sm font-medium text-slate-950">{language === "ar" ? "مصدر المستند" : "Document Source"}</label>
           <div className="mt-1 grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => setSourceMode("link")}
               className={`rounded-md border px-3 py-2 text-sm ${sourceMode === "link" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white text-slate-950"}`}
             >
-              Link
+              {language === "ar" ? "رابط" : "Link"}
             </button>
             <button
               type="button"
               onClick={() => setSourceMode("file")}
               className={`rounded-md border px-3 py-2 text-sm ${sourceMode === "file" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white text-slate-950"}`}
             >
-              Device File
+              {language === "ar" ? "ملف من الجهاز" : "Device File"}
             </button>
           </div>
           {sourceMode === "link" ? (
@@ -180,7 +185,9 @@ export default function UploadDocumentModal({
               />
               {selectedFiles.length > 0 ? (
                 <p className="mt-1 text-xs text-slate-950">
-                  {selectedFiles.length} file(s) selected
+                  {language === "ar"
+                    ? `تم اختيار ${selectedFiles.length} ملف`
+                    : `${selectedFiles.length} file(s) selected`}
                 </p>
               ) : null}
               <p className="mt-1 text-xs text-rose-600">{fileInputError}</p>
@@ -188,7 +195,9 @@ export default function UploadDocumentModal({
           )}
         </div>
         <div>
-          <label className="text-sm font-medium text-slate-950">Expires At (optional)</label>
+          <label className="text-sm font-medium text-slate-950">
+            {language === "ar" ? "تاريخ الانتهاء (اختياري)" : "Expires At (optional)"}
+          </label>
           <input
             type="datetime-local"
             {...form.register("expiresAt")}
@@ -198,10 +207,16 @@ export default function UploadDocumentModal({
         </div>
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose} disabled={pending}>
-            Cancel
+            {language === "ar" ? "إلغاء" : "Cancel"}
           </Button>
           <Button type="submit" disabled={pending}>
-            {pending ? "Uploading..." : "Upload"}
+            {pending
+              ? language === "ar"
+                ? "جارٍ الرفع..."
+                : "Uploading..."
+              : language === "ar"
+                ? "رفع"
+                : "Upload"}
           </Button>
         </div>
       </form>

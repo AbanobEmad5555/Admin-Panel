@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import type { PosProduct } from "@/modules/pos/store/pos.store";
 import { formatEGP } from "@/lib/currency";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 type ProductGridProps = {
   products: PosProduct[];
@@ -11,6 +12,7 @@ type ProductGridProps = {
 };
 
 export default function ProductGrid({ products, onAdd }: ProductGridProps) {
+  const { language } = useLocalization();
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
 
   return (
@@ -47,13 +49,13 @@ export default function ProductGrid({ products, onAdd }: ProductGridProps) {
               />
             ) : (
               <div className="flex h-full items-center justify-center text-xs text-slate-400">
-                No image
+                {language === "ar" ? "لا توجد صورة" : "No image"}
               </div>
             )}
           </div>
           {outOfStock ? (
             <p className="mb-1 inline-flex rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-700">
-              Out of stock
+              {language === "ar" ? "نفد المخزون" : "Out of stock"}
             </p>
           ) : null}
           <p className="text-sm font-semibold text-slate-900">{product.name}</p>

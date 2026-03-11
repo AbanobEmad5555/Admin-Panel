@@ -8,10 +8,15 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import api from "@/services/api";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
+import LocalizedDisplayText from "@/modules/shared/components/LocalizedDisplayText";
+import { getLocalizedValue } from "@/modules/localization/utils";
 
 type Product = {
   id: number;
   name: string;
+  nameEn?: string | null;
+  nameAr?: string | null;
   price?: number | string | null;
   priceBeforeDiscount?: number | string | null;
   priceAfterDiscount?: number | string | null;
@@ -36,6 +41,8 @@ type Product = {
 type Category = {
   id: number;
   name: string;
+  nameEn?: string | null;
+  nameAr?: string | null;
 };
 
 type Variant = {
@@ -176,6 +183,7 @@ const getErrorMessage = (error: unknown) => {
 };
 
 export default function ProductsPage() {
+  const { direction, language } = useLocalization();
   const searchParams = useSearchParams();
   const editParam = searchParams.get("edit");
   const [products, setProducts] = useState<Product[]>([]);
@@ -204,7 +212,8 @@ export default function ProductsPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [nameInput, setNameInput] = useState("");
+  const [nameEnInput, setNameEnInput] = useState("");
+  const [nameArInput, setNameArInput] = useState("");
   const [priceBeforeInput, setPriceBeforeInput] = useState("");
   const [priceAfterInput, setPriceAfterInput] = useState("");
   const [stockInput, setStockInput] = useState("");
@@ -219,6 +228,70 @@ export default function ProductsPage() {
   const [existingEditImages, setExistingEditImages] = useState<string[]>([]);
   const [imagesTouched, setImagesTouched] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const text = {
+    outOfStock:
+      language === "ar"
+        ? "لديك منتج نفد من المخزون، يرجى اتخاذ إجراء:"
+        : "You have an out-of-stock product. Please take action:",
+    products: language === "ar" ? "المنتجات" : "Products",
+    manage:
+      language === "ar"
+        ? "إدارة قائمة المنتجات والمخزون."
+        : "Manage product listings and inventory.",
+    add: language === "ar" ? "إضافة منتج" : "Add Product",
+    productName: language === "ar" ? "اسم المنتج" : "Product Name",
+    category: language === "ar" ? "الفئة" : "Category",
+    productId: language === "ar" ? "معرف المنتج" : "Product ID",
+    priceBeforeMin:
+      language === "ar" ? "الحد الأدنى قبل الخصم" : "Price Before Min",
+    priceBeforeMax:
+      language === "ar" ? "الحد الأقصى قبل الخصم" : "Price Before Max",
+    priceAfterMin:
+      language === "ar" ? "الحد الأدنى بعد الخصم" : "Price After Min",
+    priceAfterMax:
+      language === "ar" ? "الحد الأقصى بعد الخصم" : "Price After Max",
+    min: language === "ar" ? "الحد الأدنى" : "Min",
+    max: language === "ar" ? "الحد الأقصى" : "Max",
+    apply: language === "ar" ? "تطبيق الفلاتر" : "Apply Filters",
+    clear: language === "ar" ? "مسح الفلاتر" : "Clear Filters",
+    noProducts: language === "ar" ? "لا توجد منتجات." : "No products found.",
+    loading: language === "ar" ? "جارٍ التحميل..." : "Loading...",
+    image: language === "ar" ? "الصورة" : "Image",
+    variant: language === "ar" ? "المتغير" : "Variant",
+    priceBefore:
+      language === "ar" ? "السعر قبل الخصم" : "Price Before Discount",
+    priceAfter:
+      language === "ar" ? "السعر بعد الخصم" : "Price After Discount",
+    stock: language === "ar" ? "المخزون" : "Stock",
+    createdAt: language === "ar" ? "تاريخ الإنشاء" : "Created At",
+    view: language === "ar" ? "عرض" : "View",
+    actions: language === "ar" ? "الإجراءات" : "Actions",
+    noImage: language === "ar" ? "لا توجد صورة" : "No image",
+    edit: language === "ar" ? "تعديل" : "Edit",
+    delete: language === "ar" ? "حذف" : "Delete",
+    save: language === "ar" ? "حفظ" : "Save",
+    update: language === "ar" ? "تحديث" : "Update",
+    cancel: language === "ar" ? "إلغاء" : "Cancel",
+    addProduct: language === "ar" ? "إضافة منتج" : "Add Product",
+    editProduct: language === "ar" ? "تعديل المنتج" : "Edit Product",
+    deleteProduct: language === "ar" ? "حذف المنتج" : "Delete Product",
+    productNameEn:
+      language === "ar" ? "اسم المنتج (الإنجليزية)" : "Product Name (English)",
+    productNameAr:
+      language === "ar" ? "اسم المنتج (العربية)" : "Product Name (Arabic)",
+    stockLabel: language === "ar" ? "المخزون" : "Stock",
+    categoryName: language === "ar" ? "اسم الفئة" : "Category Name",
+    variantId: language === "ar" ? "المتغير" : "Variant ID",
+    status: language === "ar" ? "الحالة" : "Status",
+    active: language === "ar" ? "نشط" : "Active",
+    notActive: language === "ar" ? "غير نشط" : "Not Active",
+    description: language === "ar" ? "الوصف" : "Description",
+    optionalDescription:
+      language === "ar" ? "وصف اختياري" : "Optional description",
+    productImages: language === "ar" ? "صور المنتج" : "Product Images",
+    addImage: language === "ar" ? "إضافة صورة جديدة" : "Add New Image",
+  };
 
   const sortedProducts = useMemo(
     () => [...products].sort((a, b) => a.id - b.id),
@@ -291,7 +364,7 @@ export default function ProductsPage() {
         params.set("priceAfterMax", resolvedPriceAfterMax.trim());
       }
       const query = params.toString();
-      const response = await api.get<ApiListResponse<any>>(
+      const response = await api.get<ApiListResponse<unknown>>(
         `/products${query ? `?${query}` : ""}`
       );
       const payload = response.data?.data ?? {};
@@ -333,7 +406,7 @@ export default function ProductsPage() {
         "/categories"
       );
       setCategories(response.data?.data ?? []);
-    } catch (err) {
+    } catch {
       setCategories([]);
     }
   };
@@ -344,7 +417,7 @@ export default function ProductsPage() {
         "/variants"
       );
       setVariants(response.data?.data ?? []);
-    } catch (err) {
+    } catch {
       setVariants([]);
     }
   };
@@ -383,7 +456,8 @@ export default function ProductsPage() {
   }, [pendingEditId, products, isLoading, isPageLoading]);
 
   const resetForm = () => {
-    setNameInput("");
+    setNameEnInput("");
+    setNameArInput("");
     setPriceBeforeInput("");
     setPriceAfterInput("");
     setStockInput("");
@@ -406,7 +480,8 @@ export default function ProductsPage() {
 
   const openEditModal = (product: Product) => {
     setSelectedProduct(product);
-    setNameInput(product.name ?? "");
+    setNameEnInput(product.nameEn ?? product.name ?? "");
+    setNameArInput(product.nameAr ?? "");
     setPriceBeforeInput(product.priceBeforeDiscount?.toString() ?? "");
     setPriceAfterInput(product.priceAfterDiscount?.toString() ?? "");
     setStockInput(product.stock?.toString() ?? "");
@@ -456,7 +531,13 @@ export default function ProductsPage() {
   };
 
   const buildPayload = () => {
-    const payload: Record<string, unknown> = { name: nameInput.trim() };
+    const normalizedNameEn = nameEnInput.trim();
+    const normalizedNameAr = nameArInput.trim();
+    const payload: Record<string, unknown> = {
+      name: normalizedNameEn,
+      nameEn: normalizedNameEn,
+      nameAr: normalizedNameAr || null,
+    };
     const priceBefore = toNumber(priceBeforeInput);
     const priceAfter = toNumber(priceAfterInput);
     const stock = toNumber(stockInput);
@@ -539,6 +620,7 @@ export default function ProductsPage() {
     }
     setIsSubmitting(true);
     setActionError("");
+    const payload: Record<string, unknown> = {};
     try {
       const filesToUpload = editImageInputs.filter(
         (file): file is File => file instanceof File
@@ -551,10 +633,14 @@ export default function ProductsPage() {
           return;
         }
       }
-      const payload: Record<string, unknown> = {};
-      const nextName = nameInput.trim();
-      if (nextName && nextName !== selectedProduct.name) {
+      const nextName = nameEnInput.trim();
+      if (nextName && nextName !== (selectedProduct.nameEn ?? selectedProduct.name)) {
         payload.name = nextName;
+        payload.nameEn = nextName;
+      }
+      const nextNameAr = nameArInput.trim() || null;
+      if (nextNameAr !== (selectedProduct.nameAr ?? null)) {
+        payload.nameAr = nextNameAr;
       }
       const nextPriceBefore = toNumber(priceBeforeInput);
       if (
@@ -669,10 +755,10 @@ export default function ProductsPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-6" dir={direction}>
         {outOfStockProducts.length > 0 ? (
           <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800">
-            You have an item that out of stock - take action about this product:
+            {text.outOfStock}
             <span className="ml-2 flex flex-wrap gap-2">
               {outOfStockProducts.map((product) => (
                 <Link
@@ -680,7 +766,12 @@ export default function ProductsPage() {
                   href={`/admin/products/${product.id}`}
                   className="text-amber-800 underline decoration-amber-400 hover:text-amber-900"
                 >
-                  {product.name ?? `Product #${product.id}`}
+                  {getLocalizedValue({
+                    en: product.nameEn,
+                    ar: product.nameAr,
+                    legacy: product.name ?? `Product #${product.id}`,
+                    lang: language,
+                  })}
                 </Link>
               ))}
             </span>
@@ -688,30 +779,30 @@ export default function ProductsPage() {
         ) : null}
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-900">Products</h1>
+            <h1 className="text-2xl font-semibold text-slate-900">{text.products}</h1>
             <p className="text-sm text-slate-500">
-              Manage product listings and inventory.
+              {text.manage}
             </p>
           </div>
-          <Button onClick={openAddModal}>Add Product</Button>
+          <Button onClick={openAddModal}>{text.add}</Button>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
-                Product Name
+                {text.productName}
               </label>
               <input
                 value={nameFilter}
                 onChange={(event) => setNameFilter(event.target.value)}
-                placeholder="Product name"
+                placeholder={text.productName}
                 className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
-                Category
+                {text.category}
               </label>
               <select
                 value={categoryFilter}
@@ -721,68 +812,73 @@ export default function ProductsPage() {
                 <option value="">All</option>
                 {categories.map((category) => (
                   <option key={category.id} value={String(category.id)}>
-                    {category.name}
+                    {getLocalizedValue({
+                      en: category.nameEn,
+                      ar: category.nameAr,
+                      legacy: category.name,
+                      lang: language,
+                    })}
                   </option>
                 ))}
               </select>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
-                Product ID
+                {text.productId}
               </label>
               <input
                 type="number"
                 value={productIdFilter}
                 onChange={(event) => setProductIdFilter(event.target.value)}
-                placeholder="Product ID"
+                placeholder={text.productId}
                 className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
-                Price Before Min
+                {text.priceBeforeMin}
               </label>
               <input
                 type="number"
                 value={priceBeforeMin}
                 onChange={(event) => setPriceBeforeMin(event.target.value)}
-                placeholder="Min"
+                placeholder={text.min}
                 className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
-                Price Before Max
+                {text.priceBeforeMax}
               </label>
               <input
                 type="number"
                 value={priceBeforeMax}
                 onChange={(event) => setPriceBeforeMax(event.target.value)}
-                placeholder="Max"
+                placeholder={text.max}
                 className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
-                Price After Min
+                {text.priceAfterMin}
               </label>
               <input
                 type="number"
                 value={priceAfterMin}
                 onChange={(event) => setPriceAfterMin(event.target.value)}
-                placeholder="Min"
+                placeholder={text.min}
                 className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
-                Price After Max
+                {text.priceAfterMax}
               </label>
               <input
                 type="number"
                 value={priceAfterMax}
                 onChange={(event) => setPriceAfterMax(event.target.value)}
-                placeholder="Max"
+                placeholder={text.max}
                 className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
               />
             </div>
@@ -797,7 +893,7 @@ export default function ProductsPage() {
               disabled={isPageLoading}
               className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Apply Filters
+              {text.apply}
             </button>
             <button
               type="button"
@@ -815,7 +911,7 @@ export default function ProductsPage() {
               disabled={isPageLoading}
               className="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Clear Filters
+              {text.clear}
             </button>
           </div>
         </div>
@@ -830,30 +926,30 @@ export default function ProductsPage() {
           ) : error ? (
             <p className="text-sm text-rose-600">{error}</p>
           ) : sortedProducts.length === 0 ? (
-            <p className="text-sm text-slate-500">No products found.</p>
+            <p className="text-sm text-slate-500">{text.noProducts}</p>
           ) : (
             <div className="overflow-x-auto">
               {isPageLoading ? (
-                <div className="mb-3 text-xs text-slate-500">Loading...</div>
+                <div className="mb-3 text-xs text-slate-500">{text.loading}</div>
               ) : null}
-              <table className="w-full text-left text-sm">
+              <table className={`w-full text-sm ${direction === "rtl" ? "text-right" : "text-left"}`}>
                 <thead className="border-b border-slate-200 text-slate-500">
                   <tr>
                     <th className="py-2 pr-4 font-medium">ID</th>
-                    <th className="py-2 pr-4 font-medium">Image</th>
-                    <th className="py-2 pr-4 font-medium">Product Name</th>
-                    <th className="py-2 pr-4 font-medium">Category</th>
-                    <th className="py-2 pr-4 font-medium">Variant</th>
+                    <th className="py-2 pr-4 font-medium">{text.image}</th>
+                    <th className="py-2 pr-4 font-medium">{text.productName}</th>
+                    <th className="py-2 pr-4 font-medium">{text.category}</th>
+                    <th className="py-2 pr-4 font-medium">{text.variant}</th>
                     <th className="py-2 pr-4 font-medium">
-                      Price Before Discount
+                      {text.priceBefore}
                     </th>
                     <th className="py-2 pr-4 font-medium">
-                      Price After Discount
+                      {text.priceAfter}
                     </th>
-                    <th className="py-2 pr-4 font-medium">Stock</th>
-                    <th className="py-2 pr-4 font-medium">Created At</th>
-                    <th className="py-2 pr-4 font-medium">View</th>
-                    <th className="py-2 font-medium">Actions</th>
+                    <th className="py-2 pr-4 font-medium">{text.stock}</th>
+                    <th className="py-2 pr-4 font-medium">{text.createdAt}</th>
+                    <th className="py-2 pr-4 font-medium">{text.view}</th>
+                    <th className="py-2 font-medium">{text.actions}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -864,11 +960,11 @@ export default function ProductsPage() {
                         {resolveImageUrl(product) ? (
                           <img
                             src={resolveImageUrl(product)}
-                            alt={product.name}
+                            alt={product.nameEn ?? product.name}
                             className="h-10 w-10 rounded-md object-cover"
                           />
                         ) : (
-                          <span className="text-xs text-slate-400">No image</span>
+                          <span className="text-xs text-slate-400">{text.noImage}</span>
                         )}
                       </td>
                       <td className="py-3 pr-4">
@@ -876,15 +972,26 @@ export default function ProductsPage() {
                           href={`/admin/products/${product.id}`}
                           className="text-slate-900 hover:underline"
                         >
-                          {product.name}
+                          <LocalizedDisplayText
+                            valueEn={product.nameEn}
+                            valueAr={product.nameAr}
+                            legacyValue={product.name}
+                          />
                         </Link>
                       </td>
                       <td className="py-3 pr-4">
-                        {product.category?.name ??
-                          categories.find(
-                            (category) => category.id === product.categoryId
-                          )?.name ??
-                          "-"}
+                        {getLocalizedValue({
+                          en:
+                            product.category?.name ??
+                            categories.find((category) => category.id === product.categoryId)?.nameEn,
+                          ar:
+                            categories.find((category) => category.id === product.categoryId)?.nameAr,
+                          legacy:
+                            product.category?.name ??
+                            categories.find((category) => category.id === product.categoryId)?.name ??
+                            "-",
+                          lang: language,
+                        })}
                       </td>
                       <td className="py-3 pr-4">
                         {product.variant?.sku ||
@@ -937,7 +1044,7 @@ export default function ProductsPage() {
                             onClick={() => handleStockSave(product)}
                             disabled={stockSaving[product.id]}
                           >
-                            {stockSaving[product.id] ? "Saving" : "Update"}
+                            {stockSaving[product.id] ? text.loading : text.update}
                           </Button>
                         </div>
                         {stockErrors[product.id] ? (
@@ -954,7 +1061,7 @@ export default function ProductsPage() {
                           href={`/admin/products/${product.id}`}
                           className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100"
                         >
-                          View
+                          {text.view}
                         </Link>
                       </td>
                       <td className="py-3">
@@ -963,13 +1070,13 @@ export default function ProductsPage() {
                             variant="secondary"
                             onClick={() => openEditModal(product)}
                           >
-                            Edit
+                            {text.edit}
                           </Button>
                           <Button
                             variant="danger"
                             onClick={() => openDeleteModal(product)}
                           >
-                            Delete
+                            {text.delete}
                           </Button>
                         </div>
                       </td>
@@ -989,7 +1096,7 @@ export default function ProductsPage() {
               disabled={currentPage === 1 || isPageLoading}
               className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 transition disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Previous
+              {language === "ar" ? "السابق" : "Previous"}
             </button>
             <div className="flex flex-wrap gap-2">
               {Array.from({ length: totalPages }, (_, index) => index + 1).map(
@@ -1016,31 +1123,39 @@ export default function ProductsPage() {
               disabled={currentPage === totalPages || isPageLoading}
               className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 transition disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Next
+              {language === "ar" ? "التالي" : "Next"}
             </button>
           </div>
         ) : null}
 
-        <Modal
-          title="Add Product"
-          isOpen={isAddOpen}
-          onClose={() => setIsAddOpen(false)}
-        >
+        <Modal title={text.addProduct} isOpen={isAddOpen} onClose={() => setIsAddOpen(false)}>
           <div className="space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
-                Product Name
+                {text.productNameEn}
               </label>
               <Input
-                value={nameInput}
-                onChange={(event) => setNameInput(event.target.value)}
-                placeholder="Enter product name"
+                value={nameEnInput}
+                onChange={(event) => setNameEnInput(event.target.value)}
+                placeholder={text.productName}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">
+                {text.productNameAr}
+              </label>
+              <Input
+                value={nameArInput}
+                onChange={(event) => setNameArInput(event.target.value)}
+                placeholder={text.productNameAr}
+                dir="rtl"
+                className="text-right"
               />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
-                  Price Before
+                  {text.priceBefore}
                 </label>
                 <Input
                   type="number"
@@ -1051,7 +1166,7 @@ export default function ProductsPage() {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
-                  Price After
+                  {text.priceAfter}
                 </label>
                 <Input
                   type="number"
@@ -1064,7 +1179,7 @@ export default function ProductsPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
-                  Stock
+                  {text.stockLabel}
                 </label>
                 <Input
                   type="number"
@@ -1075,17 +1190,22 @@ export default function ProductsPage() {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
-                  Category Name
+                  {text.categoryName}
                 </label>
                 <select
                   value={categoryIdInput}
                   onChange={(event) => setCategoryIdInput(event.target.value)}
                   className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
                 >
-                  <option value="">Select category</option>
+                  <option value="">{text.categoryName}</option>
                   {categories.map((category) => (
                     <option key={category.id} value={category.id}>
-                      {category.name}
+                      {getLocalizedValue({
+                        en: category.nameEn,
+                        ar: category.nameAr,
+                        legacy: category.name,
+                        lang: language,
+                      })}
                     </option>
                   ))}
                 </select>
@@ -1094,14 +1214,14 @@ export default function ProductsPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
-                  Variant ID
+                  {text.variantId}
                 </label>
                 <select
                   value={variantIdInput}
                   onChange={(event) => setVariantIdInput(event.target.value)}
                   className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
                 >
-                  <option value="">Select variant</option>
+                  <option value="">{text.variantId}</option>
                   {variants.map((variant) => (
                     <option key={variant.id} value={String(variant.id)}>
                       {variant.sku || variant.name || `Variant #${variant.id}`}
@@ -1111,7 +1231,7 @@ export default function ProductsPage() {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
-                  Status
+                  {text.status}
                 </label>
                 <div className="flex gap-4">
                   <label className="flex items-center gap-2 text-sm text-slate-700">
@@ -1123,7 +1243,7 @@ export default function ProductsPage() {
                       onChange={(event) => setStatusInput(event.target.value)}
                       className="h-4 w-4 accent-slate-900"
                     />
-                    Active
+                    {text.active}
                   </label>
                   <label className="flex items-center gap-2 text-sm text-slate-700">
                     <input
@@ -1134,25 +1254,25 @@ export default function ProductsPage() {
                       onChange={(event) => setStatusInput(event.target.value)}
                       className="h-4 w-4 accent-slate-900"
                     />
-                    Not Active
+                    {text.notActive}
                   </label>
                 </div>
               </div>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
-                Description
+                {text.description}
               </label>
               <textarea
                 value={descriptionInput}
                 onChange={(event) => setDescriptionInput(event.target.value)}
-                placeholder="Optional description"
+                placeholder={text.optionalDescription}
                 className="min-h-[96px] w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
-                Product Images
+                {text.productImages}
               </label>
               <div className="space-y-3">
                 {imageInputs.map((file, index) => (
@@ -1191,7 +1311,7 @@ export default function ProductsPage() {
                     }
                     className="rounded-md border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 transition disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    Add New Image
+                    {text.addImage}
                   </button>
                   {imageInputs.length >= 5 ? (
                     <span className="text-xs text-slate-500">
@@ -1217,42 +1337,50 @@ export default function ProductsPage() {
                 onClick={() => setIsAddOpen(false)}
                 disabled={isSubmitting}
               >
-                Cancel
+                {text.cancel}
               </Button>
               <Button
                 onClick={handleAdd}
                 disabled={
                   isSubmitting ||
-                  nameInput.trim().length === 0 ||
+                  nameEnInput.trim().length === 0 ||
                   imageInputs.every((file) => !file)
                 }
               >
-                {isSubmitting ? "Saving..." : "Save"}
+                {isSubmitting ? text.loading : text.save}
               </Button>
             </div>
           </div>
         </Modal>
 
-        <Modal
-          title="Edit Product"
-          isOpen={isEditOpen}
-          onClose={() => setIsEditOpen(false)}
-        >
+        <Modal title={text.editProduct} isOpen={isEditOpen} onClose={() => setIsEditOpen(false)}>
           <div className="space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
-                Product Name
+                {text.productNameEn}
               </label>
               <Input
-                value={nameInput}
-                onChange={(event) => setNameInput(event.target.value)}
-                placeholder="Enter product name"
+                value={nameEnInput}
+                onChange={(event) => setNameEnInput(event.target.value)}
+                placeholder={text.productName}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">
+                {text.productNameAr}
+              </label>
+              <Input
+                value={nameArInput}
+                onChange={(event) => setNameArInput(event.target.value)}
+                placeholder={text.productNameAr}
+                dir="rtl"
+                className="text-right"
               />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
-                  Price Before
+                  {text.priceBefore}
                 </label>
                 <Input
                   type="number"
@@ -1263,7 +1391,7 @@ export default function ProductsPage() {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
-                  Price After
+                  {text.priceAfter}
                 </label>
                 <Input
                   type="number"
@@ -1276,7 +1404,7 @@ export default function ProductsPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
-                  Stock
+                  {text.stockLabel}
                 </label>
                 <Input
                   type="number"
@@ -1287,17 +1415,22 @@ export default function ProductsPage() {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
-                  Category Name
+                  {text.categoryName}
                 </label>
                 <select
                   value={categoryIdInput}
                   onChange={(event) => setCategoryIdInput(event.target.value)}
                   className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
                 >
-                  <option value="">Select category</option>
+                  <option value="">{text.categoryName}</option>
                   {categories.map((category) => (
                     <option key={category.id} value={category.id}>
-                      {category.name}
+                      {getLocalizedValue({
+                        en: category.nameEn,
+                        ar: category.nameAr,
+                        legacy: category.name,
+                        lang: language,
+                      })}
                     </option>
                   ))}
                 </select>
@@ -1306,14 +1439,14 @@ export default function ProductsPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
-                  Variant ID
+                  {text.variantId}
                 </label>
                 <select
                   value={variantIdInput}
                   onChange={(event) => setVariantIdInput(event.target.value)}
                   className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
                 >
-                  <option value="">Select variant</option>
+                  <option value="">{text.variantId}</option>
                   {variants.map((variant) => (
                     <option key={variant.id} value={String(variant.id)}>
                       {variant.sku || variant.name || `Variant #${variant.id}`}
@@ -1323,7 +1456,7 @@ export default function ProductsPage() {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
-                  Status
+                  {text.status}
                 </label>
                 <div className="flex gap-4">
                   <label className="flex items-center gap-2 text-sm text-slate-700">
@@ -1335,7 +1468,7 @@ export default function ProductsPage() {
                       onChange={(event) => setStatusInput(event.target.value)}
                       className="h-4 w-4 accent-slate-900"
                     />
-                    Active
+                    {text.active}
                   </label>
                   <label className="flex items-center gap-2 text-sm text-slate-700">
                     <input
@@ -1346,25 +1479,25 @@ export default function ProductsPage() {
                       onChange={(event) => setStatusInput(event.target.value)}
                       className="h-4 w-4 accent-slate-900"
                     />
-                    Not Active
+                    {text.notActive}
                   </label>
                 </div>
               </div>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
-                Description
+                {text.description}
               </label>
               <textarea
                 value={descriptionInput}
                 onChange={(event) => setDescriptionInput(event.target.value)}
-                placeholder="Optional description"
+                placeholder={text.optionalDescription}
                 className="min-h-[96px] w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
-                Product Images
+                {text.productImages}
               </label>
               <div className="space-y-3">
                 {existingEditImages.length > 0 ? (
@@ -1438,7 +1571,7 @@ export default function ProductsPage() {
                     }
                     className="rounded-md border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 transition disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    Add New Image
+                    {text.addImage}
                   </button>
                   {existingEditImages.length + editImageInputs.length >= 5 ? (
                     <span className="text-xs text-slate-500">
@@ -1459,27 +1592,24 @@ export default function ProductsPage() {
                 onClick={() => setIsEditOpen(false)}
                 disabled={isSubmitting}
               >
-                Cancel
+                {text.cancel}
               </Button>
               <Button
                 onClick={handleEdit}
-                disabled={isSubmitting || nameInput.trim().length === 0}
+                disabled={isSubmitting || nameEnInput.trim().length === 0}
               >
-                {isSubmitting ? "Updating..." : "Update"}
+                {isSubmitting ? text.loading : text.update}
               </Button>
             </div>
           </div>
         </Modal>
 
-        <Modal
-          title="Delete Product"
-          isOpen={isDeleteOpen}
-          onClose={() => setIsDeleteOpen(false)}
-        >
+        <Modal title={text.deleteProduct} isOpen={isDeleteOpen} onClose={() => setIsDeleteOpen(false)}>
           <div className="space-y-4">
             <p className="text-sm text-slate-600">
-              Are you sure you want to delete this product? This action cannot
-              be undone.
+              {language === "ar"
+                ? "هل أنت متأكد من حذف هذا المنتج؟ لا يمكن التراجع عن هذا الإجراء."
+                : "Are you sure you want to delete this product? This action cannot be undone."}
             </p>
             {actionError ? (
               <p className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
@@ -1492,14 +1622,14 @@ export default function ProductsPage() {
                 onClick={() => setIsDeleteOpen(false)}
                 disabled={isSubmitting}
               >
-                Cancel
+                {text.cancel}
               </Button>
               <Button
                 variant="danger"
                 onClick={handleDelete}
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Deleting..." : "Delete"}
+                {isSubmitting ? text.loading : text.delete}
               </Button>
             </div>
           </div>

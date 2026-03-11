@@ -5,11 +5,17 @@ export type PurchaseRow = {
   purchaseId: string;
   productId?: number | null;
   productName: string;
+  productNameEn?: string;
+  productNameAr?: string;
   categoryId?: number | null;
   categoryName?: string;
+  categoryNameEn?: string;
+  categoryNameAr?: string;
   variantId?: number | null;
   variantName?: string;
   supplierName: string;
+  supplierNameEn?: string;
+  supplierNameAr?: string;
   supplierContact?: string;
   supplierEmail?: string;
   supplierPhone?: string;
@@ -37,6 +43,8 @@ export type CostCategory =
 export type CostRow = {
   id: string;
   name: string;
+  costNameEn?: string;
+  costNameAr?: string;
   category: CostCategory;
   amount: number;
   date: string;
@@ -50,14 +58,17 @@ export type PurchaseFormMode = "existing" | "new";
 export type PurchaseFormValue = {
   productMode: PurchaseFormMode;
   existingProductId: string;
-  productName: string;
+  productNameEn: string;
+  productNameAr: string;
   selectedCategoryId: string;
-  category: string;
+  categoryEn: string;
+  categoryAr: string;
   selectedVariantId: string;
   variant: string;
   priceBeforeDiscount: string;
   priceAfterDiscount: string;
-  supplierName: string;
+  supplierNameEn: string;
+  supplierNameAr: string;
   supplierContact: string;
   supplierEmail: string;
   supplierPhone: string;
@@ -68,7 +79,8 @@ export type PurchaseFormValue = {
 };
 
 export type CostFormValue = {
-  name: string;
+  costNameEn: string;
+  costNameAr: string;
   category: CostCategory;
   amount: string;
   date: string;

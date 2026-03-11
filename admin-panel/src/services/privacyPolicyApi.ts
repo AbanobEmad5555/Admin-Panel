@@ -4,6 +4,10 @@ export type PrivacyPolicyRecord = {
   id: number;
   question: string;
   answer: string;
+  questionEn?: string;
+  questionAr?: string;
+  answerEn?: string;
+  answerAr?: string;
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -21,6 +25,10 @@ type ListParams = {
 type PrivacyPolicyPayload = {
   question: string;
   answer: string;
+  questionEn?: string;
+  questionAr?: string;
+  answerEn?: string;
+  answerAr?: string;
   isActive: boolean;
 };
 

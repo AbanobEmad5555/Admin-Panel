@@ -1,3 +1,7 @@
+"use client";
+
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
+
 type PurchasesRevenueChartProps = {
   labels: string[];
   purchases: number[];
@@ -24,6 +28,7 @@ export default function PurchasesRevenueChart({
   purchases,
   revenue,
 }: PurchasesRevenueChartProps) {
+  const { language } = useLocalization();
   const maxValue = Math.max(...purchases, ...revenue, 1);
   const width = 560;
   const height = 220;
@@ -31,15 +36,17 @@ export default function PurchasesRevenueChart({
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-900">Purchases vs Revenue</h3>
+        <h3 className="text-sm font-semibold text-slate-900">
+          {language === "ar" ? "المشتريات مقابل الإيرادات" : "Purchases vs Revenue"}
+        </h3>
         <div className="flex items-center gap-4 text-xs text-slate-500">
           <span className="inline-flex items-center gap-1">
             <span className="h-2 w-2 rounded-full bg-slate-700" />
-            Purchases
+            {language === "ar" ? "المشتريات" : "Purchases"}
           </span>
           <span className="inline-flex items-center gap-1">
             <span className="h-2 w-2 rounded-full bg-emerald-600" />
-            Revenue
+            {language === "ar" ? "الإيرادات" : "Revenue"}
           </span>
         </div>
       </div>

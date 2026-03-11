@@ -21,6 +21,48 @@ type UpdateLeadStatusContext = {
   previousPipeline?: PipelineColumn[];
 };
 
+const getLeadToastText = () => {
+  if (typeof window === "undefined") {
+    return {
+      created: "Lead created successfully",
+      createFailed: "Failed to create lead",
+      updated: "Lead updated successfully",
+      updateFailed: "Failed to update lead",
+      assigned: "Lead assigned to admin",
+      assignFailed: "Failed to assign admin",
+      statusUpdated: "Lead status updated",
+      statusFailed: "Failed to update lead status",
+    };
+  }
+
+  const raw = window.localStorage.getItem("admin-localization-settings");
+  const language = raw?.includes('"language":"ar"') ? "ar" : "en";
+
+  if (language === "ar") {
+    return {
+      created: "تم إنشاء العميل المحتمل بنجاح",
+      createFailed: "فشل إنشاء العميل المحتمل",
+      updated: "تم تحديث العميل المحتمل بنجاح",
+      updateFailed: "فشل تحديث العميل المحتمل",
+      assigned: "تم تعيين العميل المحتمل للمسؤول",
+      assignFailed: "فشل تعيين المسؤول",
+      statusUpdated: "تم تحديث حالة العميل المحتمل",
+      statusFailed: "فشل تحديث حالة العميل المحتمل",
+    };
+  }
+
+  return {
+    created: "Lead created successfully",
+    createFailed: "Failed to create lead",
+    updated: "Lead updated successfully",
+    updateFailed: "Failed to update lead",
+    assigned: "Lead assigned to admin",
+    assignFailed: "Failed to assign admin",
+    statusUpdated: "Lead status updated",
+    statusFailed: "Failed to update lead status",
+  };
+};
+
 const moveLeadInPipeline = (
   pipeline: PipelineColumn[],
   input: UpdateLeadStatusInput
@@ -78,11 +120,11 @@ export const useCreateLead = () => {
   return useMutation({
     mutationFn: (payload: LeadPayload) => leadsApi.createLead(payload),
     onSuccess: () => {
-      toast.success("Lead created successfully");
+      toast.success(getLeadToastText().created);
       void queryClient.invalidateQueries({ queryKey: ["leads"] });
     },
     onError: () => {
-      toast.error("Failed to create lead");
+      toast.error(getLeadToastText().createFailed);
     },
   });
 };
@@ -94,12 +136,12 @@ export const useUpdateLead = () => {
     mutationFn: ({ id, payload }: { id: number; payload: Partial<LeadPayload> }) =>
       leadsApi.updateLead(id, payload),
     onSuccess: () => {
-      toast.success("Lead updated successfully");
+      toast.success(getLeadToastText().updated);
       void queryClient.invalidateQueries({ queryKey: ["leads"] });
       void queryClient.invalidateQueries({ queryKey: ["leads", "pipeline"] });
     },
     onError: () => {
-      toast.error("Failed to update lead");
+      toast.error(getLeadToastText().updateFailed);
     },
   });
 };
@@ -111,12 +153,12 @@ export const useAssignLeadAdmin = () => {
     mutationFn: ({ leadId, adminId }: { leadId: number; adminId: number }) =>
       leadsApi.assignLeadAdmin(leadId, adminId),
     onSuccess: () => {
-      toast.success("Lead assigned to admin");
+      toast.success(getLeadToastText().assigned);
       void queryClient.invalidateQueries({ queryKey: ["leads-list"] });
       void queryClient.invalidateQueries({ queryKey: ["leads"] });
     },
     onError: () => {
-      toast.error("Failed to assign admin");
+      toast.error(getLeadToastText().assignFailed);
     },
   });
 };
@@ -137,7 +179,7 @@ export const useUpdateLeadStatus = () => {
       return { previousPipeline };
     },
     onSuccess: () => {
-      toast.success("Lead status updated");
+      toast.success(getLeadToastText().statusUpdated);
       void queryClient.invalidateQueries({ queryKey: ["leads", "pipeline"] });
       void queryClient.invalidateQueries({ queryKey: ["leads"] });
     },
@@ -145,7 +187,7 @@ export const useUpdateLeadStatus = () => {
       if (context?.previousPipeline) {
         queryClient.setQueryData(["leads", "pipeline"], context.previousPipeline);
       }
-      toast.error("Failed to update lead status");
+      toast.error(getLeadToastText().statusFailed);
     },
   });
 };

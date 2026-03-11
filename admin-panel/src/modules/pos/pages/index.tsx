@@ -22,6 +22,7 @@ import { usePosStore } from "@/modules/pos/store/pos.store";
 import type { PosOrder } from "@/modules/pos/types";
 import { getAdminToken } from "@/lib/auth";
 import { formatEGP } from "@/lib/currency";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import api from "@/services/api";
 
 type OrderSummary = Pick<
@@ -80,6 +81,7 @@ const getRoleFromToken = () => {
 };
 
 export default function PosTerminalPage() {
+  const { language } = useLocalization();
   const router = useRouter();
   const store = usePosStore();
   const [paymentOpen, setPaymentOpen] = useState(false);
@@ -103,6 +105,94 @@ export default function PosTerminalPage() {
   const refundOrder = useRefundOrder();
   const role = useMemo(() => getRoleFromToken(), []);
   const canRefund = role === "ADMIN" || role === "SUPERVISOR";
+  const text =
+    language === "ar"
+      ? {
+          outOfStock: "هذا المنتج غير متوفر حاليًا في المخزون",
+          adminPanel: "لوحة الإدارة",
+          openSessionFirst: "افتح جلسة أولًا.",
+          cartEmpty: "السلة فارغة.",
+          orderCreated: "تم إنشاء الطلب.",
+          paymentCompleted: "اكتمل الدفع.",
+          processPaymentError: "فشل تنفيذ الدفع.",
+          copied: "تم النسخ.",
+          copyFailed: "فشل النسخ.",
+          invoiceGenerated: "تم إنشاء الفاتورة بنجاح.",
+          invoiceGenerateError: "فشل إنشاء فاتورة من طلب نقطة البيع.",
+          printViewError: "تعذر فتح معاينة الطباعة.",
+          posTerminal: "محطة نقطة البيع",
+          posDescription: "إنشاء الطلبات، قبول المدفوعات المجزأة، تنفيذ الاستردادات، وإغلاق الجلسات.",
+          noActiveSession: "لا توجد جلسة نشطة",
+          sessionLabel: "الجلسة",
+          closeSession: "إغلاق الجلسة",
+          latestOrderSummary: "ملخص آخر طلب",
+          posOrderId: "معرّف طلب نقطة البيع",
+          tempOrderId: "معرّف الطلب المؤقت",
+          copy: "نسخ",
+          status: "الحالة",
+          paymentStatus: "حالة الدفع",
+          total: "الإجمالي",
+          paid: "المدفوع",
+          due: "المتبقي",
+          change: "الباقي",
+          loadingProducts: "جارٍ تحميل المنتجات...",
+          loadProductsError: "فشل تحميل المنتجات من الخادم.",
+          sessionOpened: "تم فتح الجلسة.",
+          openSessionError: "فشل فتح الجلسة.",
+          refundSuccessful: "تم الاسترداد بنجاح.",
+          refundFailed: "فشل الاسترداد.",
+          sessionClosed: "تم إغلاق الجلسة.",
+          closeSessionError: "فشل إغلاق الجلسة.",
+          thanks: "شكرًا لتسوقك معنا",
+          poweredBy: "بدعم من Vibe Clouds solutions",
+          receipt: "الإيصال",
+          subtotal: "الإجمالي الفرعي",
+          tax: "الضريبة",
+          discount: "الخصم",
+        }
+      : {
+          outOfStock: "This item currently out of stock",
+          adminPanel: "Admin Panel",
+          openSessionFirst: "Open a session first.",
+          cartEmpty: "Cart is empty.",
+          orderCreated: "Order created.",
+          paymentCompleted: "Payment completed.",
+          processPaymentError: "Failed to process payment.",
+          copied: "Copied.",
+          copyFailed: "Failed to copy.",
+          invoiceGenerated: "Invoice generated successfully.",
+          invoiceGenerateError: "Failed to generate invoice from POS order.",
+          printViewError: "Unable to open print view.",
+          posTerminal: "POS Terminal",
+          posDescription: "Create orders, accept split payments, issue refunds, and close sessions.",
+          noActiveSession: "No active session",
+          sessionLabel: "Session",
+          closeSession: "Close Session",
+          latestOrderSummary: "Latest Order Summary",
+          posOrderId: "POS Order ID",
+          tempOrderId: "Temp Order ID",
+          copy: "Copy",
+          status: "Status",
+          paymentStatus: "Payment Status",
+          total: "Total",
+          paid: "Paid",
+          due: "Due",
+          change: "Change",
+          loadingProducts: "Loading products...",
+          loadProductsError: "Failed to load products from backend.",
+          sessionOpened: "Session opened.",
+          openSessionError: "Failed to open session.",
+          refundSuccessful: "Refund successful.",
+          refundFailed: "Refund failed.",
+          sessionClosed: "Session closed.",
+          closeSessionError: "Failed to close session.",
+          thanks: "Thanks for Shoping with us",
+          poweredBy: "Powered by Vibe Clouds solutions",
+          receipt: "Receipt",
+          subtotal: "Subtotal",
+          tax: "Tax",
+          discount: "Discount",
+        };
 
   const categories = useMemo(
     () => ["All", ...Array.from(new Set(products.map((product) => product.category)))],
@@ -146,8 +236,8 @@ export default function PosTerminalPage() {
             ? String(homepageRes.value.data?.data?.logoUrl ?? "").trim()
             : "";
 
-        setReceiptBrandInfo({
-          websiteName: websiteName || "Admin Panel",
+      setReceiptBrandInfo({
+          websiteName: websiteName || text.adminPanel,
           logoUrl,
         });
       } catch {
@@ -155,7 +245,7 @@ export default function PosTerminalPage() {
           return;
         }
         setReceiptBrandInfo({
-          websiteName: "Admin Panel",
+          websiteName: text.adminPanel,
           logoUrl: "",
         });
       }
@@ -166,11 +256,11 @@ export default function PosTerminalPage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [text.adminPanel]);
 
   const handleAddProduct = (product: (typeof products)[number]) => {
     if ((product.stock ?? 0) <= 0) {
-      toast.error("This item currently out of stock");
+      toast.error(text.outOfStock);
       return;
     }
     store.addProduct(product);
@@ -180,12 +270,12 @@ export default function PosTerminalPage() {
     payments: Array<{ method: "CASH" | "CARD" | "WALLET"; amount: number; reference?: string }>
   ) => {
     if (!currentSession?.id) {
-      toast.error("Open a session first.");
+      toast.error(text.openSessionFirst);
       return;
     }
 
     if (store.items.length === 0) {
-      toast.error("Cart is empty.");
+      toast.error(text.cartEmpty);
       return;
     }
 
@@ -212,7 +302,7 @@ export default function PosTerminalPage() {
         tempOrderId: created.tempOrderId ?? null,
       });
       toast.success(
-        `Order created. POS Order: ${created.id}, Temp Order: ${created.tempOrderId ?? "-"}`
+        `${text.orderCreated} ${text.posOrderId}: ${created.id}, ${text.tempOrderId}: ${created.tempOrderId ?? "-"}`
       );
 
       const paymentStatus = String(created.paymentStatus ?? "").toUpperCase();
@@ -241,23 +331,23 @@ export default function PosTerminalPage() {
       setPaymentOpen(false);
       setReceiptOpen(true);
       store.clearCart();
-      toast.success("Payment completed.");
+      toast.success(text.paymentCompleted);
     } catch (error) {
       const apiMessage = getApiMessage(error);
       if (apiMessage) {
         toast.error(apiMessage);
         return;
       }
-      toast.error("Failed to process payment.");
+      toast.error(text.processPaymentError);
     }
   };
 
   const copyValue = async (value: string) => {
     try {
       await navigator.clipboard.writeText(value);
-      toast.success("Copied.");
+      toast.success(text.copied);
     } catch {
-      toast.error("Failed to copy.");
+      toast.error(text.copyFailed);
     }
   };
 
@@ -274,7 +364,7 @@ export default function PosTerminalPage() {
       });
       const payload = (response.data?.data ?? response.data ?? {}) as Record<string, unknown>;
       const invoiceId = String(payload.id ?? payload.invoiceId ?? payload.invoice?.id ?? "");
-      toast.success("Invoice generated successfully.");
+      toast.success(text.invoiceGenerated);
       if (invoiceId) {
         setReceiptOpen(false);
         router.push(`/admin/invoices/${invoiceId}`);
@@ -282,7 +372,7 @@ export default function PosTerminalPage() {
     } catch (error) {
       const response = (error as { response?: { status?: number; data?: { message?: string; data?: { id?: string; invoiceId?: string } } } }).response;
       const message =
-        response?.data?.message ?? "Failed to generate invoice from POS order.";
+        response?.data?.message ?? text.invoiceGenerateError;
       const existingInvoiceId = response?.data?.data?.id ?? response?.data?.data?.invoiceId;
       toast.error(message);
       if (response?.status === 409 && existingInvoiceId) {
@@ -356,7 +446,7 @@ export default function PosTerminalPage() {
           return `<div class="row"><span>${name} x${quantity}</span><span>${total}</span></div>`;
         })
         .join("");
-      const websiteName = escapeHtml(receiptBrandInfo.websiteName || "Admin Panel");
+        const websiteName = escapeHtml(receiptBrandInfo.websiteName || text.adminPanel);
       const logoSrc = receiptBrandInfo.logoUrl.trim();
       const websiteLogoMarkup = logoSrc
         ? `<div class="brand-logo-wrap"><img class="brand-logo" src="${escapeHtml(logoSrc)}" alt="${websiteName}" /></div>`
@@ -389,20 +479,20 @@ export default function PosTerminalPage() {
     <div class="wrap">
       ${websiteLogoMarkup}
       <p class="brand-name">${websiteName}</p>
-      <h1>Receipt</h1>
-      <p class="meta"><strong>POS Order:</strong> #${escapeHtml(String(receiptOrder.id))}</p>
+      <h1>${text.receipt}</h1>
+      <p class="meta"><strong>${text.posOrderId}:</strong> #${escapeHtml(String(receiptOrder.id))}</p>
       <div class="section">
         ${itemsMarkup}
       </div>
       <div class="section">
-        <div class="row"><span>Subtotal</span><span>${formatEGP(receiptOrder.subtotal)}</span></div>
-        <div class="row"><span>Tax</span><span>${formatEGP(receiptOrder.tax)}</span></div>
-        <div class="row"><span>Discount</span><span>${formatEGP(receiptOrder.discount)}</span></div>
-        <div class="row total"><span>Total</span><span>${formatEGP(receiptOrder.total)}</span></div>
+        <div class="row"><span>${text.subtotal}</span><span>${formatEGP(receiptOrder.subtotal)}</span></div>
+        <div class="row"><span>${text.tax}</span><span>${formatEGP(receiptOrder.tax)}</span></div>
+        <div class="row"><span>${text.discount}</span><span>${formatEGP(receiptOrder.discount)}</span></div>
+        <div class="row total"><span>${text.total}</span><span>${formatEGP(receiptOrder.total)}</span></div>
       </div>
       <div class="footer-note">
-        <div>Thanks for Shoping with us</div>
-        <div>Powered by Vibe Clouds solutions</div>
+        <div>${text.thanks}</div>
+        <div>${text.poweredBy}</div>
       </div>
     </div>
   </body>
@@ -427,7 +517,7 @@ export default function PosTerminalPage() {
       const frameWindow = iframe.contentWindow;
       if (!frameWindow) {
         cleanup();
-        toast.error("Unable to open print view.");
+        toast.error(text.printViewError);
         return;
       }
 
@@ -442,12 +532,12 @@ export default function PosTerminalPage() {
 
   return (
     <POSLayout
-      title="POS Terminal"
-      description="Create orders, accept split payments, issue refunds, and close sessions."
+      title={text.posTerminal}
+      description={text.posDescription}
     >
       <div className="flex flex-wrap items-center gap-2">
         <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold text-violet-700">
-          {currentSession?.id ? `Session ${currentSession.id}` : "No active session"}
+          {currentSession?.id ? `${text.sessionLabel} ${currentSession.id}` : text.noActiveSession}
         </span>
         <button
           type="button"
@@ -455,25 +545,25 @@ export default function PosTerminalPage() {
           disabled={!currentSession?.id}
           className="rounded-md border border-violet-200 bg-white px-3 py-2 text-xs font-semibold text-violet-700 disabled:opacity-40"
         >
-          Close Session
+          {text.closeSession}
         </button>
       </div>
       {latestOrder ? (
         <div className="rounded-xl bg-white p-4 shadow-sm">
-          <p className="text-sm font-semibold text-slate-900">Latest Order Summary</p>
+          <p className="text-sm font-semibold text-slate-900">{text.latestOrderSummary}</p>
           <div className="mt-2 grid grid-cols-1 gap-2 text-xs text-slate-700 md:grid-cols-2">
             <p className="flex items-center gap-2">
-              POS Order ID: <span className="font-semibold">{latestOrder.id}</span>
+              {text.posOrderId}: <span className="font-semibold">{latestOrder.id}</span>
               <button
                 type="button"
                 onClick={() => void copyValue(String(latestOrder.id))}
                 className="rounded border border-slate-300 px-2 py-0.5 text-[11px]"
               >
-                Copy
+                {text.copy}
               </button>
             </p>
             <p className="flex items-center gap-2">
-              Temp Order ID:{" "}
+              {text.tempOrderId}:{" "}
               <span className="font-semibold">{latestOrder.tempOrderId ?? "-"}</span>
               {latestOrder.tempOrderId ? (
                 <button
@@ -481,16 +571,16 @@ export default function PosTerminalPage() {
                   onClick={() => void copyValue(String(latestOrder.tempOrderId))}
                   className="rounded border border-slate-300 px-2 py-0.5 text-[11px]"
                 >
-                  Copy
+                  {text.copy}
                 </button>
               ) : null}
             </p>
-            <p>Status: {latestOrder.status ?? "-"}</p>
-            <p>Payment Status: {latestOrder.paymentStatus ?? "-"}</p>
-            <p>Total: {formatEGP(Number(latestOrder.total ?? 0))}</p>
-            <p>Paid: {formatEGP(Number(latestOrder.paidAmount ?? 0))}</p>
-            <p>Due: {formatEGP(Number(latestOrder.dueAmount ?? 0))}</p>
-            <p>Change: {formatEGP(Number(latestOrder.change ?? 0))}</p>
+            <p>{text.status}: {latestOrder.status ?? "-"}</p>
+            <p>{text.paymentStatus}: {latestOrder.paymentStatus ?? "-"}</p>
+            <p>{text.total}: {formatEGP(Number(latestOrder.total ?? 0))}</p>
+            <p>{text.paid}: {formatEGP(Number(latestOrder.paidAmount ?? 0))}</p>
+            <p>{text.due}: {formatEGP(Number(latestOrder.dueAmount ?? 0))}</p>
+            <p>{text.change}: {formatEGP(Number(latestOrder.change ?? 0))}</p>
           </div>
         </div>
       ) : null}
@@ -526,12 +616,12 @@ export default function PosTerminalPage() {
           />
           {productsLoading ? (
             <div className="rounded-xl bg-white p-6 text-sm text-slate-500 shadow-sm">
-              Loading products...
+              {text.loadingProducts}
             </div>
           ) : null}
           {productsError ? (
             <div className="rounded-xl bg-rose-50 p-6 text-sm text-rose-700 shadow-sm">
-              Failed to load products from backend.
+              {text.loadProductsError}
             </div>
           ) : null}
           <ProductGrid products={filteredProducts} onAdd={handleAddProduct} />
@@ -544,14 +634,14 @@ export default function PosTerminalPage() {
         onSubmit={async (payload) => {
           try {
             await openSession.mutateAsync(payload);
-            toast.success("Session opened.");
+            toast.success(text.sessionOpened);
           } catch (error) {
             const apiMessage = getApiMessage(error);
             if (apiMessage) {
               toast.error(apiMessage);
               return;
             }
-            toast.error("Failed to open session.");
+            toast.error(text.openSessionError);
           }
         }}
       />
@@ -571,7 +661,7 @@ export default function PosTerminalPage() {
         onSubmit={async (orderId, payload) => {
           try {
             await refundOrder.mutateAsync({ orderId, payload });
-            toast.success("Refund successful.");
+            toast.success(text.refundSuccessful);
             setRefundOpen(false);
           } catch (error) {
             const apiMessage = getApiMessage(error);
@@ -579,7 +669,7 @@ export default function PosTerminalPage() {
               toast.error(apiMessage);
               return;
             }
-            toast.error("Refund failed.");
+            toast.error(text.refundFailed);
           }
         }}
       />
@@ -598,7 +688,7 @@ export default function PosTerminalPage() {
               sessionId: currentSession.id,
               closingBalance,
             });
-            toast.success("Session closed.");
+            toast.success(text.sessionClosed);
             setCloseSessionOpen(false);
           } catch (error) {
             const apiMessage = getApiMessage(error);
@@ -606,7 +696,7 @@ export default function PosTerminalPage() {
               toast.error(apiMessage);
               return;
             }
-            toast.error("Failed to close session.");
+            toast.error(text.closeSessionError);
           }
         }}
       />

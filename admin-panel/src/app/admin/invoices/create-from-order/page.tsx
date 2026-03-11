@@ -18,6 +18,7 @@ import {
   type CreateInvoiceFromOrderSchema,
 } from "@/app/admin/invoices/schemas/createInvoice.schema";
 import type { InvoiceSource } from "@/app/admin/invoices/services/invoice.types";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 type ErrorPayload = {
   message?: string;
@@ -149,6 +150,7 @@ const loadOrderOptions = async (orderType: InvoiceSource): Promise<OrderOption[]
 };
 
 export default function CreateInvoiceFromOrderPage() {
+  const { language } = useLocalization();
   const router = useRouter();
   const createMutation = useCreateInvoiceFromOrder();
   const [isOrderDropdownOpen, setIsOrderDropdownOpen] = useState(false);
@@ -200,19 +202,66 @@ export default function CreateInvoiceFromOrderPage() {
     return () => document.removeEventListener("mousedown", onMouseDown);
   }, []);
 
+  const text =
+    language === "ar"
+      ? {
+          title: "إنشاء فاتورة من طلب",
+          subtitle: "أنشئ فاتورة من طلب عادي أو مؤقت أو من نقطة البيع.",
+          orderType: "نوع الطلب",
+          mode: "الوضع",
+          orderId: "رقم الطلب",
+          loadingOrderIds: "جارٍ تحميل أرقام الطلبات...",
+          searchAndSelect: "ابحث واختر رقم الطلب",
+          toggleOrderList: "تبديل قائمة الطلبات",
+          noMatchingOrders: "لا توجد طلبات مطابقة.",
+          loadingIds: "جارٍ تحميل المعرّفات...",
+          availableFor: (count: number, type: string) => `${count} رقم طلب متاح لنوع ${type}.`,
+          failedToLoad: "فشل تحميل أرقام الطلبات للنوع المحدد.",
+          sendEmail: "إرسال بريد إلكتروني بعد الإنشاء",
+          forceNew: "فرض إنشاء فاتورة جديدة",
+          cancel: "إلغاء",
+          creating: "جارٍ الإنشاء...",
+          createInvoice: "إنشاء الفاتورة",
+          alreadyExists: "الفاتورة موجودة بالفعل. سيتم تحويلك إلى التفاصيل.",
+          createdSuccess: "تم إنشاء الفاتورة بنجاح.",
+          createFailed: "فشل إنشاء الفاتورة.",
+        }
+      : {
+          title: "Create Invoice From Order",
+          subtitle: "Generate invoice from ORDER, TEMP_ORDER, or POS_ORDER.",
+          orderType: "Order Type",
+          mode: "Mode",
+          orderId: "Order ID",
+          loadingOrderIds: "Loading order IDs...",
+          searchAndSelect: "Search and select order id",
+          toggleOrderList: "Toggle order list",
+          noMatchingOrders: "No matching orders.",
+          loadingIds: "Loading IDs...",
+          availableFor: (count: number, type: string) => `${count} order ID(s) available for ${type}.`,
+          failedToLoad: "Failed to load order IDs for selected type.",
+          sendEmail: "Send email after creation",
+          forceNew: "Force new invoice",
+          cancel: "Cancel",
+          creating: "Creating...",
+          createInvoice: "Create Invoice",
+          alreadyExists: "Invoice already existed. Redirecting to details.",
+          createdSuccess: "Invoice created successfully.",
+          createFailed: "Failed to create invoice.",
+        };
+
   const onSubmit = form.handleSubmit(async (values) => {
     try {
       const result = await createMutation.mutateAsync(values);
       toast.success(
         result.existed
-          ? "Invoice already existed. Redirecting to details."
-          : "Invoice created successfully.",
+          ? text.alreadyExists
+          : text.createdSuccess,
       );
       router.push(`/admin/invoices/${result.id}`);
     } catch (error) {
       const axiosError = error as AxiosError<ErrorPayload>;
       const status = axiosError.response?.status;
-      const message = axiosError.response?.data?.message ?? "Failed to create invoice.";
+      const message = axiosError.response?.data?.message ?? text.createFailed;
 
       if (status === 409) {
         const existingId =
@@ -234,13 +283,11 @@ export default function CreateInvoiceFromOrderPage() {
   });
 
   return (
-    <AdminLayout title="Create Invoice From Order">
+    <AdminLayout title={text.title}>
       <section className="mx-auto max-w-3xl space-y-4">
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h1 className="text-xl font-semibold text-slate-900">Create Invoice From Order</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Generate invoice from ORDER, TEMP_ORDER, or POS_ORDER.
-          </p>
+          <h1 className="text-xl font-semibold text-slate-900">{text.title}</h1>
+          <p className="mt-1 text-sm text-slate-500">{text.subtitle}</p>
         </div>
 
         <form
@@ -249,7 +296,7 @@ export default function CreateInvoiceFromOrderPage() {
         >
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <div>
-              <label className="text-xs font-medium text-slate-600">Order Type</label>
+              <label className="text-xs font-medium text-slate-600">{text.orderType}</label>
               <select
                 {...form.register("orderType")}
                 className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm"
@@ -260,7 +307,7 @@ export default function CreateInvoiceFromOrderPage() {
               </select>
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600">Mode</label>
+              <label className="text-xs font-medium text-slate-600">{text.mode}</label>
               <select
                 {...form.register("mode")}
                 className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm"
@@ -272,7 +319,7 @@ export default function CreateInvoiceFromOrderPage() {
           </div>
 
           <div>
-            <label className="text-xs font-medium text-slate-600">Order ID</label>
+            <label className="text-xs font-medium text-slate-600">{text.orderId}</label>
             <div ref={orderDropdownRef} className="relative mt-1">
               <input
                 type="text"
@@ -285,14 +332,14 @@ export default function CreateInvoiceFromOrderPage() {
                   });
                   setIsOrderDropdownOpen(true);
                 }}
-                placeholder={isOptionsLoading ? "Loading order IDs..." : "Search and select order id"}
+                placeholder={isOptionsLoading ? text.loadingOrderIds : text.searchAndSelect}
                 className="w-full rounded border border-slate-300 px-3 py-2 pr-9 text-sm"
               />
               <button
                 type="button"
                 onClick={() => setIsOrderDropdownOpen((prev) => !prev)}
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500"
-                aria-label="Toggle order list"
+                aria-label={text.toggleOrderList}
               >
                 <ChevronDown className="h-4 w-4" />
               </button>
@@ -300,7 +347,7 @@ export default function CreateInvoiceFromOrderPage() {
               {isOrderDropdownOpen ? (
                 <div className="absolute z-30 mt-1 max-h-60 w-full overflow-y-auto rounded-md border border-slate-200 bg-white shadow-lg">
                   {filteredOptions.length === 0 ? (
-                    <div className="px-3 py-2 text-xs text-slate-500">No matching orders.</div>
+                    <div className="px-3 py-2 text-xs text-slate-500">{text.noMatchingOrders}</div>
                   ) : (
                     filteredOptions.map((option) => (
                       <button
@@ -324,13 +371,13 @@ export default function CreateInvoiceFromOrderPage() {
             </div>
             <p className="mt-1 text-xs text-slate-500">
               {isOptionsLoading
-                ? "Loading IDs..."
-                : `${filteredOptions.length} order ID(s) available for ${selectedOrderType}.`}
+                ? text.loadingIds
+                : text.availableFor(filteredOptions.length, selectedOrderType)}
             </p>
             {optionsError ? (
               <p className="mt-1 text-xs text-rose-600">
                 {(optionsError as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-                  "Failed to load order IDs for selected type."}
+                  text.failedToLoad}
               </p>
             ) : null}
             {form.formState.errors.orderId ? (
@@ -341,20 +388,20 @@ export default function CreateInvoiceFromOrderPage() {
           <div className="grid grid-cols-1 gap-2 text-sm text-slate-700">
             <label className="inline-flex items-center gap-2">
               <input type="checkbox" {...form.register("sendEmail")} />
-              Send email after creation
+              {text.sendEmail}
             </label>
             <label className="inline-flex items-center gap-2">
               <input type="checkbox" {...form.register("forceNew")} />
-              Force new invoice
+              {text.forceNew}
             </label>
           </div>
 
           <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
             <Link href="/admin/invoices">
-              <Button type="button" variant="secondary">Cancel</Button>
+              <Button type="button" variant="secondary">{text.cancel}</Button>
             </Link>
             <Button type="submit" disabled={createMutation.isPending}>
-              {createMutation.isPending ? "Creating..." : "Create Invoice"}
+              {createMutation.isPending ? text.creating : text.createInvoice}
             </Button>
           </div>
         </form>

@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 type ModalProps = {
   title: string;
@@ -10,6 +11,8 @@ type ModalProps = {
 };
 
 export default function Modal({ title, isOpen, onClose, children }: ModalProps) {
+  const { direction, t } = useLocalization();
+
   if (!isOpen) {
     return null;
   }
@@ -17,7 +20,10 @@ export default function Modal({ title, isOpen, onClose, children }: ModalProps) 
   const titleId = `modal-title-${title.toLowerCase().replace(/\s+/g, "-")}`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      dir={direction}
+    >
       <div
         role="dialog"
         aria-modal="true"
@@ -33,7 +39,7 @@ export default function Modal({ title, isOpen, onClose, children }: ModalProps) 
             onClick={onClose}
             className="text-sm text-slate-500 hover:text-slate-700"
           >
-            Close
+            {t("common.cancel", "Close")}
           </button>
         </div>
         <div className="px-4 py-4">{children}</div>

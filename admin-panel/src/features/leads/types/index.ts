@@ -13,12 +13,16 @@ export type LeadPriority = "Low" | "Medium" | "High";
 export type User = {
   id: number;
   name: string;
+  nameEn?: string;
+  nameAr?: string;
   email?: string;
 };
 
 export type Lead = {
   id: number;
   name: string;
+  nameEn?: string;
+  nameAr?: string;
   phone: string;
   email?: string;
   source: string;
@@ -68,13 +72,15 @@ export type LeadsListResult = {
 };
 
 export type TempUserPayload = {
-  tempName: string;
+  tempNameEn: string;
+  tempNameAr?: string;
   tempPhone: string;
   tempEmail?: string;
 };
 
 export type LeadPayload = {
-  name: string;
+  nameEn: string;
+  nameAr?: string;
   phone: string;
   email?: string;
   source: string;

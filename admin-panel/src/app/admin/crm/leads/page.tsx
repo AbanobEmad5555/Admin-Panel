@@ -16,6 +16,7 @@ import type {
   LeadFilters,
   User,
 } from "@/features/leads/types";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 const PAGE_SIZE = 10;
 
@@ -43,6 +44,7 @@ const toDateInput = (value?: string) => {
 };
 
 export default function LeadsListPage() {
+  const { language } = useLocalization();
   const [filters, setFilters] = useState<LeadFilters>({
     search: "",
     status: "",
@@ -158,8 +160,14 @@ export default function LeadsListPage() {
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Leads Management</h1>
-            <p className="text-sm text-slate-500">Track, assign, and progress your sales leads.</p>
+            <h1 className="text-2xl font-bold text-slate-900">
+              {language === "ar" ? "إدارة العملاء المحتملين" : "Leads Management"}
+            </h1>
+            <p className="text-sm text-slate-500">
+              {language === "ar"
+                ? "تابع العملاء المحتملين وعيّنهم وحرّكهم خلال مراحل البيع."
+                : "Track, assign, and progress your sales leads."}
+            </p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -167,7 +175,7 @@ export default function LeadsListPage() {
               href="/admin/crm/leads/new"
               className="inline-flex items-center gap-2 rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
             >
-              <Plus className="h-4 w-4" /> New Lead
+              <Plus className="h-4 w-4" /> {language === "ar" ? "عميل محتمل جديد" : "New Lead"}
             </Link>
           </div>
         </div>
@@ -185,18 +193,18 @@ export default function LeadsListPage() {
               <thead className="bg-slate-50">
                 <tr>
                   {[
-                    "Name",
-                    "Phone",
-                    "Tag",
-                    "Status",
-                    "Priority",
-                    "Assigned Admin",
-                    "Follow Up Date",
-                    "Actions",
+                    language === "ar" ? "الاسم" : "Name",
+                    language === "ar" ? "الهاتف" : "Phone",
+                    language === "ar" ? "الوسم" : "Tag",
+                    language === "ar" ? "الحالة" : "Status",
+                    language === "ar" ? "الأولوية" : "Priority",
+                    language === "ar" ? "المسؤول المعيّن" : "Assigned Admin",
+                    language === "ar" ? "تاريخ المتابعة" : "Follow Up Date",
+                    language === "ar" ? "الإجراءات" : "Actions",
                   ].map((header) => (
                     <th
                       key={header}
-                      className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+                      className={`px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 ${language === "ar" ? "text-right" : "text-left"}`}
                     >
                       {header}
                     </th>
@@ -218,7 +226,13 @@ export default function LeadsListPage() {
                 {!isLoading && pageRows.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="px-4 py-12 text-center text-sm text-slate-500">
-                      {isError ? "Failed to load leads." : "No leads found."}
+                      {isError
+                        ? language === "ar"
+                          ? "فشل تحميل العملاء المحتملين."
+                          : "Failed to load leads."
+                        : language === "ar"
+                          ? "لا يوجد عملاء محتملون."
+                          : "No leads found."}
                     </td>
                   </tr>
                 ) : null}
@@ -246,7 +260,7 @@ export default function LeadsListPage() {
                             disabled={assignLeadAdmin.isPending && updatingLeadId === lead.id}
                             className="min-w-[180px] rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700 disabled:cursor-not-allowed disabled:bg-slate-100"
                           >
-                            <option value="">Unassigned</option>
+                            <option value="">{language === "ar" ? "غير معيّن" : "Unassigned"}</option>
                             {admins.map((admin) => (
                               <option key={admin.id} value={admin.id}>
                                 {admin.name}
@@ -271,13 +285,13 @@ export default function LeadsListPage() {
                               href={`/admin/crm/leads/${lead.id}`}
                               className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-700 transition hover:bg-slate-100"
                             >
-                              View
+                              {language === "ar" ? "عرض" : "View"}
                             </Link>
                             <Link
                               href={`/admin/crm/leads/${lead.id}?mode=edit`}
                               className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-700 transition hover:bg-slate-100"
                             >
-                              Edit
+                              {language === "ar" ? "تعديل" : "Edit"}
                             </Link>
                           </div>
                         </td>
@@ -290,7 +304,9 @@ export default function LeadsListPage() {
 
           <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3">
             <p className="text-xs text-slate-500">
-              Showing {showingFrom} - {showingTo} of {filteredLeads.length}
+              {language === "ar"
+                ? `عرض ${showingFrom} - ${showingTo} من ${filteredLeads.length}`
+                : `Showing ${showingFrom} - ${showingTo} of ${filteredLeads.length}`}
             </p>
             <div className="flex items-center gap-2">
               <button
@@ -299,10 +315,10 @@ export default function LeadsListPage() {
                 disabled={safePage <= 1}
                 className="rounded-md border border-slate-300 px-3 py-1.5 text-xs text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Previous
+                {language === "ar" ? "السابق" : "Previous"}
               </button>
               <span className="text-xs text-slate-600">
-                Page {safePage} / {totalPages}
+                {language === "ar" ? `الصفحة ${safePage} / ${totalPages}` : `Page ${safePage} / ${totalPages}`}
               </span>
               <button
                 type="button"
@@ -310,7 +326,7 @@ export default function LeadsListPage() {
                 disabled={safePage >= totalPages}
                 className="rounded-md border border-slate-300 px-3 py-1.5 text-xs text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Next
+                {language === "ar" ? "التالي" : "Next"}
               </button>
             </div>
           </div>

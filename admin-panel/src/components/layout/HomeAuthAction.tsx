@@ -1,17 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { clearAdminToken, getAdminToken } from "@/lib/auth";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 export default function HomeAuthAction() {
   const router = useRouter();
-  const [isSignedIn, setIsSignedIn] = useState(false);
-
-  useEffect(() => {
-    setIsSignedIn(Boolean(getAdminToken()));
-  }, []);
+  const [isSignedIn, setIsSignedIn] = useState(() => Boolean(getAdminToken()));
+  const { language } = useLocalization();
 
   const handleSignOut = () => {
     clearAdminToken();
@@ -26,7 +24,7 @@ export default function HomeAuthAction() {
         onClick={handleSignOut}
         className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 transition hover:bg-slate-100"
       >
-        Sign out
+        {language === "ar" ? "تسجيل الخروج" : "Sign out"}
       </button>
     );
   }
@@ -36,7 +34,7 @@ export default function HomeAuthAction() {
       href="/login"
       className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 transition hover:bg-slate-100"
     >
-      Sign in
+      {language === "ar" ? "تسجيل الدخول" : "Sign in"}
     </Link>
   );
 }

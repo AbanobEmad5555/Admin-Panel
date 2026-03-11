@@ -7,6 +7,7 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import { assignOrderDeliveryDateForOutForDelivery } from "@/lib/deliveryScheduling";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import api from "@/services/api";
 
 type Order = {
@@ -322,6 +323,7 @@ const isTempStatusOptionDisabled = (
 };
 
 export default function AdminOrdersPage() {
+  const { language } = useLocalization();
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isPageLoading, setIsPageLoading] = useState(false);
@@ -363,6 +365,165 @@ export default function AdminOrdersPage() {
   const [isPosOrdersLoading, setIsPosOrdersLoading] = useState(true);
   const [posOrdersError, setPosOrdersError] = useState("");
   const [posOrdersPage, setPosOrdersPage] = useState(1);
+  const text =
+    language === "ar"
+      ? {
+          title: "الطلبات",
+          subtitle: "تابع وأدر طلبات العملاء.",
+          createTempOrder: "إنشاء طلب مؤقت",
+          status: "الحالة",
+          category: "الفئة",
+          all: "الكل",
+          orderId: "رقم الطلب",
+          customerName: "اسم العميل",
+          customerNamePlaceholder: "اسم العميل",
+          applyFilters: "تطبيق الفلاتر",
+          clearFilters: "مسح الفلاتر",
+          noOrdersFound: "لا توجد طلبات.",
+          loading: "جارٍ التحميل...",
+          showing: (from: number, to: number, total: number) => `عرض ${from}-${to} من ${total}`,
+          mobile: "الهاتف",
+          area: "المنطقة",
+          totalAmount: "المبلغ الإجمالي",
+          paymentMethod: "طريقة الدفع",
+          currentStatus: "الحالة الحالية",
+          createdAt: "تاريخ الإنشاء",
+          view: "عرض",
+          actions: "الإجراءات",
+          previous: "السابق",
+          next: "التالي",
+          tempOrders: "الطلبات المؤقتة",
+          tempOrdersSubtitle: "طلبات نقدية يدوية أنشأها المسؤولون.",
+          refreshing: "جارٍ التحديث...",
+          refresh: "تحديث",
+          noTempOrders: "لا توجد طلبات مؤقتة بعد.",
+          address: "العنوان",
+          posOrders: "طلبات نقطة البيع",
+          posOrdersSubtitle: "جميع الطلبات المنشأة من محطة نقطة البيع.",
+          noPosOrders: "لا توجد طلبات نقطة بيع.",
+          posOrderId: "رقم طلب نقطة البيع",
+          tempOrderId: "رقم الطلب المؤقت",
+          paymentStatus: "حالة الدفع",
+          createTempOrderTitle: "إنشاء طلب مؤقت",
+          customerNameInput: "اسم العميل",
+          customerNameInputPlaceholder: "أدخل اسم العميل",
+          mobileNumber: "رقم الهاتف",
+          itemIds: "أرقام المنتجات مفصولة بفواصل",
+          quantities: "الكميات مفصولة بفواصل",
+          invalidIds: (values: string) => `معرّفات غير صالحة: ${values}`,
+          invalidQuantities: (values: string) => `كميات غير صالحة: ${values}`,
+          refreshingActiveProducts: "جارٍ تحديث قائمة المنتجات النشطة...",
+          deliveryAddress: "عنوان التوصيل",
+          paymentMethodLabel: "طريقة الدفع",
+          cancel: "إلغاء",
+          creating: "جارٍ الإنشاء...",
+          cash: "نقدي",
+          customerNameTooShort: "يجب أن لا يقل الاسم عن 3 أحرف.",
+          invalidPhone: "أدخل رقم هاتف صالحًا.",
+          addressRequired: "العنوان مطلوب.",
+          itemIdsRequired: "أدخل رقم منتج واحد على الأقل.",
+          itemIdsPositive: "يجب أن تكون أرقام المنتجات أعدادًا صحيحة موجبة.",
+          quantitiesRequired: "أدخل الكميات لكل منتج.",
+          quantitiesPositive: "يجب أن تكون الكميات أعدادًا صحيحة موجبة.",
+          countsMismatchText: (a: number, b: number) => `يجب أن يتطابق عدد أرقام المنتجات (${a}) مع عدد الكميات (${b}).`,
+        }
+      : {
+          title: "Orders",
+          subtitle: "Track and manage customer orders.",
+          createTempOrder: "Create Temp Order",
+          status: "Status",
+          category: "Category",
+          all: "All",
+          orderId: "Order ID",
+          customerName: "Customer Name",
+          customerNamePlaceholder: "Customer name",
+          applyFilters: "Apply Filters",
+          clearFilters: "Clear Filters",
+          noOrdersFound: "No orders found.",
+          loading: "Loading...",
+          showing: (from: number, to: number, total: number) => `Showing ${from}-${to} of ${total}`,
+          mobile: "Mobile",
+          area: "Area",
+          totalAmount: "Total Amount",
+          paymentMethod: "Payment Method",
+          currentStatus: "Current Status",
+          createdAt: "Created At",
+          view: "View",
+          actions: "Actions",
+          previous: "Previous",
+          next: "Next",
+          tempOrders: "Temp Orders",
+          tempOrdersSubtitle: "Manual cash-only requests created by admins.",
+          refreshing: "Refreshing...",
+          refresh: "Refresh",
+          noTempOrders: "No temporary orders yet.",
+          address: "Address",
+          posOrders: "POS Orders",
+          posOrdersSubtitle: "All orders created from POS terminal.",
+          noPosOrders: "No POS orders found.",
+          posOrderId: "POS Order ID",
+          tempOrderId: "Temp Order ID",
+          paymentStatus: "Payment Status",
+          createTempOrderTitle: "Create Temp Order",
+          customerNameInput: "Customer Name",
+          customerNameInputPlaceholder: "Enter customer name",
+          mobileNumber: "Mobile Number",
+          itemIds: "Item IDs (comma separated)",
+          quantities: "Quantities (comma separated)",
+          invalidIds: (values: string) => `Invalid ID(s): ${values}`,
+          invalidQuantities: (values: string) => `Invalid quantity(ies): ${values}`,
+          refreshingActiveProducts: "Refreshing active product list...",
+          deliveryAddress: "Delivery address",
+          paymentMethodLabel: "Payment method",
+          cancel: "Cancel",
+          creating: "Creating...",
+          cash: "CASH",
+          customerNameTooShort: "Name must be at least 3 characters long.",
+          invalidPhone: "Enter a valid phone number.",
+          addressRequired: "Address is required.",
+          itemIdsRequired: "Provide at least one product ID.",
+          itemIdsPositive: "Product IDs must be positive whole numbers.",
+          quantitiesRequired: "Provide quantities for every product.",
+          quantitiesPositive: "Quantities must be positive whole numbers.",
+          countsMismatchText: (a: number, b: number) => `Product IDs (${a}) and quantities (${b}) counts must match.`,
+        };
+
+  const getStatusLabel = useCallback(
+    (status?: string | null) => {
+      const normalized = normalizeTempStatus(status ?? "");
+      if (language === "ar") {
+        switch (normalized) {
+          case "TEMP":
+            return "مؤقت";
+          case "PENDING":
+            return "قيد الانتظار";
+          case "CONFIRMED":
+            return "مؤكد";
+          case "OUT_FOR_DELIVERY":
+            return "خرج للتسليم";
+          case "DELIVERED":
+            return "تم التسليم";
+          case "COMPLETED":
+            return "مكتمل";
+          case "CANCELLED":
+          case "CANCELED":
+            return "ملغي";
+          default:
+            return normalized.replace(/_/g, " ");
+        }
+      }
+
+      switch (normalized) {
+        case "OUT_FOR_DELIVERY":
+          return "Out For Delivery";
+        case "CANCELLED":
+          return "Cancelled";
+        default:
+          return normalized.replace(/_/g, " ");
+      }
+    },
+    [language]
+  );
 
   useEffect(() => {
     fetchOrders(1, true);
@@ -515,7 +676,7 @@ export default function AdminOrdersPage() {
         return acc;
       }, []);
       setActiveProductIds(Array.from(new Set(activeIds)));
-    } catch (err) {
+    } catch {
       setActiveProductIds([]);
       setActiveProductsError("Could not load active products.");
     } finally {
@@ -628,17 +789,16 @@ export default function AdminOrdersPage() {
     const validationErrors: Record<string, string> = {};
     const trimmedName = tempUserName.trim();
     if (trimmedName.length < 3) {
-      validationErrors.userName =
-        "Name must be at least 3 characters long.";
+      validationErrors.userName = text.customerNameTooShort;
     }
     if (!isValidPhoneNumber(tempMobileNumber)) {
-      validationErrors.mobileNumber = "Enter a valid phone number.";
+      validationErrors.mobileNumber = text.invalidPhone;
     }
     if (!tempAddress.trim()) {
-      validationErrors.address = "Address is required.";
+      validationErrors.address = text.addressRequired;
     }
     if (itemIdsCount === 0) {
-      validationErrors.itemIds = "Provide at least one product ID.";
+      validationErrors.itemIds = text.itemIdsRequired;
     } else if (parsedItemIdData.invalidEntries.length > 0) {
       validationErrors.itemIds = `Invalid ID(s): ${parsedItemIdData.invalidEntries.join(
         ", "
@@ -648,11 +808,10 @@ export default function AdminOrdersPage() {
         (value) => Number.isInteger(value) && value > 0
       )
     ) {
-      validationErrors.itemIds =
-        "Product IDs must be positive whole numbers.";
+      validationErrors.itemIds = text.itemIdsPositive;
     }
     if (itemsCountCount === 0) {
-      validationErrors.itemsCount = "Provide quantities for every product.";
+      validationErrors.itemsCount = text.quantitiesRequired;
     } else if (parsedItemsCountData.invalidEntries.length > 0) {
       validationErrors.itemsCount = `Invalid quantity(ies): ${parsedItemsCountData.invalidEntries.join(
         ", "
@@ -662,8 +821,7 @@ export default function AdminOrdersPage() {
         (value) => Number.isInteger(value) && value > 0
       )
     ) {
-      validationErrors.itemsCount =
-        "Quantities must be positive whole numbers.";
+      validationErrors.itemsCount = text.quantitiesPositive;
     }
     if (itemCountsMismatch) {
       validationErrors.itemsCount =
@@ -853,43 +1011,43 @@ export default function AdminOrdersPage() {
         ) : null}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-900">Orders</h1>
+            <h1 className="text-2xl font-semibold text-slate-900">{text.title}</h1>
             <p className="text-sm text-slate-500">
-              Track and manage customer orders.
+              {text.subtitle}
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button onClick={handleOpenTempOrderModal}>Create Temp Order</Button>
+            <Button onClick={handleOpenTempOrderModal}>{text.createTempOrder}</Button>
           </div>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Status</label>
+              <label className="text-sm font-medium text-slate-700">{text.status}</label>
               <select
                 value={statusFilter}
                 onChange={(event) => setStatusFilter(event.target.value)}
                 className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
               >
-                <option value="ALL">All</option>
+                <option value="ALL">{text.all}</option>
                 {STATUS_OPTIONS.map((status) => (
                   <option key={status} value={status}>
-                    {status.replace(/_/g, " ")}
+                    {getStatusLabel(status)}
                   </option>
                 ))}
               </select>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
-                Category
+                {text.category}
               </label>
               <select
                 value={categoryFilter}
                 onChange={(event) => setCategoryFilter(event.target.value)}
                 className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
               >
-                <option value="">All</option>
+                <option value="">{text.all}</option>
                 {categories.map((category) => (
                   <option key={category.id} value={String(category.id)}>
                     {category.name}
@@ -899,24 +1057,24 @@ export default function AdminOrdersPage() {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
-                Order ID
+                {text.orderId}
               </label>
               <input
                 type="number"
                 value={orderIdFilter}
                 onChange={(event) => setOrderIdFilter(event.target.value)}
-                placeholder="Order ID"
+                placeholder={text.orderId}
                 className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
-                Customer Name
+                {text.customerName}
               </label>
               <input
                 value={customerNameFilter}
                 onChange={(event) => setCustomerNameFilter(event.target.value)}
-                placeholder="Customer name"
+                placeholder={text.customerNamePlaceholder}
                 className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
               />
             </div>
@@ -927,14 +1085,14 @@ export default function AdminOrdersPage() {
               onClick={handleApplyFilters}
               className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
             >
-              Apply Filters
+              {text.applyFilters}
             </button>
             <button
               type="button"
               onClick={handleClearFilters}
               className="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100"
             >
-              Clear Filters
+              {text.clearFilters}
             </button>
           </div>
         </div>
@@ -949,32 +1107,34 @@ export default function AdminOrdersPage() {
           ) : error ? (
             <p className="text-sm text-rose-600">{error}</p>
           ) : orders.length === 0 ? (
-            <p className="text-sm text-slate-500">No orders found.</p>
+            <p className="text-sm text-slate-500">{text.noOrdersFound}</p>
           ) : (
             <div className="overflow-x-auto">
               {isPageLoading ? (
-                <div className="mb-3 text-xs text-slate-500">Loading...</div>
+                <div className="mb-3 text-xs text-slate-500">{text.loading}</div>
               ) : null}
               {totalItems > 0 ? (
                 <div className="mb-3 text-xs text-slate-500">
-                  {`Showing ${
-                    (currentPage - 1) * limit + 1
-                  }-${Math.min(currentPage * limit, totalItems)} of ${totalItems}`}
+                  {text.showing(
+                    (currentPage - 1) * limit + 1,
+                    Math.min(currentPage * limit, totalItems),
+                    totalItems
+                  )}
                 </div>
               ) : null}
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-slate-200 text-slate-500">
                   <tr>
-                    <th className="py-2 pr-4 font-medium">Order ID</th>
-                    <th className="py-2 pr-4 font-medium">Customer Name</th>
-                    <th className="py-2 pr-4 font-medium">Mobile</th>
-                    <th className="py-2 pr-4 font-medium">Area</th>
-                    <th className="py-2 pr-4 font-medium">Total Amount</th>
-                    <th className="py-2 pr-4 font-medium">Payment Method</th>
-                    <th className="py-2 pr-4 font-medium">Current Status</th>
-                    <th className="py-2 pr-4 font-medium">Created At</th>
-                    <th className="py-2 pr-4 font-medium">View</th>
-                    <th className="py-2 font-medium">Actions</th>
+                    <th className="py-2 pr-4 font-medium">{text.orderId}</th>
+                    <th className="py-2 pr-4 font-medium">{text.customerName}</th>
+                    <th className="py-2 pr-4 font-medium">{text.mobile}</th>
+                    <th className="py-2 pr-4 font-medium">{text.area}</th>
+                    <th className="py-2 pr-4 font-medium">{text.totalAmount}</th>
+                    <th className="py-2 pr-4 font-medium">{text.paymentMethod}</th>
+                    <th className="py-2 pr-4 font-medium">{text.currentStatus}</th>
+                    <th className="py-2 pr-4 font-medium">{text.createdAt}</th>
+                    <th className="py-2 pr-4 font-medium">{text.view}</th>
+                    <th className="py-2 font-medium">{text.actions}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -1017,7 +1177,7 @@ export default function AdminOrdersPage() {
                           {order.paymentType ?? "-"}
                         </td>
                         <td className="py-3 pr-4">
-                          {order.status.replace(/_/g, " ")}
+                          {getStatusLabel(order.status)}
                         </td>
                         <td className="py-3 pr-4">
                           {formatDate(order.createdAt)}
@@ -1027,7 +1187,7 @@ export default function AdminOrdersPage() {
                             href={`/admin/orders/${order.id}`}
                             className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100"
                           >
-                            View
+                            {text.view}
                           </Link>
                         </td>
                         <td className="py-3">
@@ -1041,7 +1201,7 @@ export default function AdminOrdersPage() {
                           >
                             {STATUS_OPTIONS.map((status) => (
                               <option key={status} value={status}>
-                                {status.replace(/_/g, " ")}
+                                {getStatusLabel(status)}
                               </option>
                             ))}
                           </select>
@@ -1063,7 +1223,7 @@ export default function AdminOrdersPage() {
               disabled={currentPage === 1 || isPageLoading}
               className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 transition disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Previous
+              {text.previous}
             </button>
             <div className="flex flex-wrap gap-2">
               {Array.from({ length: totalPages }, (_, index) => index + 1).map(
@@ -1090,7 +1250,7 @@ export default function AdminOrdersPage() {
               disabled={currentPage === totalPages || isPageLoading}
               className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 transition disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Next
+              {text.next}
             </button>
           </div>
         ) : null}
@@ -1099,9 +1259,9 @@ export default function AdminOrdersPage() {
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-slate-900">Temp Orders</h2>
+            <h2 className="text-xl font-semibold text-slate-900">{text.tempOrders}</h2>
             <p className="text-sm text-slate-500">
-              Manual cash-only requests created by admins.
+              {text.tempOrdersSubtitle}
             </p>
           </div>
           <div className="flex gap-2">
@@ -1110,7 +1270,7 @@ export default function AdminOrdersPage() {
               onClick={fetchTempOrders}
               disabled={isTempOrdersLoading}
             >
-              {isTempOrdersLoading ? "Refreshing…" : "Refresh"}
+              {isTempOrdersLoading ? text.refreshing : text.refresh}
             </Button>
           </div>
         </div>
@@ -1127,22 +1287,22 @@ export default function AdminOrdersPage() {
             </p>
           ) : tempOrders.length === 0 ? (
             <p className="text-sm text-slate-500">
-              No temporary orders yet.
+              {text.noTempOrders}
             </p>
           ) : (
             <table className="w-full text-left text-sm">
               <thead className="border-b border-slate-200 text-slate-500">
                 <tr>
-                  <th className="py-2 pr-4 font-medium">Order ID</th>
-                  <th className="py-2 pr-4 font-medium">Customer Name</th>
-                  <th className="py-2 pr-4 font-medium">Mobile</th>
-                  <th className="py-2 pr-4 font-medium">Address</th>
-                  <th className="py-2 pr-4 font-medium">Total Amount</th>
-                  <th className="py-2 pr-4 font-medium">Payment Method</th>
-                  <th className="py-2 pr-4 font-medium">Status</th>
-                  <th className="py-2 pr-4 font-medium">Created At</th>
-                  <th className="py-2 font-medium">View</th>
-                  <th className="py-2 font-medium">Actions</th>
+                  <th className="py-2 pr-4 font-medium">{text.orderId}</th>
+                  <th className="py-2 pr-4 font-medium">{text.customerName}</th>
+                  <th className="py-2 pr-4 font-medium">{text.mobile}</th>
+                  <th className="py-2 pr-4 font-medium">{text.address}</th>
+                  <th className="py-2 pr-4 font-medium">{text.totalAmount}</th>
+                  <th className="py-2 pr-4 font-medium">{text.paymentMethod}</th>
+                  <th className="py-2 pr-4 font-medium">{text.status}</th>
+                  <th className="py-2 pr-4 font-medium">{text.createdAt}</th>
+                  <th className="py-2 font-medium">{text.view}</th>
+                  <th className="py-2 font-medium">{text.actions}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 text-slate-700">
@@ -1160,11 +1320,11 @@ export default function AdminOrdersPage() {
                       {getTempOrderAmount(order)}
                     </td>
                     <td className="py-3 pr-4">
-                      {order.paymentMethod ?? "CASH"}
+                      {order.paymentMethod ?? text.cash}
                     </td>
                     <td className="py-3 pr-4">
                       <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-900">
-                        {(order.status ?? "TEMP").replace(/_/g, " ")}
+                        {getStatusLabel(order.status ?? "TEMP")}
                       </span>
                     </td>
                     <td className="py-3 pr-4">
@@ -1175,7 +1335,7 @@ export default function AdminOrdersPage() {
                         type="button"
                         className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
                       >
-                        View
+                        {text.view}
                       </button>
                     </td>
                     <td className="py-3 pr-4">
@@ -1199,7 +1359,7 @@ export default function AdminOrdersPage() {
                               status
                             )}
                           >
-                            {status.replace(/_/g, " ")}
+                            {getStatusLabel(status)}
                           </option>
                         ))}
                       </select>
@@ -1218,7 +1378,7 @@ export default function AdminOrdersPage() {
               disabled={tempOrdersPage === 1}
               className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 transition disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Previous
+              {text.previous}
             </button>
             <div className="flex flex-wrap gap-2">
               {Array.from({ length: tempOrdersTotalPages }, (_, index) => index + 1).map(
@@ -1246,7 +1406,7 @@ export default function AdminOrdersPage() {
               disabled={tempOrdersPage === tempOrdersTotalPages}
               className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 transition disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Next
+              {text.next}
             </button>
           </div>
         ) : null}
@@ -1255,9 +1415,9 @@ export default function AdminOrdersPage() {
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-slate-900">POS Orders</h2>
+            <h2 className="text-xl font-semibold text-slate-900">{text.posOrders}</h2>
             <p className="text-sm text-slate-500">
-              All orders created from POS terminal.
+              {text.posOrdersSubtitle}
             </p>
           </div>
           <div className="flex gap-2">
@@ -1266,7 +1426,7 @@ export default function AdminOrdersPage() {
               onClick={fetchPosOrders}
               disabled={isPosOrdersLoading}
             >
-              {isPosOrdersLoading ? "Refreshing..." : "Refresh"}
+              {isPosOrdersLoading ? text.refreshing : text.refresh}
             </Button>
           </div>
         </div>
@@ -1282,20 +1442,20 @@ export default function AdminOrdersPage() {
               {posOrdersError}
             </p>
           ) : posOrders.length === 0 ? (
-            <p className="text-sm text-slate-500">No POS orders found.</p>
+            <p className="text-sm text-slate-500">{text.noPosOrders}</p>
           ) : (
             <table className="w-full text-left text-sm">
               <thead className="border-b border-slate-200 text-slate-500">
                 <tr>
-                  <th className="py-2 pr-4 font-medium">POS Order ID</th>
-                  <th className="py-2 pr-4 font-medium">Temp Order ID</th>
-                  <th className="py-2 pr-4 font-medium">Customer Name</th>
-                  <th className="py-2 pr-4 font-medium">Mobile</th>
-                  <th className="py-2 pr-4 font-medium">Total Amount</th>
-                  <th className="py-2 pr-4 font-medium">Payment Method</th>
-                  <th className="py-2 pr-4 font-medium">Payment Status</th>
-                  <th className="py-2 pr-4 font-medium">Current Status</th>
-                  <th className="py-2 pr-4 font-medium">Created At</th>
+                  <th className="py-2 pr-4 font-medium">{text.posOrderId}</th>
+                  <th className="py-2 pr-4 font-medium">{text.tempOrderId}</th>
+                  <th className="py-2 pr-4 font-medium">{text.customerName}</th>
+                  <th className="py-2 pr-4 font-medium">{text.mobile}</th>
+                  <th className="py-2 pr-4 font-medium">{text.totalAmount}</th>
+                  <th className="py-2 pr-4 font-medium">{text.paymentMethod}</th>
+                  <th className="py-2 pr-4 font-medium">{text.paymentStatus}</th>
+                  <th className="py-2 pr-4 font-medium">{text.currentStatus}</th>
+                  <th className="py-2 pr-4 font-medium">{text.createdAt}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 text-slate-700">
@@ -1333,7 +1493,7 @@ export default function AdminOrdersPage() {
               disabled={posOrdersPage === 1}
               className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 transition disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Previous
+              {text.previous}
             </button>
             <div className="flex flex-wrap gap-2">
               {Array.from({ length: posOrdersTotalPages }, (_, index) => index + 1).map(
@@ -1361,26 +1521,26 @@ export default function AdminOrdersPage() {
               disabled={posOrdersPage === posOrdersTotalPages}
               className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 transition disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Next
+              {text.next}
             </button>
           </div>
         ) : null}
       </div>
 
       <Modal
-        title="Create Temp Order"
+        title={text.createTempOrderTitle}
         isOpen={isTempOrderModalOpen}
         onClose={handleCloseTempOrderModal}
       >
         <div className="space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">
-              Customer Name
+              {text.customerNameInput}
             </label>
             <Input
               value={tempUserName}
               onChange={(event) => setTempUserName(event.target.value)}
-              placeholder="Enter customer name"
+              placeholder={text.customerNameInputPlaceholder}
             />
             {tempFieldErrors.userName ? (
               <p className="text-xs text-rose-600">{tempFieldErrors.userName}</p>
@@ -1388,7 +1548,7 @@ export default function AdminOrdersPage() {
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">
-              Mobile Number
+              {text.mobileNumber}
             </label>
             <Input
               type="tel"
@@ -1404,7 +1564,7 @@ export default function AdminOrdersPage() {
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">
-              Item IDs (comma separated)
+              {text.itemIds}
             </label>
             <Input
               value={tempItemIds}
@@ -1415,13 +1575,13 @@ export default function AdminOrdersPage() {
               <p className="text-xs text-rose-600">{tempFieldErrors.itemIds}</p>
             ) : parsedItemIdData.invalidEntries.length > 0 ? (
               <p className="text-xs text-rose-600">
-                Invalid ID(s):{` ${parsedItemIdData.invalidEntries.join(", ")}`}
+                {text.invalidIds(parsedItemIdData.invalidEntries.join(", "))}
               </p>
             ) : null}
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">
-              Quantities (comma separated)
+              {text.quantities}
             </label>
             <Input
               value={tempItemsCount}
@@ -1434,20 +1594,18 @@ export default function AdminOrdersPage() {
               </p>
             ) : parsedItemsCountData.invalidEntries.length > 0 ? (
               <p className="text-xs text-rose-600">
-                Invalid quantity(ies):
-                {` ${parsedItemsCountData.invalidEntries.join(", ")}`}
+                {text.invalidQuantities(parsedItemsCountData.invalidEntries.join(", "))}
               </p>
             ) : null}
             {!tempFieldErrors.itemsCount && itemCountsMismatch ? (
               <p className="text-xs text-rose-600">
-                Product IDs ({itemIdsCount}) and quantities ({itemsCountCount})
-                counts must match.
+                {text.countsMismatchText(itemIdsCount, itemsCountCount)}
               </p>
             ) : null}
           </div>
           {isActiveProductsLoading ? (
             <p className="text-xs text-slate-500">
-              Refreshing active product list...
+              {text.refreshingActiveProducts}
             </p>
           ) : activeProductsError ? (
             <p className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
@@ -1456,13 +1614,13 @@ export default function AdminOrdersPage() {
           ) : null}
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">
-              Address
+              {text.address}
             </label>
             <textarea
               value={tempAddress}
               onChange={(event) => setTempAddress(event.target.value)}
               rows={3}
-              placeholder="Delivery address"
+              placeholder={text.deliveryAddress}
               className="min-h-[96px] w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
             />
             {tempFieldErrors.address ? (
@@ -1470,8 +1628,8 @@ export default function AdminOrdersPage() {
             ) : null}
           </div>
           <div className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-            <span>Payment method</span>
-            <span className="font-semibold text-slate-900">CASH</span>
+            <span>{text.paymentMethodLabel}</span>
+            <span className="font-semibold text-slate-900">{text.cash}</span>
           </div>
           {tempSubmitError ? (
             <p className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
@@ -1484,13 +1642,13 @@ export default function AdminOrdersPage() {
               onClick={handleCloseTempOrderModal}
               disabled={isTempOrderSubmitting}
             >
-              Cancel
+              {text.cancel}
             </Button>
             <Button
               onClick={handleCreateTempOrder}
               disabled={isTempOrderSubmitting || itemCountsMismatch}
             >
-              {isTempOrderSubmitting ? "Creating..." : "Create Temp Order"}
+              {isTempOrderSubmitting ? text.creating : text.createTempOrder}
             </Button>
           </div>
         </div>

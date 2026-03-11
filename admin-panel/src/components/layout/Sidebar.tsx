@@ -2,90 +2,92 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 type NavSection = {
-  module: string;
-  items: { href: string; label: string }[];
+  moduleKey: string;
+  items: { href: string; labelKey: string }[];
 };
 
 const navSections: NavSection[] = [
   {
-    module: "Dashboards",
+    moduleKey: "nav.dashboards",
     items: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/admin/sales", label: "Sales Dashboard" },
+      { href: "/dashboard", labelKey: "nav.dashboard" },
+      { href: "/admin/sales", labelKey: "nav.salesDashboard" },
     ],
   },
   {
-    module: "Finance",
+    moduleKey: "nav.finance",
     items: [
-      { href: "/admin/invoices", label: "Invoices" },
+      { href: "/admin/invoices", labelKey: "nav.invoices" },
     ],
   },
   {
-    module: "Purchases",
+    moduleKey: "nav.purchases",
     items: [
-      { href: "/purchases", label: "Purchases" },
-      { href: "/purchases/costs", label: "Operational Costs" },
-      { href: "/purchases/summary", label: "Summary" },
+      { href: "/purchases", labelKey: "nav.purchases" },
+      { href: "/purchases/costs", labelKey: "nav.operationalCosts" },
+      { href: "/purchases/summary", labelKey: "nav.summary" },
     ],
   },
   {
-    module: "Inventory",
+    moduleKey: "nav.inventory",
     items: [
-      { href: "/admin/products", label: "Products" },
-      { href: "/admin/ratings", label: "Ratings" },
-      { href: "/categories", label: "Categories" },
-      { href: "/variants", label: "Variants" },
+      { href: "/admin/products", labelKey: "nav.products" },
+      { href: "/admin/ratings", labelKey: "nav.ratings" },
+      { href: "/categories", labelKey: "nav.categories" },
+      { href: "/variants", labelKey: "nav.variants" },
     ],
   },
   {
-    module: "CRM",
+    moduleKey: "nav.crm",
     items: [
-      { href: "/admin/orders", label: "Orders" },
-      { href: "/admin/crm/pipeline", label: "CRM Pipeline" },
-      { href: "/admin/crm/leads", label: "Leads" },
-      { href: "/admin/users", label: "Users" },
+      { href: "/admin/orders", labelKey: "nav.orders" },
+      { href: "/admin/crm/pipeline", labelKey: "nav.crmPipeline" },
+      { href: "/admin/crm/leads", labelKey: "nav.leads" },
+      { href: "/admin/users", labelKey: "nav.users" },
     ],
   },
   {
-    module: "Admin Panel",
+    moduleKey: "nav.adminPanel",
     items: [
-      { href: "/calendar", label: "Calendar" },
+      { href: "/calendar", labelKey: "nav.calendar" },
     ],
   },
   {
-    module: "Team",
+    moduleKey: "nav.team",
     items: [
-      { href: "/admin/team", label: "Team" },
+      { href: "/admin/team", labelKey: "nav.team" },
     ],
   },
   {
-    module: "Website",
+    moduleKey: "nav.website",
     items: [
-      { href: "/admin/homepage-control", label: "HomePage Control" },
-      { href: "/admin/faqs", label: "FAQ Categories" },
-      { href: "/admin/terms-conditions", label: "Terms & Conditions" },
-      { href: "/admin/privacy-policy", label: "Privacy Policy" },
+      { href: "/admin/homepage-control", labelKey: "nav.homepageControl" },
+      { href: "/admin/faqs", labelKey: "nav.faqCategories" },
+      { href: "/admin/terms-conditions", labelKey: "nav.termsConditions" },
+      { href: "/admin/privacy-policy", labelKey: "nav.privacyPolicy" },
     ],
   },
   {
-    module: "Promo Codes",
-    items: [{ href: "/admin/promo-codes", label: "Promo Codes" }],
+    moduleKey: "nav.promoCodes",
+    items: [{ href: "/admin/promo-codes", labelKey: "nav.promoCodes" }],
   },
   {
-    module: "POS",
+    moduleKey: "nav.pos",
     items: [
-      { href: "/admin/pos", label: "POS Terminal" },
-      { href: "/admin/pos/daily-report", label: "Daily Report" },
-      { href: "/admin/pos/session-report", label: "Session Report" },
-      { href: "/admin/pos/top-products", label: "Top Products" },
+      { href: "/admin/pos", labelKey: "nav.posTerminal" },
+      { href: "/admin/pos/daily-report", labelKey: "nav.dailyReport" },
+      { href: "/admin/pos/session-report", labelKey: "nav.sessionReport" },
+      { href: "/admin/pos/top-products", labelKey: "nav.topProducts" },
     ],
   },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { direction, t } = useLocalization();
 
   const isRouteActive = (href: string) => {
     if (pathname === href) {
@@ -109,25 +111,25 @@ export default function Sidebar() {
 
   const getSectionByPath = () => {
     if (pathname === "/dashboard" || pathname.startsWith("/admin/sales")) {
-      return "Dashboards";
+      return "nav.dashboards";
     }
 
     if (pathname === "/admin/sales" || pathname.startsWith("/admin/sales/")) {
-      return "Dashboards";
+      return "nav.dashboards";
     }
 
     if (
       pathname === "/admin/invoices" ||
       pathname.startsWith("/admin/invoices/")
     ) {
-      return "Finance";
+      return "nav.finance";
     }
 
     if (
       pathname === "/purchases" ||
       pathname.startsWith("/purchases/")
     ) {
-      return "Purchases";
+      return "nav.purchases";
     }
 
     if (
@@ -142,21 +144,21 @@ export default function Sidebar() {
       pathname === "/admin/ratings" ||
       pathname.startsWith("/admin/ratings/")
     ) {
-      return "Inventory";
+      return "nav.inventory";
     }
 
     if (
       pathname === "/calendar" ||
       pathname.startsWith("/calendar/")
     ) {
-      return "Admin Panel";
+      return "nav.adminPanel";
     }
 
     if (
       pathname === "/admin/team" ||
       pathname.startsWith("/admin/team/")
     ) {
-      return "Team";
+      return "nav.team";
     }
 
     if (
@@ -173,7 +175,7 @@ export default function Sidebar() {
       pathname === "/admin/crm/leads" ||
       pathname.startsWith("/admin/crm/leads/")
     ) {
-      return "CRM";
+      return "nav.crm";
     }
 
     if (
@@ -186,21 +188,21 @@ export default function Sidebar() {
       pathname === "/admin/privacy-policy" ||
       pathname.startsWith("/admin/privacy-policy/")
     ) {
-      return "Website";
+      return "nav.website";
     }
 
     if (
       pathname === "/admin/promo-codes" ||
       pathname.startsWith("/admin/promo-codes/")
     ) {
-      return "Promo Codes";
+      return "nav.promoCodes";
     }
 
     if (
       pathname === "/admin/pos" ||
       pathname.startsWith("/admin/pos/")
     ) {
-      return "POS";
+      return "nav.pos";
     }
 
     return null;
@@ -208,22 +210,26 @@ export default function Sidebar() {
 
   const activeSection = getSectionByPath();
   const visibleSections = activeSection
-    ? navSections.filter((section) => section.module === activeSection)
+    ? navSections.filter((section) => section.moduleKey === activeSection)
     : navSections;
 
   return (
-    <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-white md:block">
+    <aside
+      className={`hidden w-64 shrink-0 bg-white md:block ${
+        direction === "rtl" ? "border-l border-slate-200" : "border-r border-slate-200"
+      }`}
+    >
       <Link
         href="/"
         className="flex h-16 items-center px-6 text-lg font-semibold text-slate-900 transition hover:text-slate-700"
       >
-        Admin Panel
+        {t("app.name")}
       </Link>
       <nav className="h-[calc(100vh-4rem)] overflow-y-auto px-3 pb-4">
         {visibleSections.map((section) => (
-          <div key={section.module} className="mb-5">
+          <div key={section.moduleKey} className="mb-5">
             <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
-              {section.module}
+              {t(section.moduleKey)}
             </p>
             <div>
               {section.items.map((item) => {
@@ -238,7 +244,7 @@ export default function Sidebar() {
                         : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                     }`}
                   >
-                    {item.label}
+                    {t(item.labelKey)}
                   </Link>
                 );
               })}

@@ -1,5 +1,6 @@
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 type ConfirmDeleteModalProps = {
   open: boolean;
@@ -16,16 +17,17 @@ export default function ConfirmDeleteModal({
   onClose,
   onConfirm,
 }: ConfirmDeleteModalProps) {
+  const { language } = useLocalization();
   return (
     <Modal title={title} isOpen={open} onClose={onClose}>
       <div className="space-y-4">
         <p className="text-sm text-slate-600">{description}</p>
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>
-            Cancel
+            {language === "ar" ? "إلغاء" : "Cancel"}
           </Button>
           <Button variant="danger" onClick={onConfirm}>
-            Delete
+            {language === "ar" ? "حذف" : "Delete"}
           </Button>
         </div>
       </div>

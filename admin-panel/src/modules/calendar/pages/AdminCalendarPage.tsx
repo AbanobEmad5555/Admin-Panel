@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { getCurrentAdminRole } from "@/features/admin-reviews/utils/adminRole";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import CalendarToolbar from "@/modules/calendar/components/CalendarToolbar";
 import DeliverySettingsPanel from "@/modules/calendar/components/DeliverySettingsPanel";
 import FullCalendarView from "@/modules/calendar/components/FullCalendarView";
@@ -54,8 +55,57 @@ type CalendarMutationArg = {
 
 export default function AdminCalendarPage() {
   const router = useRouter();
+  const { language } = useLocalization();
   const role = useMemo(() => getCurrentAdminRole(), []);
   const isAuthorized = role === "ADMIN";
+  const text = useMemo(
+    () =>
+      language === "ar"
+        ? {
+            title: "تقويم عمليات التوصيل",
+            subtitle: "إدارة جداول التوصيل والأحداث التشغيلية وتعديلات مواعيد التسليم على مستوى الطلب.",
+            loadOrdersError: "فشل تحميل طلبات التوصيل.",
+            loadEventsError: "فشل تحميل الأحداث اليدوية.",
+            eventUpdated: "تم تحديث الحدث اليدوي.",
+            eventCreated: "تم إنشاء الحدث اليدوي.",
+            saveEventError: "فشل حفظ الحدث اليدوي.",
+            eventDeleted: "تم حذف الحدث اليدوي.",
+            deleteEventError: "فشل حذف الحدث اليدوي.",
+            eventTimingUpdated: "تم تحديث توقيت الحدث اليدوي.",
+            updateTimingError:
+              "تعذر تحديث توقيت الحدث. قد يتعارض مع قيود التوصيل الحالية.",
+            settingsSaved: "تم حفظ إعدادات التوصيل.",
+            saveSettingsError: "فشل حفظ إعدادات التوصيل.",
+            deliveryDateUpdated: "تم تحديث موعد تسليم الطلب.",
+            updateDeliveryDateError: "فشل تحديث موعد تسليم الطلب.",
+            legend: "دليل حالة الطلب",
+            emptyMessage: "لا توجد عمليات توصيل أو أحداث تشغيلية في هذه الفترة.",
+            loadSettingsError: "فشل تحميل إعدادات التوصيل.",
+          }
+        : {
+            title: "Delivery Operations Calendar",
+            subtitle:
+              "Manage delivery timelines, operational events, and order-level delivery overrides.",
+            loadOrdersError: "Failed to load delivery orders.",
+            loadEventsError: "Failed to load manual events.",
+            eventUpdated: "Manual event updated.",
+            eventCreated: "Manual event created.",
+            saveEventError: "Failed to save manual event.",
+            eventDeleted: "Manual event deleted.",
+            deleteEventError: "Failed to delete manual event.",
+            eventTimingUpdated: "Manual event timing updated.",
+            updateTimingError:
+              "Could not update event timing. It may overlap delivery constraints.",
+            settingsSaved: "Delivery settings saved.",
+            saveSettingsError: "Failed to save delivery settings.",
+            deliveryDateUpdated: "Order delivery date updated.",
+            updateDeliveryDateError: "Failed to update order delivery date.",
+            legend: "Order Status Legend",
+            emptyMessage: "No deliveries or operational events found for this period.",
+            loadSettingsError: "Failed to load delivery settings.",
+          },
+    [language],
+  );
 
   useEffect(() => {
     if (role === "ADMIN") {
@@ -108,9 +158,9 @@ export default function AdminCalendarPage() {
 
   const isCalendarLoading = ordersQuery.isLoading || eventsQuery.isLoading;
   const calendarErrorMessage = ordersQuery.error
-    ? getApiErrorMessage(ordersQuery.error, "Failed to load delivery orders.")
+    ? getApiErrorMessage(ordersQuery.error, text.loadOrdersError)
     : eventsQuery.error
-      ? getApiErrorMessage(eventsQuery.error, "Failed to load manual events.")
+      ? getApiErrorMessage(eventsQuery.error, text.loadEventsError)
       : null;
 
   const goToPrev = () => {
@@ -192,17 +242,17 @@ export default function AdminCalendarPage() {
           payload,
           month,
         });
-        toast.success("Manual event updated.");
+        toast.success(text.eventUpdated);
       } else {
         await createEventMutation.mutateAsync({
           payload,
           month,
         });
-        toast.success("Manual event created.");
+        toast.success(text.eventCreated);
       }
       closeManualModal();
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to save manual event."));
+      toast.error(getApiErrorMessage(error, text.saveEventError));
     }
   };
 
@@ -216,10 +266,10 @@ export default function AdminCalendarPage() {
         id: editingManualEvent.id,
         month,
       });
-      toast.success("Manual event deleted.");
+      toast.success(text.eventDeleted);
       closeManualModal();
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to delete manual event."));
+      toast.error(getApiErrorMessage(error, text.deleteEventError));
     }
   };
 
@@ -240,15 +290,10 @@ export default function AdminCalendarPage() {
         payload: datePayload,
         month,
       });
-      toast.success("Manual event timing updated.");
+      toast.success(text.eventTimingUpdated);
     } catch (error) {
       arg.revert();
-      toast.error(
-        getApiErrorMessage(
-          error,
-          "Could not update event timing. It may overlap delivery constraints.",
-        ),
-      );
+      toast.error(getApiErrorMessage(error, text.updateTimingError));
     }
   };
 
@@ -278,10 +323,10 @@ export default function AdminCalendarPage() {
   }) => {
     try {
       await updateSettingsMutation.mutateAsync({ payload });
-      toast.success("Delivery settings saved.");
+      toast.success(text.settingsSaved);
       setIsSettingsOpen(false);
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to save delivery settings."));
+      toast.error(getApiErrorMessage(error, text.saveSettingsError));
     }
   };
 
@@ -296,11 +341,11 @@ export default function AdminCalendarPage() {
         payload,
         month,
       });
-      toast.success("Order delivery date updated.");
+      toast.success(text.deliveryDateUpdated);
       setIsDeliveryDateModalOpen(false);
       setSelectedOrder(null);
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to update order delivery date."));
+      toast.error(getApiErrorMessage(error, text.updateDeliveryDateError));
     }
   };
 
@@ -312,10 +357,8 @@ export default function AdminCalendarPage() {
     <AdminLayout>
       <section className="space-y-4">
         <header className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h1 className="text-2xl font-semibold text-slate-900">Delivery Operations Calendar</h1>
-          <p className="text-sm text-slate-500">
-            Manage delivery timelines, operational events, and order-level delivery overrides.
-          </p>
+          <h1 className="text-2xl font-semibold text-slate-900">{text.title}</h1>
+          <p className="text-sm text-slate-500">{text.subtitle}</p>
         </header>
 
         <CalendarToolbar
@@ -335,7 +378,7 @@ export default function AdminCalendarPage() {
         />
 
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-600 shadow-sm">
-          <span className="font-semibold text-slate-800">Order Status Legend:</span>
+          <span className="font-semibold text-slate-800">{text.legend}:</span>
           {(["OUT_FOR_DELIVERY", "DELIVERED", "CONFIRMED"] as const).map((status) => (
             <span key={status} className="inline-flex items-center gap-1">
               <span
@@ -358,7 +401,7 @@ export default function AdminCalendarPage() {
           events={calendarEvents}
           view={view}
           loading={isCalendarLoading}
-          emptyMessage="No deliveries or operational events found for this period."
+          emptyMessage={text.emptyMessage}
           onDatesSet={handleDatesSet}
           onEventClick={handleEventClick}
           onEventDrop={(arg) => void handleManualEventTimeMutation(arg)}
@@ -399,7 +442,7 @@ export default function AdminCalendarPage() {
         isSaving={updateSettingsMutation.isPending}
         errorMessage={
           settingsQuery.error
-            ? getApiErrorMessage(settingsQuery.error, "Failed to load delivery settings.")
+            ? getApiErrorMessage(settingsQuery.error, text.loadSettingsError)
             : null
         }
         onClose={() => setIsSettingsOpen(false)}
@@ -408,4 +451,3 @@ export default function AdminCalendarPage() {
     </AdminLayout>
   );
 }
-

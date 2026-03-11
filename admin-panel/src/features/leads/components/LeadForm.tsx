@@ -13,6 +13,8 @@ import {
   type LeadPayload,
   type User,
 } from "@/features/leads/types";
+import BilingualTextField from "@/modules/shared/components/BilingualTextField";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 type LeadFormProps = {
   initialLead?: Lead;
@@ -44,9 +46,12 @@ export default function LeadForm({
   showCustomerLinking = true,
   showStatusField = true,
 }: LeadFormProps) {
+  const { language, t } = useLocalization();
+  const isArabic = language === "ar";
   const defaultValues: LeadFormValues = useMemo(
     () => ({
-      name: initialLead?.name ?? "",
+      nameEn: initialLead?.nameEn ?? initialLead?.name ?? "",
+      nameAr: initialLead?.nameAr ?? "",
       phone: initialLead?.phone ?? "",
       email: initialLead?.email ?? "",
       source: initialLead?.source ?? "",
@@ -63,7 +68,8 @@ export default function LeadForm({
           : "temp"
         : "existing",
       userId: initialLead?.userId,
-      tempName: "",
+      tempNameEn: "",
+      tempNameAr: "",
       tempPhone: "",
       tempEmail: "",
       tagOverride: initialLead?.tagOverride ?? false,
@@ -78,7 +84,7 @@ export default function LeadForm({
     handleSubmit,
     formState: { errors },
   } = useForm<LeadFormValues>({
-    resolver: zodResolver(leadSchema),
+    resolver: zodResolver(leadSchema) as never,
     defaultValues,
   });
 
@@ -87,7 +93,8 @@ export default function LeadForm({
 
   const submit = async (values: LeadFormValues) => {
     const payload: LeadPayload = {
-      name: values.name.trim(),
+      nameEn: values.nameEn.trim(),
+      nameAr: values.nameAr?.trim() || undefined,
       phone: values.phone.trim(),
       email: values.email ? values.email.trim() : undefined,
       source: values.source.trim(),
@@ -106,7 +113,8 @@ export default function LeadForm({
       payload.tempUser =
         values.customerLinkType === "temp"
           ? {
-              tempName: values.tempName?.trim() || "",
+              tempNameEn: values.tempNameEn?.trim() || "",
+              tempNameAr: values.tempNameAr?.trim() || undefined,
               tempPhone: values.tempPhone?.trim() || "",
               tempEmail: values.tempEmail?.trim() || undefined,
             }
@@ -119,47 +127,49 @@ export default function LeadForm({
   return (
     <form onSubmit={handleSubmit(submit)} className="space-y-6 rounded-xl bg-white p-6 shadow">
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Name</label>
-          <input
-            {...register("name")}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+        <div className="md:col-span-2">
+          <BilingualTextField
+            register={register}
+            nameEnField="nameEn"
+            nameArField="nameAr"
+            label={t("field.name")}
+            requiredEn
+            errors={errors}
           />
-          {errors.name ? <p className="mt-1 text-xs text-rose-600">{errors.name.message}</p> : null}
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Phone</label>
+          <label className="mb-1 block text-sm font-medium text-slate-900">{t("field.phone")}</label>
           <input
             {...register("phone")}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400"
           />
           {errors.phone ? <p className="mt-1 text-xs text-rose-600">{errors.phone.message}</p> : null}
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Email</label>
+          <label className="mb-1 block text-sm font-medium text-slate-900">{t("field.email")}</label>
           <input
             {...register("email")}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400"
           />
           {errors.email ? <p className="mt-1 text-xs text-rose-600">{errors.email.message}</p> : null}
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Source</label>
+          <label className="mb-1 block text-sm font-medium text-slate-900">{isArabic ? "المصدر" : "Source"}</label>
           <input
             {...register("source")}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400"
           />
           {errors.source ? <p className="mt-1 text-xs text-rose-600">{errors.source.message}</p> : null}
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Priority</label>
+          <label className="mb-1 block text-sm font-medium text-slate-900">{isArabic ? "الأولوية" : "Priority"}</label>
           <select
             {...register("priority")}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900"
           >
             {LEAD_PRIORITIES.map((priority) => (
               <option key={priority} value={priority}>
@@ -171,10 +181,10 @@ export default function LeadForm({
 
         {showStatusField ? (
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Status</label>
+            <label className="mb-1 block text-sm font-medium text-slate-900">{t("common.status")}</label>
             <select
               {...register("status")}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900"
             >
               {LEAD_STATUS_ORDER.map((status) => (
                 <option key={status} value={status}>
@@ -186,14 +196,14 @@ export default function LeadForm({
         ) : null}
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Assigned Admin</label>
+          <label className="mb-1 block text-sm font-medium text-slate-900">{isArabic ? "المسؤول المعيّن" : "Assigned Admin"}</label>
           <select
             {...register("assignedToId", {
               setValueAs: (value) => (value ? Number(value) : undefined),
             })}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900"
           >
-            <option value="">Unassigned</option>
+            <option value="">{isArabic ? "غير معيّن" : "Unassigned"}</option>
             {users.map((user) => (
               <option key={user.id} value={user.id}>
                 {user.name}
@@ -203,7 +213,7 @@ export default function LeadForm({
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Budget</label>
+          <label className="mb-1 block text-sm font-medium text-slate-900">{isArabic ? "الميزانية" : "Budget"}</label>
           <input
             type="number"
             min="0"
@@ -211,16 +221,16 @@ export default function LeadForm({
             {...register("budget", {
               setValueAs: (value) => (value === "" ? undefined : Number(value)),
             })}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400"
           />
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Follow Up Date</label>
+          <label className="mb-1 block text-sm font-medium text-slate-900">{isArabic ? "تاريخ المتابعة" : "Follow Up Date"}</label>
           <input
             type="date"
             {...register("followUpDate")}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900"
           />
           {errors.followUpDate ? (
             <p className="mt-1 text-xs text-rose-600">{errors.followUpDate.message}</p>
@@ -229,26 +239,26 @@ export default function LeadForm({
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">Notes</label>
+        <label className="mb-1 block text-sm font-medium text-slate-900">{isArabic ? "ملاحظات" : "Notes"}</label>
         <textarea
           rows={4}
           {...register("notes")}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400"
         />
       </div>
 
       {showCustomerLinking ? (
         <div className="rounded-lg border border-slate-200 p-4">
-          <p className="mb-3 text-sm font-semibold text-slate-900">Customer Linking</p>
+          <p className="mb-3 text-sm font-semibold text-slate-900">{isArabic ? "ربط العميل" : "Customer Linking"}</p>
 
           <div className="mb-4 flex flex-wrap gap-4">
-            <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+            <label className="inline-flex items-center gap-2 text-sm text-slate-900">
               <input type="radio" value="existing" {...register("customerLinkType")} />
-              Select Existing User
+              {isArabic ? "اختيار مستخدم موجود" : "Select Existing User"}
             </label>
-            <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+            <label className="inline-flex items-center gap-2 text-sm text-slate-900">
               <input type="radio" value="temp" {...register("customerLinkType")} />
-              Create Temp User
+              {isArabic ? "إنشاء مستخدم مؤقت" : "Create Temp User"}
             </label>
           </div>
 
@@ -258,9 +268,9 @@ export default function LeadForm({
                 {...register("userId", {
                   setValueAs: (value) => (value ? Number(value) : undefined),
                 })}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900"
               >
-                <option value="">Select user</option>
+                <option value="">{isArabic ? "اختر مستخدمًا" : "Select user"}</option>
                 {users.map((user) => (
                   <option key={user.id} value={user.id}>
                     {user.name}
@@ -271,19 +281,21 @@ export default function LeadForm({
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              <div>
-                <input
-                  {...register("tempName")}
-                  placeholder="Temp Name"
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              <div className="md:col-span-3">
+                <BilingualTextField
+                  register={register}
+                  nameEnField="tempNameEn"
+                  nameArField="tempNameAr"
+                  label={t("field.customerName")}
+                  requiredEn
+                  errors={errors}
                 />
-                {errors.tempName ? <p className="mt-1 text-xs text-rose-600">{errors.tempName.message}</p> : null}
               </div>
               <div>
                 <input
                   {...register("tempPhone")}
-                  placeholder="Temp Phone"
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                  placeholder={isArabic ? "هاتف مؤقت" : "Temp Phone"}
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400"
                 />
                 {errors.tempPhone ? (
                   <p className="mt-1 text-xs text-rose-600">{errors.tempPhone.message}</p>
@@ -292,8 +304,8 @@ export default function LeadForm({
               <div>
                 <input
                   {...register("tempEmail")}
-                  placeholder="Temp Email"
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                  placeholder={isArabic ? "بريد مؤقت" : "Temp Email"}
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400"
                 />
                 {errors.tempEmail ? (
                   <p className="mt-1 text-xs text-rose-600">{errors.tempEmail.message}</p>
@@ -305,11 +317,11 @@ export default function LeadForm({
       ) : null}
 
       <div className="rounded-lg border border-slate-200 p-4">
-        <p className="mb-3 text-sm font-semibold text-slate-900">Tag</p>
+        <p className="mb-3 text-sm font-semibold text-slate-900">{isArabic ? "الوسم" : "Tag"}</p>
 
-        <label className="mb-3 inline-flex items-center gap-2 text-sm text-slate-700">
+        <label className="mb-3 inline-flex items-center gap-2 text-sm text-slate-900">
           <input type="checkbox" {...register("tagOverride")} />
-          Override Auto Tag
+          {isArabic ? "تجاوز الوسم التلقائي" : "Override Auto Tag"}
         </label>
 
         <select
@@ -317,7 +329,7 @@ export default function LeadForm({
           disabled={!tagOverride}
           className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100"
         >
-          <option value="">Select Tag</option>
+          <option value="">{isArabic ? "اختر الوسم" : "Select Tag"}</option>
           {LEAD_TAGS.map((tag) => (
             <option key={tag} value={tag}>
               {tag}
@@ -329,14 +341,22 @@ export default function LeadForm({
 
         {!tagOverride ? (
           <p className="mt-2 text-xs text-slate-500">
-            Tag will be calculated automatically based on orders
+            {isArabic
+              ? "سيتم احتساب الوسم تلقائيًا بناءً على الطلبات"
+              : "Tag will be calculated automatically based on orders"}
           </p>
         ) : null}
       </div>
 
       <div className="flex justify-end">
         <Button type="submit" disabled={submitting}>
-          {submitting ? "Saving..." : "Save Lead"}
+          {submitting
+            ? isArabic
+              ? "جارٍ الحفظ..."
+              : "Saving..."
+            : isArabic
+              ? "حفظ العميل المحتمل"
+              : "Save Lead"}
         </Button>
       </div>
     </form>

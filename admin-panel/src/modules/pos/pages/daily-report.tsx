@@ -6,6 +6,7 @@ import POSLayout from "@/modules/pos/components/POSLayout";
 import ReportsTable from "@/modules/pos/components/ReportsTable";
 import { useDailyReport, usePosOrdersByDate } from "@/modules/pos/hooks/useReports";
 import { usePosProducts } from "@/modules/pos/hooks/useProducts";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import { formatEGP } from "@/lib/currency";
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -66,9 +67,14 @@ const extractImageValue = (value: unknown): string => {
   return "";
 };
 
+type ProductPreviewMap = Map<string, { name: string; imageUrl?: string }>;
+
 const getOrderItemNamesPreview = (
   items: unknown,
-  productMap: Map<string, { name: string; imageUrl?: string }>,
+  productMap: ProductPreviewMap,
+  unnamedItemLabel: string,
+  productPrefixLabel: string,
+  moreLabel: string
 ): string => {
   if (!Array.isArray(items) || items.length === 0) return "-";
   const names = items
@@ -77,20 +83,20 @@ const getOrderItemNamesPreview = (
       const productId = item.productId ? String(item.productId) : "";
       const mappedName = productId ? productMap.get(productId)?.name : "";
       if (mappedName) return mappedName;
-      const name = item.name ?? item.productName ?? (item.product as Record<string, unknown> | undefined)?.name;
+      const name =
+        item.name ??
+        item.productName ??
+        (item.product as Record<string, unknown> | undefined)?.name;
       if (typeof name === "string" && name.trim()) return name.trim();
-      return productId ? `Product #${productId}` : "Unnamed item";
+      return productId ? `${productPrefixLabel} #${productId}` : unnamedItemLabel;
     })
     .filter(Boolean);
 
   if (names.length <= 2) return names.join(", ");
-  return `${names.slice(0, 2).join(", ")} +${names.length - 2} more`;
+  return `${names.slice(0, 2).join(", ")} +${names.length - 2} ${moreLabel}`;
 };
 
-const getOrderItemImage = (
-  items: unknown,
-  productMap: Map<string, { name: string; imageUrl?: string }>,
-): string => {
+const getOrderItemImage = (items: unknown, productMap: ProductPreviewMap): string => {
   if (!Array.isArray(items) || items.length === 0) return "";
   for (const entry of items) {
     const item = (entry ?? {}) as Record<string, unknown>;
@@ -112,9 +118,10 @@ const getOrderItemImage = (
 };
 
 export default function PosDailyReportPage() {
+  const { language } = useLocalization();
   const [date, setDate] = useState(today());
   const [ordersPage, setOrdersPage] = useState(1);
-  const ORDERS_PAGE_SIZE = 10;
+  const ordersPageSize = 10;
   const { data, isLoading, isError } = useDailyReport(date);
   const {
     data: posOrders = [],
@@ -124,42 +131,113 @@ export default function PosDailyReportPage() {
   } = usePosOrdersByDate(date);
   const { data: products = [] } = usePosProducts();
 
+  const text =
+    language === "ar"
+      ? {
+          title: "التقرير اليومي",
+          description: "مبيعات نقطة البيع والضريبة والخصم وعدد الطلبات وتوزيع طرق الدفع.",
+          date: "التاريخ",
+          loadingReport: "جارٍ تحميل التقرير...",
+          failedReport: "تعذر تحميل التقرير.",
+          totalSales: "إجمالي المبيعات",
+          totalTax: "إجمالي الضريبة",
+          totalDiscount: "إجمالي الخصم",
+          ordersCount: "عدد الطلبات",
+          paymentMethod: "طريقة الدفع",
+          amount: "المبلغ",
+          posOrders: "طلبات نقطة البيع",
+          posOrdersSubtitle: "جميع الطلبات المنشأة في التاريخ المحدد.",
+          refresh: "تحديث",
+          refreshing: "جارٍ التحديث...",
+          failedPosOrders: "تعذر تحميل طلبات نقطة البيع.",
+          noPosOrders: "لا توجد طلبات نقطة بيع في التاريخ المحدد.",
+          posOrderId: "معرّف طلب نقطة البيع",
+          itemImage: "صورة المنتج",
+          itemName: "اسم المنتج",
+          customerName: "اسم العميل",
+          walkInCustomer: "عميل مباشر",
+          mobile: "الجوال",
+          totalAmount: "الإجمالي",
+          paymentStatus: "حالة الدفع",
+          currentStatus: "الحالة الحالية",
+          createdAt: "تاريخ الإنشاء",
+          action: "الإجراء",
+          viewDetails: "عرض التفاصيل",
+          noImage: "لا توجد صورة",
+          previous: "السابق",
+          next: "التالي",
+          more: "أخرى",
+          unnamedItem: "عنصر غير مسمى",
+          productPrefix: "منتج",
+        }
+      : {
+          title: "Daily Report",
+          description: "POS sales, tax, discount, orders count, and payment method breakdown.",
+          date: "Date",
+          loadingReport: "Loading report...",
+          failedReport: "Failed to load report.",
+          totalSales: "Total Sales",
+          totalTax: "Total Tax",
+          totalDiscount: "Total Discount",
+          ordersCount: "Orders Count",
+          paymentMethod: "Payment Method",
+          amount: "Amount",
+          posOrders: "POS Orders",
+          posOrdersSubtitle: "All orders created on selected date.",
+          refresh: "Refresh",
+          refreshing: "Refreshing...",
+          failedPosOrders: "Failed to load POS orders.",
+          noPosOrders: "No POS orders for selected date.",
+          posOrderId: "POS Order ID",
+          itemImage: "Item Image",
+          itemName: "Item Name",
+          customerName: "Customer Name",
+          walkInCustomer: "Walk-in Customer",
+          mobile: "Mobile",
+          totalAmount: "Total Amount",
+          paymentStatus: "Payment Status",
+          currentStatus: "Current Status",
+          createdAt: "Created At",
+          action: "Action",
+          viewDetails: "View Details",
+          noImage: "No image",
+          previous: "Previous",
+          next: "Next",
+          more: "more",
+          unnamedItem: "Unnamed item",
+          productPrefix: "Product",
+        };
+
   const productMap = useMemo(
     () =>
       new Map(
         products.map((product) => [
           String(product.id),
           { name: product.name, imageUrl: product.imageUrl },
-        ]),
+        ])
       ),
-    [products],
+    [products]
   );
 
-  const paymentRows = useMemo(
-    () => {
-      const breakdown = normalizePaymentBreakdown(data?.paymentBreakdown);
-      return breakdown.map((row) => ({
-        method: row.method,
-        amount: formatEGP(row.amount),
-      }));
-    },
-    [data?.paymentBreakdown]
-  );
+  const paymentRows = useMemo(() => {
+    const breakdown = normalizePaymentBreakdown(data?.paymentBreakdown);
+    return breakdown.map((row) => ({
+      method: row.method,
+      amount: formatEGP(row.amount),
+    }));
+  }, [data?.paymentBreakdown]);
 
-  const ordersTotalPages = Math.max(1, Math.ceil(posOrders.length / ORDERS_PAGE_SIZE));
+  const ordersTotalPages = Math.max(1, Math.ceil(posOrders.length / ordersPageSize));
   const safeOrdersPage = Math.min(ordersPage, ordersTotalPages);
   const pagedPosOrders = useMemo(() => {
-    const start = (safeOrdersPage - 1) * ORDERS_PAGE_SIZE;
-    return posOrders.slice(start, start + ORDERS_PAGE_SIZE);
-  }, [posOrders, safeOrdersPage]);
+    const start = (safeOrdersPage - 1) * ordersPageSize;
+    return posOrders.slice(start, start + ordersPageSize);
+  }, [ordersPageSize, posOrders, safeOrdersPage]);
 
   return (
-    <POSLayout
-      title="Daily Report"
-      description="POS sales, tax, discount, orders count, and payment method breakdown."
-    >
+    <POSLayout title={text.title} description={text.description}>
       <div className="rounded-xl bg-white p-4 shadow-sm">
-        <label className="text-sm font-medium text-slate-700">Date</label>
+        <label className="text-sm font-medium text-slate-700">{text.date}</label>
         <input
           type="date"
           value={date}
@@ -171,22 +249,38 @@ export default function PosDailyReportPage() {
         />
       </div>
 
-      {isLoading ? <div className="rounded-xl bg-white p-6 text-sm text-slate-500">Loading report...</div> : null}
-      {isError ? <div className="rounded-xl bg-rose-50 p-6 text-sm text-rose-700">Failed to load report.</div> : null}
+      {isLoading ? (
+        <div className="rounded-xl bg-white p-6 text-sm text-slate-500">{text.loadingReport}</div>
+      ) : null}
+      {isError ? (
+        <div className="rounded-xl bg-rose-50 p-6 text-sm text-rose-700">{text.failedReport}</div>
+      ) : null}
 
       {data ? (
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <div className="rounded-xl bg-white p-4 shadow-sm"><p className="text-xs text-slate-500">Total Sales</p><p className="text-xl font-bold text-violet-700">{formatEGP(toNumber(data.totalSales))}</p></div>
-          <div className="rounded-xl bg-white p-4 shadow-sm"><p className="text-xs text-slate-500">Total Tax</p><p className="text-xl font-bold text-violet-700">{formatEGP(toNumber(data.totalTax))}</p></div>
-          <div className="rounded-xl bg-white p-4 shadow-sm"><p className="text-xs text-slate-500">Total Discount</p><p className="text-xl font-bold text-violet-700">{formatEGP(toNumber(data.totalDiscount))}</p></div>
-          <div className="rounded-xl bg-white p-4 shadow-sm"><p className="text-xs text-slate-500">Orders Count</p><p className="text-xl font-bold text-violet-700">{toNumber(data.ordersCount)}</p></div>
+          <div className="rounded-xl bg-white p-4 shadow-sm">
+            <p className="text-xs text-slate-500">{text.totalSales}</p>
+            <p className="text-xl font-bold text-violet-700">{formatEGP(toNumber(data.totalSales))}</p>
+          </div>
+          <div className="rounded-xl bg-white p-4 shadow-sm">
+            <p className="text-xs text-slate-500">{text.totalTax}</p>
+            <p className="text-xl font-bold text-violet-700">{formatEGP(toNumber(data.totalTax))}</p>
+          </div>
+          <div className="rounded-xl bg-white p-4 shadow-sm">
+            <p className="text-xs text-slate-500">{text.totalDiscount}</p>
+            <p className="text-xl font-bold text-violet-700">{formatEGP(toNumber(data.totalDiscount))}</p>
+          </div>
+          <div className="rounded-xl bg-white p-4 shadow-sm">
+            <p className="text-xs text-slate-500">{text.ordersCount}</p>
+            <p className="text-xl font-bold text-violet-700">{toNumber(data.ordersCount)}</p>
+          </div>
         </div>
       ) : null}
 
       <ReportsTable
         columns={[
-          { key: "method", label: "Payment Method" },
-          { key: "amount", label: "Amount" },
+          { key: "method", label: text.paymentMethod },
+          { key: "amount", label: text.amount },
         ]}
         rows={paymentRows}
       />
@@ -194,8 +288,8 @@ export default function PosDailyReportPage() {
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-slate-900">POS Orders</h2>
-            <p className="text-sm text-slate-500">All orders created on selected date.</p>
+            <h2 className="text-xl font-semibold text-slate-900">{text.posOrders}</h2>
+            <p className="text-sm text-slate-500">{text.posOrdersSubtitle}</p>
           </div>
           <button
             type="button"
@@ -206,7 +300,7 @@ export default function PosDailyReportPage() {
             disabled={isPosOrdersLoading}
             className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isPosOrdersLoading ? "Refreshing..." : "Refresh"}
+            {isPosOrdersLoading ? text.refreshing : text.refresh}
           </button>
         </div>
 
@@ -218,31 +312,37 @@ export default function PosDailyReportPage() {
             </div>
           ) : isPosOrdersError ? (
             <p className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-              Failed to load POS orders.
+              {text.failedPosOrders}
             </p>
           ) : posOrders.length === 0 ? (
-            <p className="text-sm text-slate-500">No POS orders for selected date.</p>
+            <p className="text-sm text-slate-500">{text.noPosOrders}</p>
           ) : (
             <table className="w-full text-left text-sm">
               <thead className="border-b border-slate-200 text-slate-500">
                 <tr>
-                  <th className="py-2 pr-4 font-medium">POS Order ID</th>
-                  <th className="py-2 pr-4 font-medium">Item Image</th>
-                  <th className="py-2 pr-4 font-medium">Item Name</th>
-                  <th className="py-2 pr-4 font-medium">Customer Name</th>
-                  <th className="py-2 pr-4 font-medium">Mobile</th>
-                  <th className="py-2 pr-4 font-medium">Total Amount</th>
-                  <th className="py-2 pr-4 font-medium">Payment Method</th>
-                  <th className="py-2 pr-4 font-medium">Payment Status</th>
-                  <th className="py-2 pr-4 font-medium">Current Status</th>
-                  <th className="py-2 pr-4 font-medium">Created At</th>
-                  <th className="py-2 pr-4 font-medium">Action</th>
+                  <th className="py-2 pr-4 font-medium">{text.posOrderId}</th>
+                  <th className="py-2 pr-4 font-medium">{text.itemImage}</th>
+                  <th className="py-2 pr-4 font-medium">{text.itemName}</th>
+                  <th className="py-2 pr-4 font-medium">{text.customerName}</th>
+                  <th className="py-2 pr-4 font-medium">{text.mobile}</th>
+                  <th className="py-2 pr-4 font-medium">{text.totalAmount}</th>
+                  <th className="py-2 pr-4 font-medium">{text.paymentMethod}</th>
+                  <th className="py-2 pr-4 font-medium">{text.paymentStatus}</th>
+                  <th className="py-2 pr-4 font-medium">{text.currentStatus}</th>
+                  <th className="py-2 pr-4 font-medium">{text.createdAt}</th>
+                  <th className="py-2 pr-4 font-medium">{text.action}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 text-slate-700">
                 {pagedPosOrders.map((order, index) => {
                   const itemImage = getOrderItemImage(order.items, productMap);
-                  const itemName = getOrderItemNamesPreview(order.items, productMap);
+                  const itemName = getOrderItemNamesPreview(
+                    order.items,
+                    productMap,
+                    text.unnamedItem,
+                    text.productPrefix,
+                    text.more
+                  );
                   const paymentMethod =
                     order.paymentMethod ||
                     (Array.isArray(order.payments) && order.payments.length > 0
@@ -250,52 +350,58 @@ export default function PosDailyReportPage() {
                           new Set(
                             order.payments
                               .map((line) => String(line.method ?? "").toUpperCase())
-                              .filter((method) => Boolean(method)),
-                          ),
+                              .filter((method) => Boolean(method))
+                          )
                         ).join(", ")
                       : "-");
+
                   return (
-                  <tr key={`${order.id}-${order.createdAt ?? index}`}>
-                    <td className="py-3 pr-4">
-                      <Link
-                        href={`/admin/pos/orders/${order.id}`}
-                        className="font-medium text-violet-700 hover:underline"
-                      >
-                        {order.id ?? "-"}
-                      </Link>
-                    </td>
-                    <td className="py-3 pr-4">
-                      {itemImage ? (
-                        <div
-                          className="h-10 w-10 rounded-md border border-slate-200 bg-cover bg-center"
-                          style={{ backgroundImage: `url(${itemImage})` }}
-                        />
-                      ) : (
-                        <div className="flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-slate-100 text-[10px] text-slate-500">
-                          No image
-                        </div>
-                      )}
-                    </td>
-                    <td className="py-3 pr-4">{itemName}</td>
-                    <td className="py-3 pr-4">{order.customerName ?? "Walk-in Customer"}</td>
-                    <td className="py-3 pr-4">{order.customerMobileNumber ?? "-"}</td>
-                    <td className="py-3 pr-4">{formatEGP(toNumber(order.total))}</td>
-                    <td className="py-3 pr-4">{paymentMethod}</td>
-                    <td className="py-3 pr-4">{order.paymentStatus ?? "-"}</td>
-                    <td className="py-3 pr-4">{order.status ?? "-"}</td>
-                    <td className="py-3 pr-4">
-                      {order.createdAt ? new Date(order.createdAt).toLocaleDateString("en-US") : "-"}
-                    </td>
-                    <td className="py-3 pr-4">
-                      <Link
-                        href={`/admin/pos/orders/${order.id}`}
-                        className="inline-flex rounded-md border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
-                      >
-                        View Details
-                      </Link>
-                    </td>
-                  </tr>
-                )})}
+                    <tr key={`${order.id}-${order.createdAt ?? index}`}>
+                      <td className="py-3 pr-4">
+                        <Link
+                          href={`/admin/pos/orders/${order.id}`}
+                          className="font-medium text-violet-700 hover:underline"
+                        >
+                          {order.id ?? "-"}
+                        </Link>
+                      </td>
+                      <td className="py-3 pr-4">
+                        {itemImage ? (
+                          <div
+                            className="h-10 w-10 rounded-md border border-slate-200 bg-cover bg-center"
+                            style={{ backgroundImage: `url(${itemImage})` }}
+                          />
+                        ) : (
+                          <div className="flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-slate-100 text-[10px] text-slate-500">
+                            {text.noImage}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3 pr-4">{itemName}</td>
+                      <td className="py-3 pr-4">{order.customerName ?? text.walkInCustomer}</td>
+                      <td className="py-3 pr-4">{order.customerMobileNumber ?? "-"}</td>
+                      <td className="py-3 pr-4">{formatEGP(toNumber(order.total))}</td>
+                      <td className="py-3 pr-4">{paymentMethod}</td>
+                      <td className="py-3 pr-4">{order.paymentStatus ?? "-"}</td>
+                      <td className="py-3 pr-4">{order.status ?? "-"}</td>
+                      <td className="py-3 pr-4">
+                        {order.createdAt
+                          ? new Date(order.createdAt).toLocaleDateString(
+                              language === "ar" ? "ar-EG" : "en-US"
+                            )
+                          : "-"}
+                      </td>
+                      <td className="py-3 pr-4">
+                        <Link
+                          href={`/admin/pos/orders/${order.id}`}
+                          className="inline-flex rounded-md border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                        >
+                          {text.viewDetails}
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
@@ -309,7 +415,7 @@ export default function PosDailyReportPage() {
               disabled={safeOrdersPage === 1}
               className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Previous
+              {text.previous}
             </button>
             <div className="flex flex-wrap gap-2">
               {Array.from({ length: ordersTotalPages }, (_, index) => index + 1).map((page) => (
@@ -333,7 +439,7 @@ export default function PosDailyReportPage() {
               disabled={safeOrdersPage === ordersTotalPages}
               className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Next
+              {text.next}
             </button>
           </div>
         ) : null}

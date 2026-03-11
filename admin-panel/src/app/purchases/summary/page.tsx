@@ -5,13 +5,14 @@ import type { AxiosError } from "axios";
 import { Download, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import AdminLayout from "@/components/layout/AdminLayout";
-import { costBreakdownPalette } from "@/components/purchases/constants";
+import { costBreakdownPalette, costCategoryArabicLabels } from "@/components/purchases/constants";
 import CostsBreakdownChart from "@/components/purchases/CostsBreakdownChart";
 import ProfitTrendChart from "@/components/purchases/ProfitTrendChart";
 import PurchasesModuleNav from "@/components/purchases/PurchasesModuleNav";
 import PurchasesRevenueChart from "@/components/purchases/PurchasesRevenueChart";
 import SummaryCards from "@/components/purchases/SummaryCards";
 import { purchasesSummaryApi, type SummaryPeriod } from "@/features/purchases/api/purchases.api";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 type Period = "Day" | "Month" | "Quarter" | "Year";
 
@@ -22,11 +23,11 @@ const periodMap: Record<Period, SummaryPeriod> = {
   Year: "year",
 };
 
-const buildSeries = (period: Period) => {
+const buildSeries = (period: Period, language: "en" | "ar") => {
   const now = new Date();
 
   if (period === "Day") {
-    return { labels: ["Today"], keys: ["today"] };
+    return { labels: [language === "ar" ? "اليوم" : "Today"], keys: ["today"] };
   }
 
   if (period === "Month") {
@@ -36,16 +37,21 @@ const buildSeries = (period: Period) => {
   }
 
   if (period === "Quarter") {
+    const locale = language === "ar" ? "ar-EG" : "en-US";
     const quarterStartMonth = Math.floor(now.getMonth() / 3) * 3;
     const labels = [0, 1, 2].map((offset) =>
-      new Date(now.getFullYear(), quarterStartMonth + offset, 1).toLocaleDateString("en-US", {
+      new Date(now.getFullYear(), quarterStartMonth + offset, 1).toLocaleDateString(locale, {
         month: "short",
       })
     );
     return { labels, keys: labels.map((label) => label.toLowerCase()) };
   }
 
-  const labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const labels =
+    language === "ar"
+      ? ["ينا", "فبر", "مار", "أبر", "ماي", "يون", "يول", "أغس", "سبت", "أكت", "نوف", "ديس"]
+      : ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
   return { labels, keys: labels.map((label) => label.toLowerCase()) };
 };
 
@@ -61,27 +67,41 @@ const resolveBucketValue = (buckets: Record<string, number>, key: string) => {
   return match?.[1] ?? 0;
 };
 
-const resolveCostSlices = (buckets: Record<string, number>) =>
-  costBreakdownPalette
-    .map((item) => ({
-      label: item.label,
-      color: item.color,
-      value: Math.round(resolveBucketValue(buckets, item.key)),
-    }))
-    .filter((item) => item.value > 0);
-
 const getApiErrorMessage = (error: unknown, fallback: string) =>
   ((error as AxiosError<{ message?: string }>)?.response?.data?.message ?? fallback);
 
 export default function PurchasesSummaryPage() {
+  const { language } = useLocalization();
+  const text = {
+    title: language === "ar" ? "ملخص المشتريات" : "Purchases Summary",
+    subtitle:
+      language === "ar"
+        ? "تحليلات مالية لأداء المشتريات والمصاريف التشغيلية"
+        : "Financial analytics for purchasing and operational performance",
+    exportCsv: language === "ar" ? "تصدير CSV" : "Export CSV",
+    exportExcel: language === "ar" ? "تصدير Excel" : "Export Excel",
+    csvQueued: language === "ar" ? "تمت جدولة تصدير CSV للملخص." : "Summary CSV export queued.",
+    excelQueued: language === "ar" ? "تمت جدولة تصدير Excel للملخص." : "Summary Excel export queued.",
+    period: language === "ar" ? "الفترة" : "Period",
+    day: language === "ar" ? "يوم" : "Day",
+    month: language === "ar" ? "شهر" : "Month",
+    quarter: language === "ar" ? "ربع سنة" : "Quarter",
+    year: language === "ar" ? "سنة" : "Year",
+    loadError:
+      language === "ar" ? "تعذر تحميل ملخص المشتريات." : "Unable to load purchases summary.",
+    viewingAnalytics: language === "ar" ? "عرض التحليلات للفترة:" : "Viewing analytics for:",
+    loadingSummary: language === "ar" ? "جارٍ تحميل الملخص..." : "Loading summary...",
+  };
+
   const [period, setPeriod] = useState<Period>("Month");
-  const activeSeries = useMemo(() => buildSeries(period), [period]);
+  const activeSeries = useMemo(() => buildSeries(period, language), [period, language]);
   const [summary, setSummary] = useState<Awaited<ReturnType<typeof purchasesSummaryApi.get>> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     let mounted = true;
+
     const fetchSummary = async () => {
       setIsLoading(true);
       setError("");
@@ -96,7 +116,7 @@ export default function PurchasesSummaryPage() {
           return;
         }
         setSummary(null);
-        setError(getApiErrorMessage(requestError, "Unable to load purchases summary."));
+        setError(getApiErrorMessage(requestError, text.loadError));
       } finally {
         if (mounted) {
           setIsLoading(false);
@@ -108,7 +128,7 @@ export default function PurchasesSummaryPage() {
     return () => {
       mounted = false;
     };
-  }, [period]);
+  }, [period, text.loadError]);
 
   const purchasesSeries = activeSeries.keys.map((key) =>
     resolveBucketValue(summary?.purchasesByBucket ?? {}, key)
@@ -122,7 +142,14 @@ export default function PurchasesSummaryPage() {
   const netProfitSeries = activeSeries.keys.map((key) =>
     resolveBucketValue(summary?.netProfitByBucket ?? {}, key)
   );
-  const costSlices = resolveCostSlices(summary?.costBreakdownByCategory ?? {});
+  const costSlices = costBreakdownPalette.map((item) => ({
+    label:
+      language === "ar"
+        ? costCategoryArabicLabels[item.key as keyof typeof costCategoryArabicLabels]
+        : item.label,
+    color: item.color,
+    value: Math.round(resolveBucketValue(summary?.costBreakdownByCategory ?? {}, item.key)),
+  }));
 
   return (
     <AdminLayout>
@@ -130,36 +157,36 @@ export default function PurchasesSummaryPage() {
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Purchases Summary</h1>
-              <p className="text-sm text-slate-500">Financial analytics for purchasing and operational performance</p>
+              <h1 className="text-2xl font-bold text-slate-900">{text.title}</h1>
+              <p className="text-sm text-slate-500">{text.subtitle}</p>
             </div>
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => toast.success("Summary CSV export queued.")}
+                onClick={() => toast.success(text.csvQueued)}
                 className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100"
               >
                 <Download className="h-4 w-4" />
-                Export CSV
+                {text.exportCsv}
               </button>
               <button
                 type="button"
-                onClick={() => toast.success("Summary Excel export queued.")}
+                onClick={() => toast.success(text.excelQueued)}
                 className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100"
               >
                 <FileSpreadsheet className="h-4 w-4" />
-                Export Excel
+                {text.exportExcel}
               </button>
-              <span className="text-sm font-medium text-slate-600">Period</span>
+              <span className="text-sm font-medium text-slate-600">{text.period}</span>
               <select
                 value={period}
                 onChange={(event) => setPeriod(event.target.value as Period)}
                 className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
               >
-                <option value="Day">Day</option>
-                <option value="Month">Month</option>
-                <option value="Quarter">Quarter</option>
-                <option value="Year">Year</option>
+                <option value="Day">{text.day}</option>
+                <option value="Month">{text.month}</option>
+                <option value="Quarter">{text.quarter}</option>
+                <option value="Year">{text.year}</option>
               </select>
             </div>
           </div>
@@ -190,13 +217,7 @@ export default function PurchasesSummaryPage() {
                 purchases={purchasesSeries}
                 revenue={revenueSeries}
               />
-              <CostsBreakdownChart
-                slices={
-                  costSlices.length > 0
-                    ? costSlices
-                    : costBreakdownPalette.map((item) => ({ label: item.label, color: item.color, value: 0 }))
-                }
-              />
+              <CostsBreakdownChart slices={costSlices} />
             </div>
 
             <ProfitTrendChart
@@ -208,9 +229,12 @@ export default function PurchasesSummaryPage() {
         )}
 
         <p className="text-xs text-slate-500">
-          Viewing analytics for: <span className="font-semibold text-slate-700">{period}</span>
+          {text.viewingAnalytics}{" "}
+          <span className="font-semibold text-slate-700">
+            {text[period.toLowerCase() as "day" | "month" | "quarter" | "year"]}
+          </span>
         </p>
-        {isLoading ? <p className="text-xs text-slate-500">Loading summary...</p> : null}
+        {isLoading ? <p className="text-xs text-slate-500">{text.loadingSummary}</p> : null}
       </section>
     </AdminLayout>
   );

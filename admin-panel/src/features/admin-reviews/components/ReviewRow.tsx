@@ -9,6 +9,7 @@ import {
   getReviewStatusPresentation,
   isEditedPendingReview,
 } from "@/features/admin-reviews/utils/reviewEditing";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 type ReviewRowProps = {
   review: AdminReviewExtended;
@@ -62,7 +63,24 @@ export default function ReviewRow({
   onDelete,
   isMutating,
 }: ReviewRowProps) {
-  const statusPresentation = getReviewStatusPresentation(review);
+  const { language } = useLocalization();
+  const statusPresentation = getReviewStatusPresentation(review, language);
+  const text =
+    language === "ar"
+      ? {
+          details: "التفاصيل",
+          approve: "موافقة",
+          hide: "إخفاء",
+          delete: "حذف",
+          edited: "معدل",
+        }
+      : {
+          details: "Details",
+          approve: "Approve",
+          hide: "Hide",
+          delete: "Delete",
+          edited: "Edited",
+        };
 
   return (
     <tr
@@ -117,7 +135,7 @@ export default function ReviewRow({
           {isEditedPendingReview(review) ? (
             <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-medium text-sky-700">
               <Pencil className="h-3 w-3" />
-              Edited
+              {text.edited}
             </span>
           ) : null}
         </div>
@@ -141,7 +159,7 @@ export default function ReviewRow({
               onOpenDetails(review);
             }}
           >
-            Details
+            {text.details}
           </Button>
           {canApproveReview(review.status) ? (
             <Button
@@ -153,7 +171,7 @@ export default function ReviewRow({
               }}
               className="bg-emerald-600 text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              Approve
+              {text.approve}
             </Button>
           ) : null}
           {canHideReview(review.status) ? (
@@ -166,7 +184,7 @@ export default function ReviewRow({
                 onHide(review);
               }}
             >
-              Hide
+              {text.hide}
             </Button>
           ) : null}
           <Button
@@ -178,7 +196,7 @@ export default function ReviewRow({
               onDelete(review);
             }}
           >
-            Delete
+            {text.delete}
           </Button>
           <div
             onClick={(event) => {

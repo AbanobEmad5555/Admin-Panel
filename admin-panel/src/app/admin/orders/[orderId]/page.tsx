@@ -7,6 +7,7 @@ import AdminLayout from "@/components/layout/AdminLayout";
 import Button from "@/components/ui/Button";
 import { assignOrderDeliveryDateForOutForDelivery } from "@/lib/deliveryScheduling";
 import api from "@/services/api";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 type OrderItem = {
   id?: number | string;
@@ -364,6 +365,7 @@ const resolveSubtotal = (item: OrderItem) => {
 };
 
 export default function OrderDetailsPage() {
+  const { language } = useLocalization();
   const params = useParams();
   const orderId = Array.isArray(params?.orderId)
     ? params?.orderId[0]
@@ -378,6 +380,86 @@ export default function OrderDetailsPage() {
   const [resolvedCustomerId, setResolvedCustomerId] = useState<
     number | string | null
   >(null);
+  const text =
+    language === "ar"
+      ? {
+          invalidOrderId: "رقم الطلب غير صالح.",
+          unknown: "غير معروف",
+          updateAssignedFailed: "تم نقل الطلب إلى خارج للتسليم، لكن فشل تعيين تاريخ التسليم.",
+          updateAssignedSuccess: "تم تحديث حالة الطلب وتعيين تاريخ التسليم.",
+          updateSuccess: "تم تحديث حالة الطلب.",
+          orders: "الطلبات",
+          orderTitle: `طلب #${orderId ?? "-"}`,
+          orderTrail: `طلب #${orderId ?? "-"}`,
+          backToOrders: "العودة إلى الطلبات",
+          orderNotFound: "الطلب غير موجود.",
+          orderSummary: "ملخص الطلب",
+          orderId: "رقم الطلب",
+          status: "الحالة",
+          createdAt: "تاريخ الإنشاء",
+          paymentMethod: "طريقة الدفع",
+          totalAmount: "المبلغ الإجمالي",
+          customerInformation: "بيانات العميل",
+          fullName: "الاسم الكامل",
+          email: "البريد الإلكتروني",
+          phone: "الهاتف",
+          shippingAddress: "عنوان الشحن",
+          area: "المنطقة",
+          city: "المدينة",
+          street: "الشارع",
+          notes: "ملاحظات",
+          orderItems: "عناصر الطلب",
+          noItemsFound: "لا توجد عناصر.",
+          productImage: "صورة المنتج",
+          productName: "اسم المنتج",
+          variant: "المتغير",
+          quantity: "الكمية",
+          price: "السعر",
+          subtotal: "الإجمالي الفرعي",
+          orderActions: "إجراءات الطلب",
+          selectStatus: "اختر الحالة",
+          updating: "جارٍ التحديث...",
+          updateStatus: "تحديث الحالة",
+        }
+      : {
+          invalidOrderId: "Invalid order id.",
+          unknown: "Unknown",
+          updateAssignedFailed: "Order moved to Out For Delivery, but assigning delivery date failed.",
+          updateAssignedSuccess: "Order status updated and delivery date assigned.",
+          updateSuccess: "Order status updated.",
+          orders: "Orders",
+          orderTitle: `Order #${orderId ?? "-"}`,
+          orderTrail: `Order #${orderId ?? "-"}`,
+          backToOrders: "Back to Orders",
+          orderNotFound: "Order not found.",
+          orderSummary: "Order Summary",
+          orderId: "Order ID",
+          status: "Status",
+          createdAt: "Created At",
+          paymentMethod: "Payment Method",
+          totalAmount: "Total Amount",
+          customerInformation: "Customer Information",
+          fullName: "Full Name",
+          email: "Email",
+          phone: "Phone",
+          shippingAddress: "Shipping Address",
+          area: "Area",
+          city: "City",
+          street: "Street",
+          notes: "Notes",
+          orderItems: "Order Items",
+          noItemsFound: "No items found.",
+          productImage: "Product Image",
+          productName: "Product Name",
+          variant: "Variant",
+          quantity: "Quantity",
+          price: "Price",
+          subtotal: "Subtotal",
+          orderActions: "Order Actions",
+          selectStatus: "Select status",
+          updating: "Updating...",
+          updateStatus: "Update Status",
+        };
 
   const items = useMemo(() => resolveItems(order ?? {}), [order]);
   const shippingAddress = useMemo(
@@ -386,7 +468,7 @@ export default function OrderDetailsPage() {
   );
   useEffect(() => {
     if (!orderId) {
-      setError("Invalid order id.");
+      setError(language === "ar" ? "رقم الطلب غير صالح." : "Invalid order id.");
       setIsLoading(false);
       return;
     }
@@ -413,7 +495,7 @@ export default function OrderDetailsPage() {
     };
 
     loadOrder();
-  }, [orderId]);
+  }, [language, orderId]);
 
   useEffect(() => {
     if (!toastMessage && !toastError) {
@@ -495,10 +577,10 @@ export default function OrderDetailsPage() {
         );
         if (!assignment.success) {
           setToastError(
-            "Order moved to Out For Delivery, but assigning delivery date failed.",
+            text.updateAssignedFailed,
           );
         } else {
-          setToastMessage("Order status updated and delivery date assigned.");
+          setToastMessage(text.updateAssignedSuccess);
         }
       } else if (statusInput === "DELIVERED") {
         await api.put(`/orders/${orderId}/delivered`);
@@ -511,7 +593,7 @@ export default function OrderDetailsPage() {
       }
       setOrder((prev) => (prev ? { ...prev, status: statusInput } : prev));
       if (statusInput !== "OUT_FOR_DELIVERY") {
-        setToastMessage("Order status updated.");
+        setToastMessage(text.updateSuccess);
       }
     } catch (err) {
       setToastError(getErrorMessage(err));
@@ -525,7 +607,7 @@ export default function OrderDetailsPage() {
   );
   const statusLabel = order?.status ?? "UNKNOWN";
   const customerId = resolvedCustomerId;
-  const customerName = order ? resolveCustomerName(order) : "Unknown";
+  const customerName = order ? resolveCustomerName(order) : text.unknown;
 
   return (
     <AdminLayout>
@@ -533,20 +615,20 @@ export default function OrderDetailsPage() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="text-sm text-slate-500">
-              <Link href="/admin/orders" className="hover:text-slate-700">
-                Orders
+                <Link href="/admin/orders" className="hover:text-slate-700">
+                {text.orders}
               </Link>{" "}
-              / Order #{orderId}
+              / {text.orderTrail}
             </div>
             <h1 className="text-2xl font-semibold text-slate-900">
-              Order #{orderId}
+              {text.orderTitle}
             </h1>
           </div>
           <Link
             href="/admin/orders"
             className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100"
           >
-            Back to Orders
+            {text.backToOrders}
           </Link>
         </div>
 
@@ -570,21 +652,21 @@ export default function OrderDetailsPage() {
         ) : error ? (
           <p className="text-sm text-rose-600">{error}</p>
         ) : !order ? (
-          <p className="text-sm text-slate-500">Order not found.</p>
+          <p className="text-sm text-slate-500">{text.orderNotFound}</p>
         ) : (
           <div className="space-y-6">
             <div className="grid gap-4 lg:grid-cols-3">
               <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                 <h2 className="text-base font-semibold text-slate-900">
-                  Order Summary
+                  {text.orderSummary}
                 </h2>
                 <div className="mt-3 space-y-2 text-sm text-slate-600">
                   <div className="flex items-center justify-between">
-                    <span>Order ID</span>
+                    <span>{text.orderId}</span>
                     <span className="font-medium text-slate-900">{orderId}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Status</span>
+                    <span>{text.status}</span>
                     <span
                       className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(
                         statusLabel
@@ -594,19 +676,19 @@ export default function OrderDetailsPage() {
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Created At</span>
+                    <span>{text.createdAt}</span>
                     <span className="text-slate-900">
                       {formatDate(order.createdAt ?? order.created_at)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Payment Method</span>
+                    <span>{text.paymentMethod}</span>
                     <span className="text-slate-900">
                       {order.paymentType ?? order.paymentMethod ?? "-"}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Total Amount</span>
+                    <span>{text.totalAmount}</span>
                     <span className="font-medium text-slate-900">
                       {totalAmountValue !== null
                         ? formatCurrency(Number(totalAmountValue))
@@ -618,11 +700,11 @@ export default function OrderDetailsPage() {
 
               <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                 <h2 className="text-base font-semibold text-slate-900">
-                  Customer Information
+                  {text.customerInformation}
                 </h2>
                 <div className="mt-3 space-y-2 text-sm text-slate-600">
                   <div className="flex items-center justify-between">
-                    <span>Full Name</span>
+                    <span>{text.fullName}</span>
                     {customerId ? (
                       <Link
                         href={`/admin/users/${customerId}`}
@@ -635,13 +717,13 @@ export default function OrderDetailsPage() {
                     )}
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Email</span>
+                    <span>{text.email}</span>
                     <span className="text-slate-900">
                       {resolveCustomerEmail(order)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Phone</span>
+                    <span>{text.phone}</span>
                     <span className="text-slate-900">
                       {resolveCustomerPhone(order)}
                     </span>
@@ -651,30 +733,30 @@ export default function OrderDetailsPage() {
 
               <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                 <h2 className="text-base font-semibold text-slate-900">
-                  Shipping Address
+                  {text.shippingAddress}
                 </h2>
                 <div className="mt-3 space-y-2 text-sm text-slate-600">
                   <div className="flex items-center justify-between">
-                    <span>Area</span>
+                    <span>{text.area}</span>
                     <span className="text-slate-900">
                       {shippingAddress?.area ?? "-"}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>City</span>
+                    <span>{text.city}</span>
                     <span className="text-slate-900">
                       {shippingAddress?.city ?? "-"}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Street</span>
+                    <span>{text.street}</span>
                     <span className="text-slate-900">
                       {shippingAddress?.street ?? "-"}
                     </span>
                   </div>
                   {shippingAddress?.notes ? (
                     <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-                      Notes: {shippingAddress.notes}
+                      {text.notes}: {shippingAddress.notes}
                     </div>
                   ) : null}
                 </div>
@@ -684,22 +766,22 @@ export default function OrderDetailsPage() {
             <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-base font-semibold text-slate-900">
-                  Order Items
+                  {text.orderItems}
                 </h2>
               </div>
               {items.length === 0 ? (
-                <p className="text-sm text-slate-500">No items found.</p>
+                <p className="text-sm text-slate-500">{text.noItemsFound}</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm">
                     <thead className="border-b border-slate-200 text-slate-500">
                       <tr>
-                        <th className="py-2 pr-4 font-medium">Product Image</th>
-                        <th className="py-2 pr-4 font-medium">Product Name</th>
-                        <th className="py-2 pr-4 font-medium">Variant</th>
-                        <th className="py-2 pr-4 font-medium">Quantity</th>
-                        <th className="py-2 pr-4 font-medium">Price</th>
-                        <th className="py-2 font-medium">Subtotal</th>
+                        <th className="py-2 pr-4 font-medium">{text.productImage}</th>
+                        <th className="py-2 pr-4 font-medium">{text.productName}</th>
+                        <th className="py-2 pr-4 font-medium">{text.variant}</th>
+                        <th className="py-2 pr-4 font-medium">{text.quantity}</th>
+                        <th className="py-2 pr-4 font-medium">{text.price}</th>
+                        <th className="py-2 font-medium">{text.subtotal}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200">
@@ -756,7 +838,7 @@ export default function OrderDetailsPage() {
 
             <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
               <h2 className="text-base font-semibold text-slate-900">
-                Order Actions
+                {text.orderActions}
               </h2>
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 <select
@@ -764,7 +846,7 @@ export default function OrderDetailsPage() {
                   onChange={(event) => setStatusInput(event.target.value)}
                   className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
                 >
-                  <option value="">Select status</option>
+                  <option value="">{text.selectStatus}</option>
                   {STATUS_OPTIONS.map((status) => (
                     <option key={status} value={status}>
                       {status.replace(/_/g, " ")}
@@ -775,7 +857,7 @@ export default function OrderDetailsPage() {
                   onClick={handleStatusUpdate}
                   disabled={!statusInput || isUpdating}
                 >
-                  {isUpdating ? "Updating..." : "Update Status"}
+                  {isUpdating ? text.updating : text.updateStatus}
                 </Button>
               </div>
             </div>

@@ -30,18 +30,35 @@ export const filterOnlyEditedReviews = (
 
 export const getReviewStatusPresentation = (
   review: Pick<AdminReviewExtended, "status" | "isEdited">,
+  language: "en" | "ar" = "en",
 ) => {
+  const labels =
+    language === "ar"
+      ? {
+          pendingEdited: "قيد المراجعة (معدل)",
+          pendingEditedAria: "تقييم معدل بانتظار الإشراف",
+          pending: "قيد المراجعة",
+          approved: "مقبول",
+          hidden: "مخفي",
+        }
+      : {
+          pendingEdited: "PENDING (Edited)",
+          pendingEditedAria: "Edited review pending moderation",
+          pending: "PENDING",
+          approved: "APPROVED",
+          hidden: "HIDDEN",
+        };
   if (isEditedPendingReview(review)) {
     return {
-      label: "PENDING (Edited)",
+      label: labels.pendingEdited,
       className: "border-sky-200 bg-sky-100 text-sky-800",
-      ariaLabel: "Edited review pending moderation",
+      ariaLabel: labels.pendingEditedAria,
     };
   }
 
   if (review.status === "PENDING") {
     return {
-      label: "PENDING",
+      label: labels.pending,
       className: "border-amber-200 bg-amber-100 text-amber-800",
       ariaLabel: undefined,
     };
@@ -49,14 +66,14 @@ export const getReviewStatusPresentation = (
 
   if (review.status === "APPROVED") {
     return {
-      label: "APPROVED",
+      label: labels.approved,
       className: "border-emerald-200 bg-emerald-100 text-emerald-800",
       ariaLabel: undefined,
     };
   }
 
   return {
-    label: "HIDDEN",
+    label: labels.hidden,
     className: "border-slate-200 bg-slate-100 text-slate-700",
     ariaLabel: undefined,
   };

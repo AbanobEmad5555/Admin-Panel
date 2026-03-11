@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
+import { LocalizationProvider } from "@/modules/localization/LocalizationProvider";
 
 type AppProvidersProps = {
   children: React.ReactNode;
@@ -23,8 +24,10 @@ export default function AppProviders({ children }: AppProvidersProps) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {children}
-      <Toaster position="top-right" richColors closeButton />
+      <LocalizationProvider>
+        {children}
+        <Toaster position="top-right" richColors closeButton />
+      </LocalizationProvider>
     </QueryClientProvider>
   );
 }

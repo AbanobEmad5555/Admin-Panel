@@ -11,6 +11,7 @@ import TagBadge from "@/features/leads/components/TagBadge";
 import { useLeads } from "@/features/leads/hooks/useLeads";
 import { useUpdateLead } from "@/features/leads/hooks/useLeadMutations";
 import type { LeadPayload, User } from "@/features/leads/types";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 const formatDate = (value?: string) => {
   if (!value) {
@@ -30,6 +31,7 @@ const formatDate = (value?: string) => {
 };
 
 export default function LeadDetailsPage() {
+  const { language } = useLocalization();
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
@@ -39,6 +41,48 @@ export default function LeadDetailsPage() {
 
   const { data: leads = [], isLoading, isError } = useLeads({});
   const updateLead = useUpdateLead();
+  const text =
+    language === "ar"
+      ? {
+          title: "تفاصيل العميل المحتمل",
+          subtitle: "اعرض وعدّل ملف العميل المحتمل وحالة المبيعات.",
+          backToView: "العودة للعرض",
+          editLead: "تعديل العميل المحتمل",
+          loadFailed: "فشل تحميل العميل المحتمل.",
+          notFound: "العميل المحتمل غير موجود.",
+          name: "الاسم",
+          phone: "الهاتف",
+          email: "البريد الإلكتروني",
+          assignedAdmin: "المسؤول المعيّن",
+          unassigned: "غير معيّن",
+          source: "المصدر",
+          followUpDate: "تاريخ المتابعة",
+          tagOverride: "تجاوز الوسم",
+          enabled: "مفعل",
+          disabled: "معطل",
+          budget: "الميزانية",
+          notes: "ملاحظات",
+        }
+      : {
+          title: "Lead Details",
+          subtitle: "View and edit lead profile and sales status.",
+          backToView: "Back to View",
+          editLead: "Edit Lead",
+          loadFailed: "Failed to load lead.",
+          notFound: "Lead not found.",
+          name: "Name",
+          phone: "Phone",
+          email: "Email",
+          assignedAdmin: "Assigned Admin",
+          unassigned: "Unassigned",
+          source: "Source",
+          followUpDate: "Follow Up Date",
+          tagOverride: "Tag Override",
+          enabled: "Enabled",
+          disabled: "Disabled",
+          budget: "Budget",
+          notes: "Notes",
+        };
 
   const selectedLead = useMemo(
     () => leads.find((lead) => lead.id === leadId),
@@ -67,8 +111,8 @@ export default function LeadDetailsPage() {
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Lead Details</h1>
-            <p className="text-sm text-slate-500">View and edit lead profile and sales status.</p>
+            <h1 className="text-2xl font-bold text-slate-900">{text.title}</h1>
+            <p className="text-sm text-slate-500">{text.subtitle}</p>
           </div>
 
           {selectedLead ? (
@@ -77,14 +121,14 @@ export default function LeadDetailsPage() {
                 href={`/admin/crm/leads/${selectedLead.id}`}
                 className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100"
               >
-                Back to View
+                {text.backToView}
               </Link>
             ) : (
               <Link
                 href={`/admin/crm/leads/${selectedLead.id}?mode=edit`}
                 className="rounded-md bg-slate-900 px-3 py-2 text-sm text-white transition hover:bg-slate-800"
               >
-                Edit Lead
+                {text.editLead}
               </Link>
             )
           ) : null}
@@ -98,7 +142,7 @@ export default function LeadDetailsPage() {
 
         {!isLoading && (isError || !selectedLead) ? (
           <div className="rounded-xl bg-white p-6 text-sm text-slate-600 shadow">
-            {isError ? "Failed to load lead." : "Lead not found."}
+            {isError ? text.loadFailed : text.notFound}
           </div>
         ) : null}
 
@@ -123,19 +167,19 @@ export default function LeadDetailsPage() {
               <div className="rounded-xl bg-white p-6 shadow">
                 <dl className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div>
-                    <dt className="text-xs uppercase tracking-wide text-slate-500">Name</dt>
+                    <dt className="text-xs uppercase tracking-wide text-slate-500">{text.name}</dt>
                     <dd className="text-sm font-medium text-slate-900">{selectedLead.name}</dd>
                   </div>
                   <div>
-                    <dt className="text-xs uppercase tracking-wide text-slate-500">Phone</dt>
+                    <dt className="text-xs uppercase tracking-wide text-slate-500">{text.phone}</dt>
                     <dd className="text-sm font-medium text-slate-900">{selectedLead.phone}</dd>
                   </div>
                   <div>
-                    <dt className="text-xs uppercase tracking-wide text-slate-500">Email</dt>
+                    <dt className="text-xs uppercase tracking-wide text-slate-500">{text.email}</dt>
                     <dd className="text-sm font-medium text-slate-900">{selectedLead.email ?? "-"}</dd>
                   </div>
                   <div>
-                    <dt className="text-xs uppercase tracking-wide text-slate-500">Assigned Admin</dt>
+                    <dt className="text-xs uppercase tracking-wide text-slate-500">{text.assignedAdmin}</dt>
                     <dd className="text-sm font-medium text-slate-900">
                       {selectedLead.assignedTo?.id ? (
                         <Link
@@ -145,32 +189,32 @@ export default function LeadDetailsPage() {
                           {selectedLead.assignedTo.name}
                         </Link>
                       ) : (
-                        selectedLead.assignedTo?.name ?? "Unassigned"
+                        selectedLead.assignedTo?.name ?? text.unassigned
                       )}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-xs uppercase tracking-wide text-slate-500">Source</dt>
+                    <dt className="text-xs uppercase tracking-wide text-slate-500">{text.source}</dt>
                     <dd className="text-sm font-medium text-slate-900">{selectedLead.source}</dd>
                   </div>
                   <div>
-                    <dt className="text-xs uppercase tracking-wide text-slate-500">Follow Up Date</dt>
+                    <dt className="text-xs uppercase tracking-wide text-slate-500">{text.followUpDate}</dt>
                     <dd className="text-sm font-medium text-slate-900">{formatDate(selectedLead.followUpDate)}</dd>
                   </div>
                   <div>
-                    <dt className="text-xs uppercase tracking-wide text-slate-500">Tag Override</dt>
+                    <dt className="text-xs uppercase tracking-wide text-slate-500">{text.tagOverride}</dt>
                     <dd className="text-sm font-medium text-slate-900">
-                      {selectedLead.tagOverride ? "Enabled" : "Disabled"}
+                      {selectedLead.tagOverride ? text.enabled : text.disabled}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-xs uppercase tracking-wide text-slate-500">Budget</dt>
+                    <dt className="text-xs uppercase tracking-wide text-slate-500">{text.budget}</dt>
                     <dd className="text-sm font-medium text-slate-900">
                       {typeof selectedLead.budget === "number" ? selectedLead.budget : "-"}
                     </dd>
                   </div>
                   <div className="md:col-span-2">
-                    <dt className="text-xs uppercase tracking-wide text-slate-500">Notes</dt>
+                    <dt className="text-xs uppercase tracking-wide text-slate-500">{text.notes}</dt>
                     <dd className="text-sm text-slate-700">{selectedLead.notes ?? "-"}</dd>
                   </div>
                 </dl>

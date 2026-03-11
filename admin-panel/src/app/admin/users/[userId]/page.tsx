@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import AdminLayout from "@/components/layout/AdminLayout";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import api from "@/services/api";
 
 type Address = {
@@ -159,6 +160,7 @@ const resolveOrders = (user: UserDetail, rootOrders?: Order[] | null) => {
 };
 
 export default function UserDetailsPage() {
+  const { language } = useLocalization();
   const params = useParams();
   const router = useRouter();
   const userId = Array.isArray(params?.userId)
@@ -186,6 +188,118 @@ export default function UserDetailsPage() {
   const [ordersSummary, setOrdersSummary] = useState<UserDetail["ordersSummary"]>(
     null
   );
+  const text =
+    language === "ar"
+      ? {
+          invalidUserId: "رقم المستخدم غير صالح.",
+          updatedSuccess: "تم تحديث المستخدم بنجاح.",
+          activated: "تم تفعيل المستخدم.",
+          suspended: "تم تعليق المستخدم.",
+          users: "المستخدمون",
+          userDetails: "تفاصيل المستخدم",
+          backToUsers: "العودة إلى المستخدمين",
+          editUser: "تعديل المستخدم",
+          suspendUser: "تعليق المستخدم",
+          activateUser: "تفعيل المستخدم",
+          deleteUser: "حذف المستخدم",
+          userNotFound: "المستخدم غير موجود.",
+          userOverview: "نظرة عامة على المستخدم",
+          fullName: "الاسم الكامل",
+          email: "البريد الإلكتروني",
+          phone: "الهاتف",
+          role: "الدور",
+          status: "الحالة",
+          createdAt: "تاريخ الإنشاء",
+          primaryAddress: "العنوان الأساسي",
+          city: "المدينة",
+          area: "المنطقة",
+          street: "الشارع",
+          noAddress: "لا يوجد عنوان متاح.",
+          ordersSummary: "ملخص الطلبات",
+          totalOrders: "إجمالي الطلبات",
+          totalSpent: "إجمالي الإنفاق",
+          lastOrderDate: "تاريخ آخر طلب",
+          recentOrders: "الطلبات الأخيرة",
+          noOrders: "لا توجد طلبات.",
+          orderId: "رقم الطلب",
+          totalAmount: "المبلغ الإجمالي",
+          paymentMethod: "طريقة الدفع",
+          view: "عرض",
+          editUserTitle: "تعديل المستخدم",
+          name: "الاسم",
+          enterName: "أدخل الاسم",
+          enterEmail: "أدخل البريد الإلكتروني",
+          passwordOptional: "كلمة المرور (اختياري)",
+          leaveBlankPassword: "اتركه فارغًا للإبقاء على كلمة المرور الحالية",
+          cancel: "إلغاء",
+          saving: "جارٍ الحفظ...",
+          save: "حفظ",
+          suspendUserTitle: "تعليق المستخدم",
+          activateUserTitle: "تفعيل المستخدم",
+          suspendConfirm: "هل أنت متأكد من أنك تريد تعليق هذا المستخدم؟",
+          activateConfirm: "هل أنت متأكد من أنك تريد تفعيل هذا المستخدم؟",
+          suspend: "تعليق",
+          activate: "تفعيل",
+          deleteUserTitle: "حذف المستخدم",
+          deleteConfirm: "سيؤدي هذا الإجراء إلى حذف المستخدم نهائيًا ولا يمكن التراجع عنه. يجب أن ينفذه المسؤولون فقط.",
+          deleting: "جارٍ الحذف...",
+          delete: "حذف",
+        }
+      : {
+          invalidUserId: "Invalid user id.",
+          updatedSuccess: "User updated successfully.",
+          activated: "User activated.",
+          suspended: "User suspended.",
+          users: "Users",
+          userDetails: "User Details",
+          backToUsers: "Back to Users",
+          editUser: "Edit User",
+          suspendUser: "Suspend User",
+          activateUser: "Activate User",
+          deleteUser: "Delete User",
+          userNotFound: "User not found.",
+          userOverview: "User Overview",
+          fullName: "Full Name",
+          email: "Email",
+          phone: "Phone",
+          role: "Role",
+          status: "Status",
+          createdAt: "Created At",
+          primaryAddress: "Primary Address",
+          city: "City",
+          area: "Area",
+          street: "Street",
+          noAddress: "No address available.",
+          ordersSummary: "Orders Summary",
+          totalOrders: "Total Orders",
+          totalSpent: "Total Spent",
+          lastOrderDate: "Last Order Date",
+          recentOrders: "Recent Orders",
+          noOrders: "No orders found.",
+          orderId: "Order ID",
+          totalAmount: "Total Amount",
+          paymentMethod: "Payment Method",
+          view: "View",
+          editUserTitle: "Edit User",
+          name: "Name",
+          enterName: "Enter name",
+          enterEmail: "Enter email",
+          passwordOptional: "Password (optional)",
+          leaveBlankPassword: "Leave blank to keep current password",
+          cancel: "Cancel",
+          saving: "Saving...",
+          save: "Save",
+          suspendUserTitle: "Suspend User",
+          activateUserTitle: "Activate User",
+          suspendConfirm: "Are you sure you want to suspend this user?",
+          activateConfirm: "Are you sure you want to activate this user?",
+          suspend: "Suspend",
+          activate: "Activate",
+          deleteUserTitle: "Delete User",
+          deleteConfirm: "This action will permanently remove the user and cannot be undone. Only admins should perform this action.",
+          deleting: "Deleting...",
+          delete: "Delete",
+        };
 
   const address = useMemo(
     () => resolvePrimaryAddress(user ?? {}, rootAddress),
@@ -198,7 +312,7 @@ export default function UserDetailsPage() {
 
   useEffect(() => {
     if (!userId) {
-      setError("Invalid user id.");
+      setError(language === "ar" ? "رقم المستخدم غير صالح." : "Invalid user id.");
       setIsLoading(false);
       return;
     }
@@ -231,7 +345,7 @@ export default function UserDetailsPage() {
     };
 
     loadUser();
-  }, [userId]);
+  }, [language, userId]);
 
   useEffect(() => {
     if (!toastMessage && !toastError) {
@@ -288,7 +402,7 @@ export default function UserDetailsPage() {
       await api.put(`/admin/users/${userId}`, payload);
       setUser((prev) => (prev ? { ...prev, ...payload } : prev));
       setIsEditOpen(false);
-      setToastMessage("User updated successfully.");
+      setToastMessage(text.updatedSuccess);
     } catch (err) {
       const message = getErrorMessage(err);
       setActionError(message);
@@ -315,7 +429,7 @@ export default function UserDetailsPage() {
       );
       setIsSuspendOpen(false);
       setToastMessage(
-        nextStatus === "ACTIVE" ? "User activated." : "User suspended."
+        nextStatus === "ACTIVE" ? text.activated : text.suspended
       );
     } catch (err) {
       const message = getErrorMessage(err);
@@ -353,13 +467,13 @@ export default function UserDetailsPage() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="text-sm text-slate-500">
-              <Link href="/admin/users" className="hover:text-slate-700">
-                Users
+                <Link href="/admin/users" className="hover:text-slate-700">
+                {text.users}
               </Link>{" "}
-              / User Details
+              / {text.userDetails}
             </div>
             <h1 className="text-2xl font-semibold text-slate-900">
-              {user ? resolveName(user) : "User Details"}
+              {user ? resolveName(user) : text.userDetails}
             </h1>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -367,10 +481,10 @@ export default function UserDetailsPage() {
               href="/admin/users"
               className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100"
             >
-              Back to Users
+              {text.backToUsers}
             </Link>
             <Button variant="secondary" onClick={openEditModal} disabled={!user}>
-              Edit User
+              {text.editUser}
             </Button>
             <Button
               variant="secondary"
@@ -378,15 +492,15 @@ export default function UserDetailsPage() {
               disabled={!user || isSubmitting}
             >
               {resolveStatus(user ?? {}) === "ACTIVE"
-                ? "Suspend User"
-                : "Activate User"}
+                ? text.suspendUser
+                : text.activateUser}
             </Button>
             <Button
               variant="danger"
               onClick={() => setIsDeleteOpen(true)}
               disabled={!user || isSubmitting}
             >
-              Delete User
+              {text.deleteUser}
             </Button>
           </div>
         </div>
@@ -411,31 +525,31 @@ export default function UserDetailsPage() {
         ) : error ? (
           <p className="text-sm text-rose-600">{error}</p>
         ) : !user ? (
-          <p className="text-sm text-slate-500">User not found.</p>
+          <p className="text-sm text-slate-500">{text.userNotFound}</p>
         ) : (
           <div className="space-y-6">
             <div className="grid gap-4 lg:grid-cols-3">
               <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                 <h2 className="text-base font-semibold text-slate-900">
-                  User Overview
+                  {text.userOverview}
                 </h2>
                 <div className="mt-3 space-y-2 text-sm text-slate-600">
                   <div className="flex items-center justify-between">
-                    <span>Full Name</span>
+                    <span>{text.fullName}</span>
                     <span className="font-medium text-slate-900">
                       {resolveName(user)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Email</span>
+                    <span>{text.email}</span>
                     <span className="text-slate-900">{user.email ?? "-"}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Phone</span>
+                    <span>{text.phone}</span>
                     <span className="text-slate-900">{user.phone ?? "-"}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Role</span>
+                    <span>{text.role}</span>
                     <span
                       className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${getRoleBadgeClass(
                         String(user.role ?? "USER").toUpperCase()
@@ -445,7 +559,7 @@ export default function UserDetailsPage() {
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Status</span>
+                    <span>{text.status}</span>
                     <span
                       className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(
                         resolveStatus(user)
@@ -455,7 +569,7 @@ export default function UserDetailsPage() {
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Created At</span>
+                    <span>{text.createdAt}</span>
                     <span className="text-slate-900">
                       {formatDate(user.createdAt ?? user.created_at)}
                     </span>
@@ -465,30 +579,30 @@ export default function UserDetailsPage() {
 
               <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                 <h2 className="text-base font-semibold text-slate-900">
-                  Primary Address
+                  {text.primaryAddress}
                 </h2>
                 {address ? (
                   <div className="mt-3 space-y-2 text-sm text-slate-600">
                     <div className="flex items-center justify-between">
-                      <span>City</span>
+                      <span>{text.city}</span>
                       <span className="text-slate-900">
                         {address.city ?? "-"}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span>Area</span>
+                      <span>{text.area}</span>
                       <span className="text-slate-900">
                         {address.area ?? "-"}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span>Street</span>
+                      <span>{text.street}</span>
                       <span className="text-slate-900">
                         {address.street ?? "-"}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span>Phone</span>
+                      <span>{text.phone}</span>
                       <span className="text-slate-900">
                         {address.phone ?? "-"}
                       </span>
@@ -496,28 +610,28 @@ export default function UserDetailsPage() {
                   </div>
                 ) : (
                   <p className="mt-3 text-sm text-slate-500">
-                    No address available.
+                    {text.noAddress}
                   </p>
                 )}
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                 <h2 className="text-base font-semibold text-slate-900">
-                  Orders Summary
+                  {text.ordersSummary}
                 </h2>
                 <div className="mt-3 space-y-2 text-sm text-slate-600">
                   <div className="flex items-center justify-between">
-                    <span>Total Orders</span>
+                    <span>{text.totalOrders}</span>
                     <span className="text-slate-900">{totalOrders}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Total Spent</span>
+                    <span>{text.totalSpent}</span>
                     <span className="text-slate-900">
                       {formatCurrency(totalSpent)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Last Order Date</span>
+                    <span>{text.lastOrderDate}</span>
                     <span className="text-slate-900">
                       {formatDate(lastOrderDate)}
                     </span>
@@ -529,24 +643,24 @@ export default function UserDetailsPage() {
             <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-base font-semibold text-slate-900">
-                  Recent Orders
+                  {text.recentOrders}
                 </h2>
               </div>
               {orders.length === 0 ? (
-                <p className="text-sm text-slate-500">No orders found.</p>
+                <p className="text-sm text-slate-500">{text.noOrders}</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm">
                     <thead className="border-b border-slate-200 text-slate-500">
                       <tr>
-                        <th className="py-2 pr-4 font-medium">Order ID</th>
-                        <th className="py-2 pr-4 font-medium">Total Amount</th>
+                        <th className="py-2 pr-4 font-medium">{text.orderId}</th>
+                        <th className="py-2 pr-4 font-medium">{text.totalAmount}</th>
                         <th className="py-2 pr-4 font-medium">
-                          Payment Method
+                          {text.paymentMethod}
                         </th>
-                        <th className="py-2 pr-4 font-medium">Status</th>
-                        <th className="py-2 pr-4 font-medium">Created At</th>
-                        <th className="py-2 font-medium">View</th>
+                        <th className="py-2 pr-4 font-medium">{text.status}</th>
+                        <th className="py-2 pr-4 font-medium">{text.createdAt}</th>
+                        <th className="py-2 font-medium">{text.view}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200">
@@ -589,7 +703,7 @@ export default function UserDetailsPage() {
                                   href={`/admin/orders/${order.id}`}
                                   className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100"
                                 >
-                                  View
+                                  {text.view}
                                 </Link>
                               ) : (
                                 "-"
@@ -608,44 +722,44 @@ export default function UserDetailsPage() {
       </div>
 
       <Modal
-        title="Edit User"
+        title={text.editUserTitle}
         isOpen={isEditOpen}
         onClose={() => setIsEditOpen(false)}
       >
         <div className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Name</label>
+            <label className="text-sm font-medium text-slate-700">{text.name}</label>
             <input
               value={nameInput}
               onChange={(event) => setNameInput(event.target.value)}
-              placeholder="Enter name"
+              placeholder={text.enterName}
               className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Email</label>
+            <label className="text-sm font-medium text-slate-700">{text.email}</label>
             <input
               value={emailInput}
               onChange={(event) => setEmailInput(event.target.value)}
-              placeholder="Enter email"
+              placeholder={text.enterEmail}
               type="email"
               className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
             />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">
-              Password (optional)
+              {text.passwordOptional}
             </label>
             <input
               value={passwordInput}
               onChange={(event) => setPasswordInput(event.target.value)}
-              placeholder="Leave blank to keep current password"
+              placeholder={text.leaveBlankPassword}
               type="password"
               className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Role</label>
+            <label className="text-sm font-medium text-slate-700">{text.role}</label>
             <select
               value={roleInput}
               onChange={(event) => setRoleInput(event.target.value)}
@@ -666,10 +780,10 @@ export default function UserDetailsPage() {
               onClick={() => setIsEditOpen(false)}
               disabled={isSubmitting}
             >
-              Cancel
+              {text.cancel}
             </Button>
             <Button onClick={handleEdit} disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : "Save"}
+              {isSubmitting ? text.saving : text.save}
             </Button>
           </div>
         </div>
@@ -678,8 +792,8 @@ export default function UserDetailsPage() {
       <Modal
         title={
           resolveStatus(user ?? {}) === "ACTIVE"
-            ? "Suspend User"
-            : "Activate User"
+            ? text.suspendUserTitle
+            : text.activateUserTitle
         }
         isOpen={isSuspendOpen}
         onClose={() => setIsSuspendOpen(false)}
@@ -687,8 +801,8 @@ export default function UserDetailsPage() {
         <div className="space-y-4">
           <p className="text-sm text-slate-600">
             {resolveStatus(user ?? {}) === "ACTIVE"
-              ? "Are you sure you want to suspend this user?"
-              : "Are you sure you want to activate this user?"}
+              ? text.suspendConfirm
+              : text.activateConfirm}
           </p>
           {actionError ? (
             <p className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
@@ -701,26 +815,25 @@ export default function UserDetailsPage() {
               onClick={() => setIsSuspendOpen(false)}
               disabled={isSubmitting}
             >
-              Cancel
+              {text.cancel}
             </Button>
             <Button onClick={handleSuspendToggle} disabled={isSubmitting}>
               {resolveStatus(user ?? {}) === "ACTIVE"
-                ? "Suspend"
-                : "Activate"}
+                ? text.suspend
+                : text.activate}
             </Button>
           </div>
         </div>
       </Modal>
 
       <Modal
-        title="Delete User"
+        title={text.deleteUserTitle}
         isOpen={isDeleteOpen}
         onClose={() => setIsDeleteOpen(false)}
       >
         <div className="space-y-4">
           <p className="text-sm text-slate-600">
-            This action will permanently remove the user and cannot be undone.
-            Only admins should perform this action.
+            {text.deleteConfirm}
           </p>
           {actionError ? (
             <p className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
@@ -733,14 +846,14 @@ export default function UserDetailsPage() {
               onClick={() => setIsDeleteOpen(false)}
               disabled={isSubmitting}
             >
-              Cancel
+              {text.cancel}
             </Button>
             <Button
               variant="danger"
               onClick={handleDelete}
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Deleting..." : "Delete"}
+              {isSubmitting ? text.deleting : text.delete}
             </Button>
           </div>
         </div>

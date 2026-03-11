@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 export type PromoCodeFormValues = {
   code: string;
@@ -71,70 +72,136 @@ export default function PromoCodeFormModal({
   onClose,
   onSubmit,
 }: PromoCodeFormModalProps) {
-  const [form, setForm] = useState<PromoCodeFormValues>(emptyForm);
+  const { language } = useLocalization();
+  const initialFormState = useMemo(
+    () => initialValues ?? emptyForm,
+    [initialValues],
+  );
+  const [form, setForm] = useState<PromoCodeFormValues>(initialFormState);
   const [errors, setErrors] = useState<PromoCodeFormErrors>({});
+  const text =
+    language === "ar"
+      ? {
+          addTitle: "إضافة كود خصم",
+          editTitle: "تعديل كود الخصم",
+          code: "الكود",
+          codePlaceholder: "أدخل كود الخصم",
+          type: "النوع",
+          fixed: "ثابت",
+          percentage: "نسبة مئوية",
+          value: "القيمة",
+          valuePlaceholder: "قيمة رقمية",
+          minimumOrderPrice: "الحد الأدنى لسعر الطلب",
+          maxDiscountAmount: "أقصى مبلغ خصم",
+          expireDate: "تاريخ الانتهاء",
+          maxUsagePerUser: "أقصى استخدام لكل مستخدم",
+          maxTotalUsage: "أقصى استخدام إجمالي",
+          active: "نشط",
+          cancel: "إلغاء",
+          saving: "جارٍ الحفظ...",
+          save: "حفظ",
+          codeRequired: "الكود مطلوب.",
+          typeRequired: "النوع مطلوب.",
+          valueRequired: "القيمة مطلوبة.",
+          valueNumber: "يجب أن تكون القيمة رقمًا.",
+          fixedPositive: "يجب أن تكون القيمة الثابتة أكبر من صفر.",
+          percentageRange: "يجب أن تكون النسبة بين 1 و100.",
+          minOrderRequired: "الحد الأدنى لسعر الطلب مطلوب.",
+          numberMinZero: "يجب أن تكون قيمة رقمية أكبر من أو تساوي 0.",
+          maxDiscountRequired: "أقصى مبلغ خصم مطلوب.",
+          expireRequired: "تاريخ الانتهاء مطلوب.",
+          expireInvalid: "يجب أن يكون تاريخ الانتهاء صالحًا بصيغة YYYY-MM-DD.",
+          maxPerUserRequired: "أقصى استخدام لكل مستخدم مطلوب.",
+          numberMinOne: "يجب أن تكون قيمة رقمية أكبر من أو تساوي 1.",
+          maxTotalRequired: "أقصى استخدام إجمالي مطلوب.",
+        }
+      : {
+          addTitle: "Add Promo Code",
+          editTitle: "Edit Promo Code",
+          code: "Code",
+          codePlaceholder: "Enter promo code",
+          type: "Type",
+          fixed: "Fixed",
+          percentage: "Percentage",
+          value: "Value",
+          valuePlaceholder: "Numeric value",
+          minimumOrderPrice: "Minimum order price",
+          maxDiscountAmount: "Max discount amount",
+          expireDate: "Expire date",
+          maxUsagePerUser: "Max usage / user",
+          maxTotalUsage: "Max total usage",
+          active: "Active",
+          cancel: "Cancel",
+          saving: "Saving...",
+          save: "Save",
+          codeRequired: "Code is required.",
+          typeRequired: "Type is required.",
+          valueRequired: "Value is required.",
+          valueNumber: "Value must be a number.",
+          fixedPositive: "Fixed value must be greater than zero.",
+          percentageRange: "Percentage must be between 1 and 100.",
+          minOrderRequired: "Minimum order price is required.",
+          numberMinZero: "Must be a number >= 0.",
+          maxDiscountRequired: "Max discount amount is required.",
+          expireRequired: "Expire date is required.",
+          expireInvalid: "Expire date must be a valid YYYY-MM-DD.",
+          maxPerUserRequired: "Max usage per user is required.",
+          numberMinOne: "Must be a number >= 1.",
+          maxTotalRequired: "Max total usage is required.",
+        };
 
-  useEffect(() => {
-    if (initialValues) {
-      setForm(initialValues);
-    } else {
-      setForm(emptyForm);
-    }
-    setErrors({});
-  }, [initialValues, isOpen]);
-
-  const title = mode === "create" ? "Add Promo Code" : "Edit Promo Code";
+  const title = mode === "create" ? text.addTitle : text.editTitle;
 
   const validate = () => {
     const nextErrors: PromoCodeFormErrors = {};
     const trimmedCode = form.code.trim();
     if (!trimmedCode) {
-      nextErrors.code = "Code is required.";
+      nextErrors.code = text.codeRequired;
     }
     if (!form.type) {
-      nextErrors.type = "Type is required.";
+      nextErrors.type = text.typeRequired;
     }
     const parsedValue = Number(form.value);
     if (!form.value.trim()) {
-      nextErrors.value = "Value is required.";
+      nextErrors.value = text.valueRequired;
     } else if (Number.isNaN(parsedValue)) {
-      nextErrors.value = "Value must be a number.";
+      nextErrors.value = text.valueNumber;
     } else if (form.type === "FIXED" && parsedValue <= 0) {
-      nextErrors.value = "Fixed value must be greater than zero.";
+      nextErrors.value = text.fixedPositive;
     } else if (
       form.type === "PERCENTAGE" &&
       (parsedValue < 1 || parsedValue > 100)
     ) {
-      nextErrors.value = "Percentage must be between 1 and 100.";
+      nextErrors.value = text.percentageRange;
     }
     const minOrder = Number(form.minimum_order_price);
     if (!form.minimum_order_price.trim()) {
-      nextErrors.minimum_order_price = "Minimum order price is required.";
+      nextErrors.minimum_order_price = text.minOrderRequired;
     } else if (Number.isNaN(minOrder) || minOrder < 0) {
-      nextErrors.minimum_order_price = "Must be a number >= 0.";
+      nextErrors.minimum_order_price = text.numberMinZero;
     }
     const maxDiscount = Number(form.max_discount_amount);
     if (!form.max_discount_amount.trim()) {
-      nextErrors.max_discount_amount = "Max discount amount is required.";
+      nextErrors.max_discount_amount = text.maxDiscountRequired;
     } else if (Number.isNaN(maxDiscount) || maxDiscount < 0) {
-      nextErrors.max_discount_amount = "Must be a number >= 0.";
+      nextErrors.max_discount_amount = text.numberMinZero;
     }
     if (!form.expire_date.trim()) {
-      nextErrors.expire_date = "Expire date is required.";
+      nextErrors.expire_date = text.expireRequired;
     } else if (!isValidDate(form.expire_date)) {
-      nextErrors.expire_date = "Expire date must be a valid YYYY-MM-DD.";
+      nextErrors.expire_date = text.expireInvalid;
     }
     const perUser = Number(form.max_usage_per_user);
     if (!form.max_usage_per_user.trim()) {
-      nextErrors.max_usage_per_user = "Max usage per user is required.";
+      nextErrors.max_usage_per_user = text.maxPerUserRequired;
     } else if (Number.isNaN(perUser) || perUser < 1) {
-      nextErrors.max_usage_per_user = "Must be a number >= 1.";
+      nextErrors.max_usage_per_user = text.numberMinOne;
     }
     const totalUsage = Number(form.max_total_usage);
     if (!form.max_total_usage.trim()) {
-      nextErrors.max_total_usage = "Max total usage is required.";
+      nextErrors.max_total_usage = text.maxTotalRequired;
     } else if (Number.isNaN(totalUsage) || totalUsage < 1) {
-      nextErrors.max_total_usage = "Must be a number >= 1.";
+      nextErrors.max_total_usage = text.numberMinOne;
     }
     setErrors(nextErrors);
     return nextErrors;
@@ -166,20 +233,20 @@ export default function PromoCodeFormModal({
     <Modal title={title} isOpen={isOpen} onClose={onClose}>
       <div className="space-y-4">
         <div>
-          <label className="text-sm font-medium text-slate-700">Code</label>
+          <label className="text-sm font-medium text-slate-700">{text.code}</label>
           <Input
             value={form.code}
             onChange={(event) =>
               setForm((prev) => ({ ...prev, code: event.target.value }))
             }
-            placeholder="Enter promo code"
+            placeholder={text.codePlaceholder}
           />
           {errors.code ? (
             <p className="mt-1 text-xs text-rose-600">{errors.code}</p>
           ) : null}
         </div>
         <div>
-          <label className="text-sm font-medium text-slate-700">Type</label>
+          <label className="text-sm font-medium text-slate-700">{text.type}</label>
           <select
             value={form.type}
             onChange={(event) =>
@@ -190,21 +257,21 @@ export default function PromoCodeFormModal({
             }
             className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
           >
-            <option value="FIXED">Fixed</option>
-            <option value="PERCENTAGE">Percentage</option>
+            <option value="FIXED">{text.fixed}</option>
+            <option value="PERCENTAGE">{text.percentage}</option>
           </select>
           {errors.type ? (
             <p className="mt-1 text-xs text-rose-600">{errors.type}</p>
           ) : null}
         </div>
         <div>
-          <label className="text-sm font-medium text-slate-700">Value</label>
+          <label className="text-sm font-medium text-slate-700">{text.value}</label>
           <Input
             value={form.value}
             onChange={(event) =>
               setForm((prev) => ({ ...prev, value: event.target.value }))
             }
-            placeholder="Numeric value"
+            placeholder={text.valuePlaceholder}
             {...numericInputProps}
           />
           {errors.value ? (
@@ -214,7 +281,7 @@ export default function PromoCodeFormModal({
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="text-sm font-medium text-slate-700">
-              Minimum order price
+              {text.minimumOrderPrice}
             </label>
             <Input
               value={form.minimum_order_price}
@@ -235,7 +302,7 @@ export default function PromoCodeFormModal({
           </div>
           <div>
             <label className="text-sm font-medium text-slate-700">
-              Max discount amount
+              {text.maxDiscountAmount}
             </label>
             <Input
               value={form.max_discount_amount}
@@ -256,7 +323,7 @@ export default function PromoCodeFormModal({
           </div>
         </div>
         <div>
-          <label className="text-sm font-medium text-slate-700">Expire date</label>
+          <label className="text-sm font-medium text-slate-700">{text.expireDate}</label>
           <Input
             type="date"
             value={form.expire_date}
@@ -272,7 +339,7 @@ export default function PromoCodeFormModal({
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="text-sm font-medium text-slate-700">
-              Max usage / user
+              {text.maxUsagePerUser}
             </label>
             <Input
               value={form.max_usage_per_user}
@@ -293,7 +360,7 @@ export default function PromoCodeFormModal({
           </div>
           <div>
             <label className="text-sm font-medium text-slate-700">
-              Max total usage
+              {text.maxTotalUsage}
             </label>
             <Input
               value={form.max_total_usage}
@@ -322,14 +389,14 @@ export default function PromoCodeFormModal({
               setForm((prev) => ({ ...prev, is_active: event.target.checked }))
             }
           />
-          Active
+          {text.active}
         </label>
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
-            Cancel
+            {text.cancel}
           </Button>
           <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : "Save"}
+            {isSubmitting ? text.saving : text.save}
           </Button>
         </div>
       </div>

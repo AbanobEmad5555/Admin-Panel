@@ -6,6 +6,7 @@ import AdminLayout from "@/components/layout/AdminLayout";
 import PipelineColumn from "@/features/leads/components/PipelineColumn";
 import { useUpdateLeadStatus } from "@/features/leads/hooks/useLeadMutations";
 import { usePipeline } from "@/features/leads/hooks/usePipeline";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import {
   LEAD_STATUS_ORDER,
   type Lead,
@@ -13,8 +14,21 @@ import {
 } from "@/features/leads/types";
 
 export default function LeadsPipelinePage() {
+  const { language } = useLocalization();
   const { data: pipeline = [], isLoading, isError } = usePipeline();
   const updateStatus = useUpdateLeadStatus();
+  const text =
+    language === "ar"
+      ? {
+          title: "مسار العملاء المحتملين",
+          subtitle: "اسحب العملاء المحتملين وأفلتهم بين مراحل المبيعات.",
+          loadFailed: "فشل تحميل مسار العملاء المحتملين.",
+        }
+      : {
+          title: "Leads Pipeline",
+          subtitle: "Drag and drop leads across sales stages.",
+          loadFailed: "Failed to load pipeline.",
+        };
 
   const board = useMemo(() => {
     const empty: Record<LeadStatus, Lead[]> = {
@@ -80,8 +94,8 @@ export default function LeadsPipelinePage() {
     <AdminLayout>
       <div className="space-y-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Leads Pipeline</h1>
-          <p className="text-sm text-slate-500">Drag and drop leads across sales stages.</p>
+          <h1 className="text-2xl font-bold text-slate-900">{text.title}</h1>
+          <p className="text-sm text-slate-500">{text.subtitle}</p>
         </div>
 
         {isLoading ? (
@@ -94,7 +108,7 @@ export default function LeadsPipelinePage() {
 
         {!isLoading && isError ? (
           <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-            Failed to load pipeline.
+            {text.loadFailed}
           </div>
         ) : null}
 

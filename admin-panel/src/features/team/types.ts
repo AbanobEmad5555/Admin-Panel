@@ -14,9 +14,11 @@ export type EmploymentType = "FULL_TIME" | "PART_TIME" | "TRAINEE";
 export type Employee = {
   id: string;
   employeeCode?: string | null;
-  firstName: string;
-  lastName: string;
+  firstName?: string | null;
+  lastName?: string | null;
   fullName: string;
+  fullNameEn?: string | null;
+  fullNameAr?: string | null;
   role: TeamRole;
   status: TeamStatus;
   salary: number;
@@ -25,8 +27,12 @@ export type Employee = {
   phone?: string | null;
   address?: string | null;
   title?: string | null;
+  titleEn?: string | null;
+  titleAr?: string | null;
   employmentType?: EmploymentType | null;
   department?: string | null;
+  departmentEn?: string | null;
+  departmentAr?: string | null;
   profileImageUrl?: string | null;
   hireDate?: string | null;
   shiftStart?: string | null;
@@ -57,17 +63,19 @@ export type PaginatedResponse<T> = {
 };
 
 export type CreateEmployeeInput = {
-  firstName: string;
-  lastName: string;
+  fullNameEn: string;
+  fullNameAr?: string;
   role: TeamRole;
   salary: number;
   currency: string;
   email?: string;
   phone?: string;
   address?: string;
-  title?: string;
+  titleEn?: string;
+  titleAr?: string;
   employmentType?: EmploymentType;
-  department?: string;
+  departmentEn?: string;
+  departmentAr?: string;
   profileImageUrl?: string | null;
   hireDate?: string;
   shiftStart?: string;

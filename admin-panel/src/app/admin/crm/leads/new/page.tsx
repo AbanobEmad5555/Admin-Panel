@@ -7,9 +7,11 @@ import LeadForm from "@/features/leads/components/LeadForm";
 import { useCreateLead } from "@/features/leads/hooks/useLeadMutations";
 import { useLeads } from "@/features/leads/hooks/useLeads";
 import type { LeadPayload, User } from "@/features/leads/types";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 export default function CreateLeadPage() {
   const router = useRouter();
+  const { language } = useLocalization();
   const createLead = useCreateLead();
   const { data: leads = [] } = useLeads({});
 
@@ -34,8 +36,14 @@ export default function CreateLeadPage() {
     <AdminLayout>
       <div className="space-y-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Create Lead</h1>
-          <p className="text-sm text-slate-500">Add a new lead and assign ownership.</p>
+          <h1 className="text-2xl font-bold text-slate-900">
+            {language === "ar" ? "إنشاء عميل محتمل" : "Create Lead"}
+          </h1>
+          <p className="text-sm text-slate-500">
+            {language === "ar"
+              ? "أضف عميلًا محتملًا جديدًا وعيّن المسؤول عنه."
+              : "Add a new lead and assign ownership."}
+          </p>
         </div>
 
         <LeadForm

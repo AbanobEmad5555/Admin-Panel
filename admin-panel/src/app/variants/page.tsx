@@ -6,6 +6,7 @@ import AdminLayout from "@/components/layout/AdminLayout";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import api from "@/services/api";
 
 type Variant = {
@@ -101,7 +102,15 @@ const getErrorMessage = (error: unknown) => {
   return "Something went wrong.";
 };
 
+const getErrorStatus = (error: unknown) => {
+  if (typeof error !== "object" || error === null) {
+    return undefined;
+  }
+  return (error as { response?: { status?: number } }).response?.status;
+};
+
 export default function VariantsPage() {
+  const { language } = useLocalization();
   const router = useRouter();
   const [variants, setVariants] = useState<Variant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -124,6 +133,92 @@ export default function VariantsPage() {
   const [filterSize, setFilterSize] = useState("");
   const [filterColor, setFilterColor] = useState("");
   const [filterMaterial, setFilterMaterial] = useState("");
+  const text =
+    language === "ar"
+      ? {
+          title: "المتغيرات",
+          subtitle: "إدارة متغيرات المنتج وخصائصه.",
+          addVariant: "إضافة متغير",
+          id: "المعرّف",
+          sku: "رمز SKU",
+          size: "المقاس",
+          color: "اللون",
+          material: "الخامة",
+          status: "الحالة",
+          createdAt: "تاريخ الإنشاء",
+          actions: "الإجراءات",
+          all: "الكل",
+          applyFilters: "تطبيق عوامل التصفية",
+          resetFilters: "إعادة التعيين",
+          noVariants: "لا توجد متغيرات.",
+          active: "نشط",
+          inactive: "غير نشط",
+          edit: "تعديل",
+          delete: "حذف",
+          addVariantTitle: "إضافة متغير",
+          editVariantTitle: "تعديل المتغير",
+          deleteVariantTitle: "حذف المتغير",
+          enterSku: "أدخل SKU",
+          selectSize: "اختر المقاس",
+          selectColor: "اختر اللون",
+          selectMaterial: "اختر الخامة",
+          autoGenerate: "توليد تلقائي",
+          autoGenerateTitle: "توليد SKU بناءً على الخصائص المحددة",
+          save: "حفظ",
+          saving: "جارٍ الحفظ...",
+          update: "تحديث",
+          updating: "جارٍ التحديث...",
+          deleting: "جارٍ الحذف...",
+          cancel: "إلغاء",
+          deleteQuestion: "هل أنت متأكد أنك تريد حذف هذا المتغير؟",
+          skuRequired: "رمز SKU مطلوب.",
+          attributesRequired: "جميع الخصائص مطلوبة.",
+          noChanges: "لا توجد تغييرات للتحديث.",
+          autoGenerateError: "يجب اختيار كل الخيارات لاستخدام التوليد التلقائي.",
+          genericError: "حدث خطأ غير متوقع.",
+        }
+      : {
+          title: "Variants",
+          subtitle: "Manage product variants and attributes.",
+          addVariant: "Add Variant",
+          id: "ID",
+          sku: "SKU",
+          size: "Size",
+          color: "Color",
+          material: "Material",
+          status: "Status",
+          createdAt: "Created At",
+          actions: "Actions",
+          all: "All",
+          applyFilters: "Apply Filters",
+          resetFilters: "Reset Filters",
+          noVariants: "No variants found.",
+          active: "Active",
+          inactive: "Inactive",
+          edit: "Edit",
+          delete: "Delete",
+          addVariantTitle: "Add Variant",
+          editVariantTitle: "Edit Variant",
+          deleteVariantTitle: "Delete Variant",
+          enterSku: "Enter SKU",
+          selectSize: "Select size",
+          selectColor: "Select color",
+          selectMaterial: "Select material",
+          autoGenerate: "Auto Generate",
+          autoGenerateTitle: "Generate SKU based on selected attributes",
+          save: "Save",
+          saving: "Saving...",
+          update: "Update",
+          updating: "Updating...",
+          deleting: "Deleting...",
+          cancel: "Cancel",
+          deleteQuestion: "Are you sure you want to delete this variant?",
+          skuRequired: "SKU is required.",
+          attributesRequired: "All attributes are required.",
+          noChanges: "No changes to update.",
+          autoGenerateError: "You need to choose all options to use Auto Generate",
+          genericError: "Something went wrong.",
+        };
 
   const sortedVariants = useMemo(
     () => [...variants].sort((a, b) => a.id - b.id),
@@ -142,7 +237,7 @@ export default function VariantsPage() {
     } catch (err) {
       const message = getErrorMessage(err);
       setError(message);
-      const status = (err as any)?.response?.status;
+      const status = getErrorStatus(err);
       if (status === 401 || status === 403) {
         router.replace("/login");
       }
@@ -229,19 +324,23 @@ export default function VariantsPage() {
         isActive: statusInput === "active",
       };
       if (!payload.sku) {
-        setActionError("SKU is required.");
+        setActionError(text.skuRequired);
         return;
       }
       if (!payload.attributes.size || !payload.attributes.color || !payload.attributes.material) {
-        setActionError("All attributes are required.");
+        setActionError(text.attributesRequired);
         return;
       }
       await api.post("/variants", payload);
       setIsAddOpen(false);
       await fetchVariants();
     } catch (err) {
-      setActionError(getErrorMessage(err));
-      const status = (err as any)?.response?.status;
+      setActionError(
+        (typeof err === "object" && err !== null
+          ? ((err as { response?: { data?: { message?: string } } }).response?.data?.message ?? text.genericError)
+          : text.genericError)
+      );
+      const status = getErrorStatus(err);
       if (status === 401 || status === 403) {
         router.replace("/login");
       }
@@ -260,7 +359,7 @@ export default function VariantsPage() {
 
   const handleAutoGenerateSku = () => {
     if (!sizeInput || !colorInput || !materialInput) {
-      setActionError("You need to choose all options to use Auto Generate");
+      setActionError(text.autoGenerateError);
       return;
     }
     const sku = `${sanitizeSkuPart(materialInput)}-${sanitizeSkuPart(
@@ -301,7 +400,7 @@ export default function VariantsPage() {
         payload.isActive = nextStatus;
       }
       if (Object.keys(payload).length === 0) {
-        setActionError("No changes to update.");
+        setActionError(text.noChanges);
         return;
       }
       await api.put(`/variants/${selectedVariant.id}`, payload);
@@ -309,8 +408,12 @@ export default function VariantsPage() {
       setSelectedVariant(null);
       await fetchVariants();
     } catch (err) {
-      setActionError(getErrorMessage(err));
-      const status = (err as any)?.response?.status;
+      setActionError(
+        (typeof err === "object" && err !== null
+          ? ((err as { response?: { data?: { message?: string } } }).response?.data?.message ?? text.genericError)
+          : text.genericError)
+      );
+      const status = getErrorStatus(err);
       if (status === 401 || status === 403) {
         router.replace("/login");
       }
@@ -331,8 +434,12 @@ export default function VariantsPage() {
       setSelectedVariant(null);
       await fetchVariants();
     } catch (err) {
-      setActionError(getErrorMessage(err));
-      const status = (err as any)?.response?.status;
+      setActionError(
+        (typeof err === "object" && err !== null
+          ? ((err as { response?: { data?: { message?: string } } }).response?.data?.message ?? text.genericError)
+          : text.genericError)
+      );
+      const status = getErrorStatus(err);
       if (status === 401 || status === 403) {
         router.replace("/login");
       }
@@ -346,42 +453,42 @@ export default function VariantsPage() {
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-900">Variants</h1>
+            <h1 className="text-2xl font-semibold text-slate-900">{text.title}</h1>
             <p className="text-sm remember text-slate-500">
-              Manage product variants and attributes.
+              {text.subtitle}
             </p>
           </div>
-          <Button onClick={openAddModal}>Add Variant</Button>
+          <Button onClick={openAddModal}>{text.addVariant}</Button>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">ID</label>
+              <label className="text-sm font-medium text-slate-700">{text.id}</label>
               <input
                 value={filterId}
                 onChange={(event) => setFilterId(event.target.value)}
-                placeholder="ID"
+                placeholder={text.id}
                 className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">SKU</label>
+              <label className="text-sm font-medium text-slate-700">{text.sku}</label>
               <input
                 value={filterSku}
                 onChange={(event) => setFilterSku(event.target.value)}
-                placeholder="SKU"
+                placeholder={text.sku}
                 className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Size</label>
+              <label className="text-sm font-medium text-slate-700">{text.size}</label>
               <select
                 value={filterSize}
                 onChange={(event) => setFilterSize(event.target.value)}
                 className="w-full appearance-none rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
               >
-                <option value="">All</option>
+                <option value="">{text.all}</option>
                 {SIZE_OPTIONS.map((size) => (
                   <option key={size.value} value={size.value}>
                     {size.label}
@@ -390,13 +497,13 @@ export default function VariantsPage() {
               </select>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Color</label>
+              <label className="text-sm font-medium text-slate-700">{text.color}</label>
               <select
                 value={filterColor}
                 onChange={(event) => setFilterColor(event.target.value)}
                 className="w-full appearance-none rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
               >
-                <option value="">All</option>
+                <option value="">{text.all}</option>
                 {COLOR_OPTIONS.map((color) => (
                   <option key={color.value} value={color.value}>
                     {color.name}
@@ -406,14 +513,14 @@ export default function VariantsPage() {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
-                Material
+                {text.material}
               </label>
               <select
                 value={filterMaterial}
                 onChange={(event) => setFilterMaterial(event.target.value)}
                 className="w-full appearance-none rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
               >
-                <option value="">All</option>
+                <option value="">{text.all}</option>
                 {MATERIAL_OPTIONS.map((material) => (
                   <option key={material.value} value={material.value}>
                     {material.label}
@@ -428,14 +535,14 @@ export default function VariantsPage() {
               onClick={handleApplyFilters}
               className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
             >
-              Apply Filters
+              {text.applyFilters}
             </button>
             <button
               type="button"
               onClick={handleResetFilters}
               className="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100"
             >
-              Reset Filters
+              {text.resetFilters}
             </button>
           </div>
         </div>
@@ -450,20 +557,20 @@ export default function VariantsPage() {
           ) : error ? (
             <p className="text-sm text-rose-600">{error}</p>
           ) : sortedVariants.length === 0 ? (
-            <p className="text-sm text-slate-500">No variants found.</p>
+            <p className="text-sm text-slate-500">{text.noVariants}</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-slate-200 text-slate-500">
                   <tr>
-                    <th className="py-2 pr-4 font-medium">ID</th>
-                    <th className="py-2 pr-4 font-medium">SKU</th>
-                    <th className="py-2 pr-4 font-medium">Size</th>
-                    <th className="py-2 pr-4 font-medium">Color</th>
-                    <th className="py-2 pr-4 font-medium">Material</th>
-                    <th className="py-2 pr-4 font-medium">Status</th>
-                    <th className="py-2 pr-4 font-medium">Created At</th>
-                    <th className="py-2 font-medium">Actions</th>
+                    <th className="py-2 pr-4 font-medium">{text.id}</th>
+                    <th className="py-2 pr-4 font-medium">{text.sku}</th>
+                    <th className="py-2 pr-4 font-medium">{text.size}</th>
+                    <th className="py-2 pr-4 font-medium">{text.color}</th>
+                    <th className="py-2 pr-4 font-medium">{text.material}</th>
+                    <th className="py-2 pr-4 font-medium">{text.status}</th>
+                    <th className="py-2 pr-4 font-medium">{text.createdAt}</th>
+                    <th className="py-2 font-medium">{text.actions}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -481,7 +588,7 @@ export default function VariantsPage() {
                         {variant.attributes?.material ?? "-"}
                       </td>
                       <td className="py-3 pr-4">
-                        {variant.isActive ? "Active" : "Inactive"}
+                        {variant.isActive ? text.active : text.inactive}
                       </td>
                       <td className="py-3 pr-4">
                         {formatDate(variant.createdAt)}
@@ -492,13 +599,13 @@ export default function VariantsPage() {
                             variant="secondary"
                             onClick={() => openEditModal(variant)}
                           >
-                            Edit
+                            {text.edit}
                           </Button>
                           <Button
                             variant="danger"
                             onClick={() => openDeleteModal(variant)}
                           >
-                            Delete
+                            {text.delete}
                           </Button>
                         </div>
                       </td>
@@ -511,19 +618,19 @@ export default function VariantsPage() {
         </div>
 
         <Modal
-          title="Add Variant"
+          title={text.addVariantTitle}
           isOpen={isAddOpen}
           onClose={() => setIsAddOpen(false)}
         >
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">SKU</label>
+              <label className="text-sm font-medium text-slate-700">{text.sku}</label>
               <div className="flex flex-wrap gap-2">
                 <div className="flex-1">
                   <Input
                     value={skuInput}
                     onChange={(event) => setSkuInput(event.target.value)}
-                    placeholder="Enter SKU"
+                    placeholder={text.enterSku}
                   />
                 </div>
                 <Button
@@ -531,16 +638,16 @@ export default function VariantsPage() {
                   variant="secondary"
                   className="h-10"
                   onClick={handleAutoGenerateSku}
-                  title="Generate SKU based on selected attributes"
+                  title={text.autoGenerateTitle}
                 >
-                  Auto Generate
+                  {text.autoGenerate}
                 </Button>
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
-                  Size
+                  {text.size}
                 </label>
                 <div className="relative">
                   <select
@@ -548,7 +655,7 @@ export default function VariantsPage() {
                     onChange={(event) => setSizeInput(event.target.value)}
                     className="w-full appearance-none rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
                   >
-                    <option value="">Select size</option>
+                    <option value="">{text.selectSize}</option>
                     {SIZE_OPTIONS.map((size) => (
                       <option key={size.value} value={size.value}>
                         {size.label}
@@ -562,7 +669,7 @@ export default function VariantsPage() {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
-                  Color
+                  {text.color}
                 </label>
                 <div className="relative">
                   <select
@@ -570,7 +677,7 @@ export default function VariantsPage() {
                     onChange={(event) => setColorInput(event.target.value)}
                     className="w-full appearance-none rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
                   >
-                    <option value="">Select color</option>
+                    <option value="">{text.selectColor}</option>
                     {COLOR_OPTIONS.map((color) => (
                       <option key={color.value} value={color.value}>
                         {color.name}
@@ -594,7 +701,7 @@ export default function VariantsPage() {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
-                Material
+                  {text.material}
               </label>
               <div className="relative">
                 <select
@@ -602,7 +709,7 @@ export default function VariantsPage() {
                   onChange={(event) => setMaterialInput(event.target.value)}
                   className="w-full appearance-none rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
                 >
-                  <option value="">Select material</option>
+                  <option value="">{text.selectMaterial}</option>
                   {MATERIAL_OPTIONS.map((material) => (
                     <option key={material.value} value={material.value}>
                       {material.label}
@@ -616,7 +723,7 @@ export default function VariantsPage() {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
-                Status
+                {text.status}
               </label>
               <div className="flex gap-4">
                 <label className="flex items-center gap-2 text-sm text-slate-700">
@@ -628,7 +735,7 @@ export default function VariantsPage() {
                     onChange={(event) => setStatusInput(event.target.value)}
                     className="h-4 w-4 accent-slate-900"
                   />
-                  Active
+                  {text.active}
                 </label>
                 <label className="flex items-center gap-2 text-sm text-slate-700">
                   <input
@@ -639,7 +746,7 @@ export default function VariantsPage() {
                     onChange={(event) => setStatusInput(event.target.value)}
                     className="h-4 w-4 accent-slate-900"
                   />
-                  Inactive
+                  {text.inactive}
                 </label>
               </div>
             </div>
@@ -654,32 +761,32 @@ export default function VariantsPage() {
                 onClick={() => setIsAddOpen(false)}
                 disabled={isSubmitting}
               >
-                Cancel
+                {text.cancel}
               </Button>
               <Button
                 onClick={handleAdd}
                 disabled={isSubmitting || skuInput.trim().length === 0}
               >
-                {isSubmitting ? "Saving..." : "Save"}
+                {isSubmitting ? text.saving : text.save}
               </Button>
             </div>
           </div>
         </Modal>
 
         <Modal
-          title="Edit Variant"
+          title={text.editVariantTitle}
           isOpen={isEditOpen}
           onClose={() => setIsEditOpen(false)}
         >
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">SKU</label>
+              <label className="text-sm font-medium text-slate-700">{text.sku}</label>
               <div className="flex flex-wrap gap-2">
                 <div className="flex-1">
                   <Input
                     value={skuInput}
                     onChange={(event) => setSkuInput(event.target.value)}
-                    placeholder="Enter SKU"
+                    placeholder={text.enterSku}
                   />
                 </div>
                 <Button
@@ -687,16 +794,16 @@ export default function VariantsPage() {
                   variant="secondary"
                   className="h-10"
                   onClick={handleAutoGenerateSku}
-                  title="Generate SKU based on selected attributes"
+                  title={text.autoGenerateTitle}
                 >
-                  Auto Generate
+                  {text.autoGenerate}
                 </Button>
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
-                  Size
+                  {text.size}
                 </label>
                 <div className="relative">
                   <select
@@ -704,7 +811,7 @@ export default function VariantsPage() {
                     onChange={(event) => setSizeInput(event.target.value)}
                     className="w-full appearance-none rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
                   >
-                    <option value="">Select size</option>
+                    <option value="">{text.selectSize}</option>
                     {SIZE_OPTIONS.map((size) => (
                       <option key={size.value} value={size.value}>
                         {size.label}
@@ -718,7 +825,7 @@ export default function VariantsPage() {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
-                  Color
+                  {text.color}
                 </label>
                 <div className="relative">
                   <select
@@ -726,7 +833,7 @@ export default function VariantsPage() {
                     onChange={(event) => setColorInput(event.target.value)}
                     className="w-full appearance-none rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
                   >
-                    <option value="">Select color</option>
+                    <option value="">{text.selectColor}</option>
                     {COLOR_OPTIONS.map((color) => (
                       <option key={color.value} value={color.value}>
                         {color.name}
@@ -750,7 +857,7 @@ export default function VariantsPage() {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
-                Material
+                  {text.material}
               </label>
               <div className="relative">
                 <select
@@ -758,7 +865,7 @@ export default function VariantsPage() {
                   onChange={(event) => setMaterialInput(event.target.value)}
                   className="w-full appearance-none rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
                 >
-                  <option value="">Select material</option>
+                  <option value="">{text.selectMaterial}</option>
                   {MATERIAL_OPTIONS.map((material) => (
                     <option key={material.value} value={material.value}>
                       {material.label}
@@ -772,7 +879,7 @@ export default function VariantsPage() {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
-                Status
+                {text.status}
               </label>
               <div className="flex gap-4">
                 <label className="flex items-center gap-2 text-sm text-slate-700">
@@ -784,7 +891,7 @@ export default function VariantsPage() {
                     onChange={(event) => setStatusInput(event.target.value)}
                     className="h-4 w-4 accent-slate-900"
                   />
-                  Active
+                  {text.active}
                 </label>
                 <label className="flex items-center gap-2 text-sm text-slate-700">
                   <input
@@ -795,7 +902,7 @@ export default function VariantsPage() {
                     onChange={(event) => setStatusInput(event.target.value)}
                     className="h-4 w-4 accent-slate-900"
                   />
-                  Inactive
+                  {text.inactive}
                 </label>
               </div>
             </div>
@@ -810,26 +917,26 @@ export default function VariantsPage() {
                 onClick={() => setIsEditOpen(false)}
                 disabled={isSubmitting}
               >
-                Cancel
+                {text.cancel}
               </Button>
               <Button
                 onClick={handleEdit}
                 disabled={isSubmitting || skuInput.trim().length === 0}
               >
-                {isSubmitting ? "Updating..." : "Update"}
+                {isSubmitting ? text.updating : text.update}
               </Button>
             </div>
           </div>
         </Modal>
 
         <Modal
-          title="Delete Variant"
+          title={text.deleteVariantTitle}
           isOpen={isDeleteOpen}
           onClose={() => setIsDeleteOpen(false)}
         >
           <div className="space-y-4">
             <p className="text-sm text-slate-600">
-              Are you sure you want to delete this variant?
+              {text.deleteQuestion}
             </p>
             {actionError ? (
               <p className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
@@ -842,14 +949,14 @@ export default function VariantsPage() {
                 onClick={() => setIsDeleteOpen(false)}
                 disabled={isSubmitting}
               >
-                Cancel
+                {text.cancel}
               </Button>
               <Button
                 variant="danger"
                 onClick={handleDelete}
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Deleting..." : "Delete"}
+                {isSubmitting ? text.deleting : text.delete}
               </Button>
             </div>
           </div>

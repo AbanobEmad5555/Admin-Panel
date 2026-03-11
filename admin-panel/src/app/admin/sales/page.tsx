@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "@/components/layout/AdminLayout";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import api from "@/services/api";
 
 type SalesSnapshotData = {
@@ -182,7 +183,7 @@ const normalizeTopProductItem = (item: unknown, index: number): TopProduct => {
       (typeof record.title === "string" ? record.title : "") ||
       (typeof record.label === "string" ? record.label : "") ||
       (typeof record.product_title === "string" ? record.product_title : "") ||
-      "Unnamed product",
+      text.unnamedProduct,
     quantity: safeNumber(
       record.quantity ??
         record.qty ??
@@ -197,55 +198,126 @@ const normalizeTopProductItem = (item: unknown, index: number): TopProduct => {
 };
 
 export default function SalesDashboardPage() {
+  const { language } = useLocalization();
+  const text = useMemo(
+    () =>
+      language === "ar"
+        ? {
+          today: "اليوم",
+          thisMonth: "هذا الشهر",
+          thisQuarter: "هذا الربع",
+          thisYear: "هذا العام",
+          lastMonth: "الشهر الماضي",
+          insights: "الرؤى",
+          title: "لوحة المبيعات",
+          subtitle: "لقطة مباشرة للإيرادات وأفضل المبيعات وزخم المنتجات.",
+          totalSalesFor: "إجمالي المبيعات خلال",
+          orders: "طلبات",
+          lastYear: "العام الماضي",
+          historicalSales: "إجمالي المبيعات التاريخي للمقارنة",
+          bestSellers: "الأكثر مبيعًا",
+          bestSellersSubtitle: "أفضل منتج أداءً لكل إطار زمني",
+          bestSellerPerformance: "أداء أفضل مبيعًا باستخدام بيانات التنفيذ",
+          quantitySoldFor: "الكمية المباعة لأفضل منتج خلال",
+          quantity: "الكمية",
+          noBestSeller: "لا يوجد أفضل مبيعًا بعد",
+          topProducts: "أفضل المنتجات",
+          topProductsSubtitle: "أفضل 10 منتجات مرتبة حسب الوحدات المشحونة",
+          sortHint: "مرر فوق العناوين لتغيير اتجاه الفرز",
+          noTopProducts: "لا توجد منتجات الأعلى مبيعًا بعد.",
+          page: "الصفحة",
+          of: "من",
+          prev: "السابق",
+          next: "التالي",
+          product: "المنتج",
+          sortByProductName: "الترتيب حسب اسم المنتج",
+          sortByQuantity: "الترتيب حسب إجمالي الكمية المباعة",
+          unnamedProduct: "منتج بدون اسم",
+          }
+        : {
+          today: "Today",
+          thisMonth: "This Month",
+          thisQuarter: "This Quarter",
+          thisYear: "This Year",
+          lastMonth: "Last Month",
+          insights: "Insights",
+          title: "Sales Dashboard",
+          subtitle: "Live snapshot of revenue, best sellers, and product momentum.",
+          totalSalesFor: "Total sales for",
+          orders: "orders",
+          lastYear: "Last Year",
+          historicalSales: "Historical total sales for reference",
+          bestSellers: "Best Sellers",
+          bestSellersSubtitle: "Top-performing product for each timeframe",
+          bestSellerPerformance: "Best seller ecommerce performance using fulfillment data",
+          quantitySoldFor: "Quantity sold for best seller during",
+          quantity: "Quantity",
+          noBestSeller: "No best seller yet",
+          topProducts: "Top Products",
+          topProductsSubtitle: "Top 10 products sorted by units shipped",
+          sortHint: "Hover the headers to change the sort direction",
+          noTopProducts: "No top-selling products yet.",
+          page: "Page",
+          of: "of",
+          prev: "Prev",
+          next: "Next",
+          product: "Product",
+          sortByProductName: "Sort by product name",
+          sortByQuantity: "Sort by total quantity sold",
+          unnamedProduct: "Unnamed product",
+          },
+    [language]
+  );
+
   const kpiTimeframes = useMemo<KpiFrame[]>(() => {
     return [
       {
         key: "today",
-        title: "Today",
+        title: text.today,
         endpoint: "/sales/today",
       },
       {
         key: "thisMonth",
-        title: "This Month",
+        title: text.thisMonth,
         endpoint: "/sales/this-month",
       },
       {
         key: "thisQuarter",
-        title: "This Quarter",
+        title: text.thisQuarter,
         endpoint: "/sales/this-quarter",
       },
       {
         key: "thisYear",
-        title: "This Year",
+        title: text.thisYear,
         endpoint: "/sales/this-year",
       },
     ];
-  }, []);
+  }, [text]);
 
   const bestSellerTimeframes = useMemo<BestSellerFrame[]>(() => {
     return [
       {
         key: "today",
-        label: "Today",
+        label: text.today,
         endpoint: "/sales/best-seller/today",
       },
       {
         key: "thisMonth",
-        label: "This Month",
+        label: text.thisMonth,
         endpoint: "/sales/best-seller/this-month",
       },
       {
         key: "lastMonth",
-        label: "Last Month",
+        label: text.lastMonth,
         endpoint: "/sales/best-seller/last-month",
       },
       {
         key: "thisYear",
-        label: "This Year",
+        label: text.thisYear,
         endpoint: "/sales/best-seller/this-year",
       },
     ];
-  }, []);
+  }, [text]);
 
   const lastYearLabel = useMemo(
     () => (new Date().getFullYear() - 1).toString(),
@@ -540,13 +612,13 @@ export default function SalesDashboardPage() {
       <div className="space-y-6">
         <header className="space-y-1">
           <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-            Insights
+            {text.insights}
           </p>
           <h1 className="text-2xl font-semibold text-slate-900">
-            Sales Dashboard
+            {text.title}
           </h1>
           <p className="text-sm text-slate-500">
-            Live snapshot of revenue, best sellers, and product momentum.
+            {text.subtitle}
           </p>
         </header>
 
@@ -568,7 +640,7 @@ export default function SalesDashboardPage() {
                   </p>
                   <span
                     className="text-xs text-slate-400"
-                    title={`Total sales for ${frame.title}`}
+                    title={`${text.totalSalesFor} ${frame.title}`}
                   >
                     ℹ
                   </span>
@@ -586,7 +658,7 @@ export default function SalesDashboardPage() {
                   {rangeLabel}
                 </p>
                 {!state?.loading && !state?.error ? (
-                  <p className="mt-1 text-xs text-slate-500">{totalOrders} orders</p>
+                  <p className="mt-1 text-xs text-slate-500">{totalOrders} {text.orders}</p>
                 ) : null}
 
                 {state?.error && (
@@ -603,14 +675,14 @@ export default function SalesDashboardPage() {
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">Last Year</p>
+                <p className="text-sm font-medium text-slate-600">{text.lastYear}</p>
                 <p className="text-xs text-slate-500">
                   Jan 1 — Dec 31 {lastYearLabel}
                 </p>
               </div>
               <span
                 className="text-xs text-slate-400"
-                title="Historical total sales for reference"
+                title={text.historicalSales}
               >
                 ℹ
               </span>
@@ -636,15 +708,15 @@ export default function SalesDashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold text-slate-900">
-                Best Sellers
+                {text.bestSellers}
               </h2>
               <p className="text-sm text-slate-500">
-                Top-performing product for each timeframe
+                {text.bestSellersSubtitle}
               </p>
             </div>
             <span
               className="text-xs text-slate-400"
-              title="Best seller ecommerce performance using fulfillment data"
+              title={text.bestSellerPerformance}
             >
               ℹ
             </span>
@@ -667,7 +739,7 @@ export default function SalesDashboardPage() {
                     </p>
                     <span
                       className="text-xs text-slate-400"
-                      title={`Quantity sold for best seller during ${frame.label}`}
+                      title={`${text.quantitySoldFor} ${frame.label}`}
                     >
                       ℹ
                     </span>
@@ -684,7 +756,7 @@ export default function SalesDashboardPage() {
                           {product?.productName}
                         </p>
                         <p className="text-sm text-slate-500">
-                          Quantity:{" "}
+                          {text.quantity}:{" "}
                           <span className="text-emerald-600">
                             {product?.quantity ?? 0}
                           </span>
@@ -692,7 +764,7 @@ export default function SalesDashboardPage() {
                       </>
                     ) : (
                       <p className="text-sm text-slate-500">
-                        No best seller yet
+                        {text.noBestSeller}
                       </p>
                     )}
                   </div>
@@ -706,15 +778,15 @@ export default function SalesDashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold text-slate-900">
-                Top Products
+                {text.topProducts}
               </h2>
               <p className="text-sm text-slate-500">
-                Top 10 products sorted by units shipped
+                {text.topProductsSubtitle}
               </p>
             </div>
             <span
               className="text-xs text-slate-400"
-              title="Hover the headers to change the sort direction"
+              title={text.sortHint}
             >
               ℹ
             </span>
@@ -732,7 +804,7 @@ export default function SalesDashboardPage() {
               </div>
             ) : sortedProducts.length === 0 ? (
               <div className="px-6 py-10 text-center text-sm text-slate-500">
-                No top-selling products yet.
+                {text.noTopProducts}
               </div>
             ) : (
               <>
@@ -745,9 +817,9 @@ export default function SalesDashboardPage() {
                             type="button"
                             className="flex items-center gap-1 font-semibold"
                             onClick={() => handleSort("name")}
-                            title="Sort products alphabetically"
+                            title={text.sortByProductName}
                           >
-                            Product
+                            {text.product}
                             {sortKey === "name" && (
                               <span className="text-slate-400">
                                 {sortDirection === "asc" ? "↑" : "↓"}
@@ -760,9 +832,9 @@ export default function SalesDashboardPage() {
                             type="button"
                             className="flex items-center gap-1 font-semibold"
                             onClick={() => handleSort("quantity")}
-                            title="Sort by total quantity sold"
+                            title={text.sortByQuantity}
                           >
-                            Quantity
+                            {text.quantity}
                             {sortKey === "quantity" && (
                               <span className="text-slate-400">
                                 {sortDirection === "asc" ? "↑" : "↓"}
@@ -806,7 +878,7 @@ export default function SalesDashboardPage() {
                 </div>
                 <div className="flex flex-col gap-3 border-t border-slate-100 px-6 py-3 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-xs uppercase tracking-wide text-slate-500">
-                    Page {effectiveCurrentPage} of {totalPages}
+                    {text.page} {effectiveCurrentPage} {text.of} {totalPages}
                   </p>
                   <div className="flex gap-2">
                     <button
@@ -815,7 +887,7 @@ export default function SalesDashboardPage() {
                       disabled={effectiveCurrentPage === 1}
                       className="rounded-lg border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      Prev
+                      {text.prev}
                     </button>
                     <button
                       type="button"
@@ -823,7 +895,7 @@ export default function SalesDashboardPage() {
                       disabled={effectiveCurrentPage === totalPages}
                       className="rounded-lg border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      Next
+                      {text.next}
                     </button>
                   </div>
                 </div>

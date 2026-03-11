@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AxiosError } from "axios";
 import { Download, FileSpreadsheet, Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -9,11 +9,16 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import ConfirmDeleteModal from "@/components/purchases/ConfirmDeleteModal";
 import CostFormModal from "@/components/purchases/CostFormModal";
-import { costCategories, costCategoryLabels } from "@/components/purchases/constants";
+import {
+  costCategories,
+  costCategoryArabicLabels,
+  costCategoryLabels,
+} from "@/components/purchases/constants";
 import CostsTable from "@/components/purchases/CostsTable";
 import PurchasesModuleNav from "@/components/purchases/PurchasesModuleNav";
 import type { CostFormValue, CostRow } from "@/components/purchases/types";
 import { purchaseCostsApi } from "@/features/purchases/api/purchases.api";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 const PAGE_SIZE = 20;
 
@@ -21,6 +26,54 @@ const getApiErrorMessage = (error: unknown, fallback: string) =>
   ((error as AxiosError<{ message?: string }>)?.response?.data?.message ?? fallback);
 
 export default function PurchasesCostsPage() {
+  const { language, t } = useLocalization();
+  const text = {
+    title: t("nav.operationalCosts") || "Operational Costs",
+    subtitle:
+      language === "ar"
+        ? "تابع الإيجار والمرافق والرواتب والمصروفات الأخرى"
+        : "Track rent, utilities, salaries and other expenses",
+    addCost: language === "ar" ? "إضافة مصروف" : "Add Cost",
+    exportCsv: language === "ar" ? "تصدير CSV" : "Export CSV",
+    exportExcel: language === "ar" ? "تصدير Excel" : "Export Excel",
+    csvQueued:
+      language === "ar"
+        ? "تمت جدولة تصدير CSV للمصروفات التشغيلية."
+        : "Operational costs CSV export queued.",
+    excelQueued:
+      language === "ar"
+        ? "تمت جدولة تصدير Excel للمصروفات التشغيلية."
+        : "Operational costs Excel export queued.",
+    loadError:
+      language === "ar" ? "تعذر تحميل المصروفات التشغيلية." : "Failed to load operational costs.",
+    requiredFields:
+      language === "ar" ? "يرجى استكمال الحقول المطلوبة." : "Please complete required fields.",
+    costAdded: language === "ar" ? "تمت إضافة المصروف." : "Cost added.",
+    costUpdated: language === "ar" ? "تم تحديث المصروف." : "Cost updated.",
+    createError: language === "ar" ? "تعذر إنشاء المصروف." : "Failed to create cost.",
+    updateError: language === "ar" ? "تعذر تحديث المصروف." : "Failed to update cost.",
+    namePlaceholder: language === "ar" ? "التصفية باسم المصروف" : "Filter by cost name",
+    allCategories: language === "ar" ? "كل الفئات" : "All categories",
+    clear: language === "ar" ? "مسح" : "Clear",
+    apply: language === "ar" ? "تطبيق" : "Apply",
+    retry: language === "ar" ? "إعادة المحاولة" : "Retry",
+    emptyTitle: language === "ar" ? "لا توجد مصروفات" : "No costs found",
+    emptyDescription:
+      language === "ar"
+        ? "جرّب تعديل الفلاتر أو أضف مصروفًا تشغيليًا جديدًا."
+        : "Try adjusting filters or add a new operational cost.",
+    previous: t("common.previous") || "Previous",
+    next: t("common.next") || "Next",
+    pageLabel: language === "ar" ? "الصفحة" : "Page",
+    ofLabel: language === "ar" ? "من" : "of",
+    rowsPerPage: language === "ar" ? "صفًا لكل صفحة" : "rows per page",
+    deleteTitle: language === "ar" ? "حذف المصروف" : "Delete Cost",
+    deleteDescription:
+      language === "ar" ? "هل تريد حذف سجل المصروف التشغيلي هذا؟" : "Delete this operational cost entry?",
+    costDeleted: language === "ar" ? "تم حذف المصروف." : "Cost deleted.",
+    deleteError: language === "ar" ? "تعذر حذف المصروف." : "Failed to delete cost.",
+  };
+
   const [rows, setRows] = useState<CostRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -31,34 +84,33 @@ export default function PurchasesCostsPage() {
   const [nameFilter, setNameFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<CostRow["category"] | "ALL">("ALL");
   const [dateFilter, setDateFilter] = useState("");
-
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const [selectedRow, setSelectedRow] = useState<CostRow | null>(null);
-
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [rowToDelete, setRowToDelete] = useState<CostRow | null>(null);
 
-  const refreshCosts = async () => {
+  const refreshCosts = useCallback(async () => {
     setError("");
     try {
       const data = await purchaseCostsApi.list();
       setRows(data);
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, "Failed to load operational costs."));
+      setError(getApiErrorMessage(requestError, text.loadError));
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [text.loadError]);
 
   useEffect(() => {
     void refreshCosts();
-  }, []);
+  }, [refreshCosts]);
 
   const filteredRows = useMemo(() => {
     const query = nameFilter.trim().toLowerCase();
     return rows.filter((row) => {
-      const matchesName = query.length === 0 || row.name.toLowerCase().includes(query);
+      const localizedName = [row.name, row.costNameEn, row.costNameAr].filter(Boolean).join(" ").toLowerCase();
+      const matchesName = query.length === 0 || localizedName.includes(query);
       const matchesCategory = categoryFilter === "ALL" || row.category === categoryFilter;
       const matchesDate = dateFilter.length === 0 || row.date === dateFilter;
       return matchesName && matchesCategory && matchesDate;
@@ -74,42 +126,41 @@ export default function PurchasesCostsPage() {
 
   const handleSubmit = async (payload: CostFormValue) => {
     const amount = Number(payload.amount || 0);
-    if (!payload.name.trim() || amount <= 0 || !payload.date) {
-      toast.error("Please complete required fields.");
+    if (!payload.costNameEn.trim() || amount <= 0 || !payload.date) {
+      toast.error(text.requiredFields);
       return;
     }
 
     try {
       if (formMode === "create") {
         await purchaseCostsApi.create({
-          name: payload.name.trim(),
+          name: payload.costNameEn.trim(),
+          costNameEn: payload.costNameEn.trim(),
+          costNameAr: payload.costNameAr.trim() || undefined,
           category: payload.category,
           amount,
           date: payload.date,
           notes: payload.notes.trim() || undefined,
         });
-        toast.success("Cost added.");
+        toast.success(text.costAdded);
       } else if (selectedRow) {
         await purchaseCostsApi.update(selectedRow.id, {
-          name: payload.name.trim(),
+          name: payload.costNameEn.trim(),
+          costNameEn: payload.costNameEn.trim(),
+          costNameAr: payload.costNameAr.trim() || undefined,
           category: payload.category,
           amount,
           date: payload.date,
           notes: payload.notes.trim() || undefined,
         });
-        toast.success("Cost updated.");
+        toast.success(text.costUpdated);
       }
 
       await refreshCosts();
       setFormOpen(false);
       setSelectedRow(null);
     } catch (requestError) {
-      toast.error(
-        getApiErrorMessage(
-          requestError,
-          formMode === "create" ? "Failed to create cost." : "Failed to update cost."
-        )
-      );
+      toast.error(getApiErrorMessage(requestError, formMode === "create" ? text.createError : text.updateError));
     }
   };
 
@@ -119,10 +170,8 @@ export default function PurchasesCostsPage() {
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Operational Costs</h1>
-              <p className="text-sm text-slate-500">
-                Track rent, utilities, salaries and other expenses
-              </p>
+              <h1 className="text-2xl font-bold text-slate-900">{text.title}</h1>
+              <p className="text-sm text-slate-500">{text.subtitle}</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Button
@@ -135,25 +184,25 @@ export default function PurchasesCostsPage() {
                 className="gap-2"
               >
                 <Plus className="h-4 w-4" />
-                Add Cost
+                {text.addCost}
               </Button>
               <Button
                 type="button"
                 variant="secondary"
                 className="gap-2"
-                onClick={() => toast.success("Operational costs CSV export queued.")}
+                onClick={() => toast.success(text.csvQueued)}
               >
                 <Download className="h-4 w-4" />
-                Export CSV
+                {text.exportCsv}
               </Button>
               <Button
                 type="button"
                 variant="secondary"
                 className="gap-2"
-                onClick={() => toast.success("Operational costs Excel export queued.")}
+                onClick={() => toast.success(text.excelQueued)}
               >
                 <FileSpreadsheet className="h-4 w-4" />
-                Export Excel
+                {text.exportExcel}
               </Button>
             </div>
           </div>
@@ -164,7 +213,7 @@ export default function PurchasesCostsPage() {
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             <Input
-              placeholder="Filter by cost name"
+              placeholder={text.namePlaceholder}
               value={draftNameFilter}
               onChange={(event) => setDraftNameFilter(event.target.value)}
             />
@@ -175,10 +224,10 @@ export default function PurchasesCostsPage() {
               }
               className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
             >
-              <option value="ALL">All categories</option>
+              <option value="ALL">{text.allCategories}</option>
               {costCategories.map((category) => (
                 <option key={category} value={category}>
-                  {costCategoryLabels[category]}
+                  {language === "ar" ? costCategoryArabicLabels[category] : costCategoryLabels[category]}
                 </option>
               ))}
             </select>
@@ -204,7 +253,7 @@ export default function PurchasesCostsPage() {
                 setPage(1);
               }}
             >
-              Clear
+              {text.clear}
             </Button>
             <Button
               type="button"
@@ -215,7 +264,7 @@ export default function PurchasesCostsPage() {
                 setPage(1);
               }}
             >
-              Apply
+              {text.apply}
             </Button>
           </div>
         </div>
@@ -238,17 +287,15 @@ export default function PurchasesCostsPage() {
               }}
               className="ml-2 font-semibold underline"
             >
-              Retry
+              {text.retry}
             </button>
           </div>
         ) : null}
 
         {!isLoading && !error && filteredRows.length === 0 ? (
           <div className="rounded-xl border border-slate-200 bg-white p-10 text-center shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-900">No costs found</h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Try adjusting filters or add a new operational cost.
-            </p>
+            <h2 className="text-lg font-semibold text-slate-900">{text.emptyTitle}</h2>
+            <p className="mt-1 text-sm text-slate-500">{text.emptyDescription}</p>
             <div className="mt-4">
               <Button
                 type="button"
@@ -258,7 +305,7 @@ export default function PurchasesCostsPage() {
                   setFormOpen(true);
                 }}
               >
-                Add Cost
+                {text.addCost}
               </Button>
             </div>
           </div>
@@ -286,11 +333,11 @@ export default function PurchasesCostsPage() {
                 disabled={currentPage <= 1}
                 onClick={() => setPage((prev) => Math.max(1, prev - 1))}
               >
-                Previous
+                {text.previous}
               </Button>
               <div className="text-sm text-slate-600">
-                Page <span className="font-semibold">{currentPage}</span> of{" "}
-                <span className="font-semibold">{totalPages}</span> • 20 rows per page
+                {text.pageLabel} <span className="font-semibold">{currentPage}</span> {text.ofLabel}{" "}
+                <span className="font-semibold">{totalPages}</span> • 20 {text.rowsPerPage}
               </div>
               <Button
                 type="button"
@@ -298,7 +345,7 @@ export default function PurchasesCostsPage() {
                 disabled={currentPage >= totalPages}
                 onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
               >
-                Next
+                {text.next}
               </Button>
             </div>
           </>
@@ -320,22 +367,23 @@ export default function PurchasesCostsPage() {
 
       <ConfirmDeleteModal
         open={deleteOpen}
-        title="Delete Cost"
-        description="Delete this operational cost entry?"
+        title={text.deleteTitle}
+        description={text.deleteDescription}
         onClose={() => setDeleteOpen(false)}
         onConfirm={() => {
           if (!rowToDelete) {
             return;
           }
+
           void purchaseCostsApi
             .remove(rowToDelete.id)
             .then(async () => {
               await refreshCosts();
               setDeleteOpen(false);
-              toast.success("Cost deleted.");
+              toast.success(text.costDeleted);
             })
             .catch((requestError: unknown) => {
-              toast.error(getApiErrorMessage(requestError, "Failed to delete cost."));
+              toast.error(getApiErrorMessage(requestError, text.deleteError));
             })
             .finally(() => undefined);
         }}

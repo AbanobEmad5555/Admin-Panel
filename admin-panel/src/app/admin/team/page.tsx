@@ -26,6 +26,7 @@ import {
   getCachedEmploymentType,
   setCachedEmploymentType,
 } from "@/features/team/utils/employmentTypeCache";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import type { Employee, EmployeeListParams, EmploymentType } from "@/features/team/types";
 
 const PAGE_SIZE = 20;
@@ -43,6 +44,7 @@ const getErrorMessage = (error: unknown) =>
   ((error as AxiosError<{ message?: string }>)?.response?.data?.message ?? "Something went wrong.");
 
 export default function TeamPage() {
+  const { language } = useLocalization();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -164,14 +166,18 @@ export default function TeamPage() {
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Team</h1>
+              <h1 className="text-2xl font-bold text-slate-900">
+                {language === "ar" ? "الفريق" : "Team"}
+              </h1>
               <p className="text-sm text-slate-900">
-                Manage employees, roles, documents and status.
+                {language === "ar"
+                  ? "إدارة الموظفين والأدوار والمستندات والحالة."
+                  : "Manage employees, roles, documents and status."}
               </p>
             </div>
             <Button type="button" className="gap-2" onClick={() => setCreateOpen(true)}>
               <Plus className="h-4 w-4" />
-              Add Employee
+              {language === "ar" ? "إضافة موظف" : "Add Employee"}
             </Button>
           </div>
         </div>
@@ -198,13 +204,15 @@ export default function TeamPage() {
 
         {listQuery.isError && statusCode === 403 ? (
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-amber-800 shadow-sm">
-            You do not have permission to access team management.
+            {language === "ar"
+              ? "ليس لديك صلاحية للوصول إلى إدارة الفريق."
+              : "You do not have permission to access team management."}
           </div>
         ) : null}
 
         {listQuery.isError && statusCode === 404 ? (
           <div className="rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-            Team module endpoint not found.
+            {language === "ar" ? "لم يتم العثور على واجهة الفريق." : "Team module endpoint not found."}
           </div>
         ) : null}
 
@@ -216,8 +224,14 @@ export default function TeamPage() {
 
         {!listQuery.isLoading && !listQuery.isError && filteredRows.length === 0 ? (
           <div className="rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-900">No employees found</h2>
-            <p className="mt-1 text-sm text-slate-900">Try changing filters or add a new employee.</p>
+            <h2 className="text-lg font-semibold text-slate-900">
+              {language === "ar" ? "لا يوجد موظفون" : "No employees found"}
+            </h2>
+            <p className="mt-1 text-sm text-slate-900">
+              {language === "ar"
+                ? "جرّب تغيير الفلاتر أو إضافة موظف جديد."
+                : "Try changing filters or add a new employee."}
+            </p>
           </div>
         ) : null}
 
@@ -235,10 +249,10 @@ export default function TeamPage() {
                 disabled={page <= 1}
                 onClick={() => applyParams({ page: Math.max(1, page - 1) })}
               >
-                Previous
+                {language === "ar" ? "السابق" : "Previous"}
               </Button>
               <p className="text-sm text-slate-900">
-                Page <span className="font-semibold">{page}</span> of{" "}
+                {language === "ar" ? "الصفحة" : "Page"} <span className="font-semibold">{page}</span> {language === "ar" ? "من" : "of"}{" "}
                 <span className="font-semibold">{totalPages}</span>
               </p>
               <Button
@@ -247,7 +261,7 @@ export default function TeamPage() {
                 disabled={page >= totalPages}
                 onClick={() => applyParams({ page: Math.min(totalPages, page + 1) })}
               >
-                Next
+                {language === "ar" ? "التالي" : "Next"}
               </Button>
             </div>
           </>
@@ -264,13 +278,13 @@ export default function TeamPage() {
               if (employee?.id) {
                 setCachedEmploymentType(employee.id, values.employmentType);
               }
-              toast.success("Employee created successfully.");
+              toast.success(language === "ar" ? "تم إنشاء الموظف بنجاح." : "Employee created successfully.");
               setCreateOpen(false);
             },
             onError: (error) => {
               const status = getStatus(error);
               if (status === 409) {
-                toast.error("Conflict while creating employee.");
+                toast.error(language === "ar" ? "يوجد تعارض أثناء إنشاء الموظف." : "Conflict while creating employee.");
                 return;
               }
               toast.error(getErrorMessage(error));
@@ -289,7 +303,7 @@ export default function TeamPage() {
           updateMutation.mutate(values, {
             onSuccess: () => {
               setCachedEmploymentType(editingEmployeeId, values.employmentType);
-              toast.success("Employee updated.");
+              toast.success(language === "ar" ? "تم تحديث الموظف." : "Employee updated.");
               setEditingEmployeeId(null);
             },
             onError: (error) => toast.error(getErrorMessage(error)),
@@ -306,7 +320,7 @@ export default function TeamPage() {
           if (!statusEmployee) return;
           statusMutation.mutate(values, {
             onSuccess: () => {
-              toast.success("Employee status updated.");
+              toast.success(language === "ar" ? "تم تحديث حالة الموظف." : "Employee status updated.");
               setStatusEmployee(null);
             },
             onError: (error) => toast.error(getErrorMessage(error)),

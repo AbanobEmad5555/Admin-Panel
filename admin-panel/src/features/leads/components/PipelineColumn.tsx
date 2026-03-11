@@ -2,6 +2,7 @@ import { Draggable, Droppable } from "@hello-pangea/dnd";
 import LeadCard from "@/features/leads/components/LeadCard";
 import type { Lead, LeadStatus } from "@/features/leads/types";
 import { formatEGP } from "@/lib/currency";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 type PipelineColumnProps = {
   status: LeadStatus;
@@ -20,6 +21,24 @@ export default function PipelineColumn({
   budgetTotal,
   dragDisabled,
 }: PipelineColumnProps) {
+  const { language } = useLocalization();
+  const localizedStatus =
+    language === "ar"
+      ? {
+          New: "جديد",
+          Contacted: "تم التواصل",
+          Interested: "مهتم",
+          Negotiating: "تفاوض",
+          Won: "مكتسب",
+          Lost: "مفقود",
+        }[status] ?? status
+      : status;
+  const leadCountLabel =
+    language === "ar"
+      ? `${leads.length} عميل محتمل`
+      : `${leads.length} lead${leads.length === 1 ? "" : "s"}`;
+  const emptyText =
+    language === "ar" ? "لا يوجد عملاء محتملون في هذه المرحلة." : "No leads in this stage.";
   return (
     <Droppable droppableId={status} isDropDisabled={dragDisabled}>
       {(dropProvided, dropSnapshot) => (
@@ -30,10 +49,8 @@ export default function PipelineColumn({
         >
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-base font-semibold text-slate-900">{status}</h2>
-              <p className="mt-1 text-xs text-slate-500">
-                {leads.length} lead{leads.length === 1 ? "" : "s"}
-              </p>
+              <h2 className="text-base font-semibold text-slate-900">{localizedStatus}</h2>
+              <p className="mt-1 text-xs text-slate-500">{leadCountLabel}</p>
             </div>
             <span className="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700">
               {formatBudget(budgetTotal)}
@@ -43,7 +60,7 @@ export default function PipelineColumn({
           <div className="space-y-3">
             {leads.length === 0 ? (
               <div className="rounded-lg border border-dashed border-slate-300 bg-white px-3 py-6 text-center text-sm text-slate-500">
-                No leads in this stage.
+                {emptyText}
               </div>
             ) : null}
 

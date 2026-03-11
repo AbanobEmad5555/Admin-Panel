@@ -14,6 +14,7 @@ import PurchasesModuleNav from "@/components/purchases/PurchasesModuleNav";
 import PurchasesTable from "@/components/purchases/PurchasesTable";
 import type { PurchaseFormValue, PurchaseRow } from "@/components/purchases/types";
 import { purchasesApi } from "@/features/purchases/api/purchases.api";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import api from "@/services/api";
 
 const PAGE_SIZE = 10;
@@ -130,6 +131,7 @@ const formatProductLabel = (product: CatalogProduct) => {
 };
 
 export default function PurchasesPage() {
+  const { language } = useLocalization();
   const [rows, setRows] = useState<PurchaseRow[]>([]);
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [categories, setCategories] = useState<CategoryOption[]>([]);
@@ -150,6 +152,78 @@ export default function PurchasesPage() {
   const [arrivalDateModalOpen, setArrivalDateModalOpen] = useState(false);
   const [rowForStatusUpdate, setRowForStatusUpdate] = useState<PurchaseRow | null>(null);
   const [arrivalDateInput, setArrivalDateInput] = useState("");
+  const text =
+    language === "ar"
+      ? {
+          title: "المشتريات",
+          subtitle: "متابعة مشتريات الموردين ووصول مخزون المنتجات",
+          addPurchase: "إضافة مشتريات",
+          exportCsv: "تصدير CSV",
+          exportExcel: "تصدير Excel",
+          exportCsvQueued: "تمت جدولة تصدير CSV.",
+          exportExcelQueued: "تمت جدولة تصدير Excel.",
+          loadError: "فشل تحميل المشتريات.",
+          retry: "إعادة المحاولة",
+          emptyTitle: "لا توجد مشتريات",
+          emptySubtitle: "جرّب تغيير عوامل التصفية أو أضف أمر شراء جديدًا.",
+          purchaseCreated: "تم إنشاء أمر الشراء.",
+          purchaseUpdated: "تم تحديث أمر الشراء.",
+          purchaseCreateError: "فشل إنشاء أمر الشراء.",
+          purchaseUpdateError: "فشل تحديث أمر الشراء.",
+          productApproved: "تم اعتماد المنتج.",
+          productApproveError: "فشل اعتماد المنتج.",
+          purchaseDeleted: "تم حذف أمر الشراء.",
+          purchaseDeleteError: "فشل حذف أمر الشراء.",
+          purchaseStatusUpdated: "تم تحديث حالة الشراء.",
+          purchaseStatusUpdateError: "فشل تحديث حالة الشراء.",
+          previous: "السابق",
+          next: "التالي",
+          page: "الصفحة",
+          of: "من",
+          deleteTitle: "حذف أمر شراء",
+          deleteDescription: "هل أنت متأكد أنك تريد حذف أمر الشراء هذا؟ لا يمكن التراجع عن هذا الإجراء.",
+          arrivalModalTitle: "اختر تاريخ الوصول المتوقع",
+          arrivalModalDescription: "حدّد تاريخ الوصول المتوقع قبل تغيير الحالة إلى قيد النقل.",
+          selectArrivalError: "يرجى اختيار تاريخ الوصول المتوقع.",
+          cancel: "إلغاء",
+          confirm: "تأكيد",
+          completeRequiredFields: "يرجى استكمال الحقول المطلوبة.",
+        }
+      : {
+          title: "Purchases",
+          subtitle: "Track supplier purchases and product stock arrivals",
+          addPurchase: "Add Purchase",
+          exportCsv: "Export CSV",
+          exportExcel: "Export Excel",
+          exportCsvQueued: "CSV export queued.",
+          exportExcelQueued: "Excel export queued.",
+          loadError: "Failed to load purchases.",
+          retry: "Retry",
+          emptyTitle: "No purchases found",
+          emptySubtitle: "Try changing filters or add a new purchase order.",
+          purchaseCreated: "Purchase created.",
+          purchaseUpdated: "Purchase updated.",
+          purchaseCreateError: "Failed to create purchase.",
+          purchaseUpdateError: "Failed to update purchase.",
+          productApproved: "Product approved.",
+          productApproveError: "Failed to approve product.",
+          purchaseDeleted: "Purchase deleted.",
+          purchaseDeleteError: "Failed to delete purchase.",
+          purchaseStatusUpdated: "Purchase status updated.",
+          purchaseStatusUpdateError: "Failed to update purchase status.",
+          previous: "Previous",
+          next: "Next",
+          page: "Page",
+          of: "of",
+          deleteTitle: "Delete Purchase",
+          deleteDescription: "Are you sure you want to delete this purchase order? This action cannot be undone.",
+          arrivalModalTitle: "Choose Expected Arrival Date",
+          arrivalModalDescription: "Set expected arrival date before changing status to IN_TRANSIT.",
+          selectArrivalError: "Please select expected arrival date.",
+          cancel: "Cancel",
+          confirm: "Confirm",
+          completeRequiredFields: "Please complete required fields.",
+        };
 
   const refreshPurchases = async () => {
     setIsError(false);
@@ -297,7 +371,7 @@ export default function PurchasesPage() {
         ? selectedProduct
           ? formatProductLabel(selectedProduct)
           : ""
-        : [payload.productName.trim(), payload.variant.trim()].filter(Boolean).join(" - ");
+        : [payload.productNameEn.trim(), payload.variant.trim()].filter(Boolean).join(" - ");
 
     return {
       quantity,
@@ -306,6 +380,12 @@ export default function PurchasesPage() {
       mutation: {
         productId: selectedProduct?.id,
         productName,
+        productNameEn:
+          payload.productMode === "existing"
+            ? selectedProduct?.name ?? productName
+            : payload.productNameEn.trim(),
+        productNameAr:
+          payload.productMode === "existing" ? undefined : payload.productNameAr.trim() || undefined,
         categoryId:
           selectedProduct?.categoryId ??
           selectedProduct?.category?.id ??
@@ -314,14 +394,18 @@ export default function PurchasesPage() {
         categoryName:
           selectedProduct?.category?.name ??
           selectedCategory?.name ??
-          payload.category.trim() ??
+          payload.categoryEn.trim() ??
           fallback?.categoryName,
+        categoryNameEn: payload.categoryEn.trim() || selectedCategory?.name || fallback?.categoryName,
+        categoryNameAr: payload.categoryAr.trim() || undefined,
         variantId: selectedProduct?.variantId ?? selectedVariant?.id ?? undefined,
         variantName:
           formatVariantLabel(selectedProduct?.variant) ||
           formatVariantLabel(selectedVariant, payload.variant.trim()) ||
           fallback?.variantName,
-        supplierName: payload.supplierName.trim(),
+        supplierName: payload.supplierNameEn.trim(),
+        supplierNameEn: payload.supplierNameEn.trim(),
+        supplierNameAr: payload.supplierNameAr.trim() || undefined,
         supplierContact: payload.supplierContact.trim() || undefined,
         supplierEmail: payload.supplierEmail.trim() || undefined,
         supplierPhone: payload.supplierPhone.trim() || undefined,
@@ -338,36 +422,42 @@ export default function PurchasesPage() {
     const { quantity, unitCost, productName, mutation } = buildMutationPayload(payload, selectedRow);
 
     if (!productName || !mutation.supplierName || quantity <= 0 || unitCost <= 0) {
-      toast.error("Please complete required fields.");
+      toast.error(text.completeRequiredFields);
       return;
     }
 
     try {
       if (formMode === "create") {
         await purchasesApi.create(mutation);
-        toast.success("Purchase created.");
+        toast.success(text.purchaseCreated);
       } else if (selectedRow) {
         await purchasesApi.update(selectedRow.id, mutation);
-        toast.success("Purchase updated.");
+        toast.success(text.purchaseUpdated);
       }
       await refreshPurchases();
       setFormOpen(false);
       setSelectedRow(null);
     } catch {
-      toast.error(formMode === "create" ? "Failed to create purchase." : "Failed to update purchase.");
+      toast.error(formMode === "create" ? text.purchaseCreateError : text.purchaseUpdateError);
     }
   };
 
   const handleApproveProduct = async (row: PurchaseRow) => {
     try {
-      await purchasesApi.update(row.id, {
-        productId: row.productId ?? undefined,
-        productName: row.productName,
-        categoryId: row.categoryId ?? undefined,
-        categoryName: row.categoryName,
-        variantId: row.variantId ?? undefined,
-        variantName: row.variantName,
-        supplierName: row.supplierName,
+        await purchasesApi.update(row.id, {
+          productId: row.productId ?? undefined,
+          productName: row.productName,
+          productNameEn: row.productNameEn,
+          productNameAr: row.productNameAr,
+          categoryId: row.categoryId ?? undefined,
+          categoryName: row.categoryName,
+          categoryNameEn: row.categoryNameEn,
+          categoryNameAr: row.categoryNameAr,
+          variantId: row.variantId ?? undefined,
+          variantName: row.variantName,
+          supplierName: row.supplierName,
+          supplierNameEn: row.supplierNameEn,
+          supplierNameAr: row.supplierNameAr,
         supplierContact: row.supplierContact,
         supplierEmail: row.supplierEmail,
         supplierPhone: row.supplierPhone,
@@ -378,9 +468,9 @@ export default function PurchasesPage() {
         pendingApproval: false,
       });
       await refreshPurchases();
-      toast.success("Product approved.");
+      toast.success(text.productApproved);
     } catch {
-      toast.error("Failed to approve product.");
+      toast.error(text.productApproveError);
     }
   };
 
@@ -390,8 +480,8 @@ export default function PurchasesPage() {
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Purchases</h1>
-              <p className="text-sm text-slate-500">Track supplier purchases and product stock arrivals</p>
+              <h1 className="text-2xl font-bold text-slate-900">{text.title}</h1>
+              <p className="text-sm text-slate-500">{text.subtitle}</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Button
@@ -404,25 +494,25 @@ export default function PurchasesPage() {
                 className="gap-2"
               >
                 <Plus className="h-4 w-4" />
-                Add Purchase
+                {text.addPurchase}
               </Button>
               <Button
                 type="button"
                 variant="secondary"
                 className="gap-2"
-                onClick={() => toast.success("CSV export queued.")}
+                onClick={() => toast.success(text.exportCsvQueued)}
               >
                 <Download className="h-4 w-4" />
-                Export CSV
+                {text.exportCsv}
               </Button>
               <Button
                 type="button"
                 variant="secondary"
                 className="gap-2"
-                onClick={() => toast.success("Excel export queued.")}
+                onClick={() => toast.success(text.exportExcelQueued)}
               >
                 <FileSpreadsheet className="h-4 w-4" />
-                Export Excel
+                {text.exportExcel}
               </Button>
             </div>
           </div>
@@ -456,7 +546,7 @@ export default function PurchasesPage() {
 
         {isError ? (
           <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 shadow-sm">
-            Failed to load purchases.
+            {text.loadError}
             <button
               type="button"
               onClick={() => {
@@ -465,15 +555,15 @@ export default function PurchasesPage() {
               }}
               className="ml-2 font-semibold underline"
             >
-              Retry
+              {text.retry}
             </button>
           </div>
         ) : null}
 
         {!isLoading && !isError && filteredRows.length === 0 ? (
           <div className="rounded-xl border border-slate-200 bg-white p-10 text-center shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-900">No purchases found</h2>
-            <p className="mt-1 text-sm text-slate-500">Try changing filters or add a new purchase order.</p>
+            <h2 className="text-lg font-semibold text-slate-900">{text.emptyTitle}</h2>
+            <p className="mt-1 text-sm text-slate-500">{text.emptySubtitle}</p>
             <div className="mt-4">
               <Button
                 type="button"
@@ -483,7 +573,7 @@ export default function PurchasesPage() {
                   setFormOpen(true);
                 }}
               >
-                Add Purchase
+                {text.addPurchase}
               </Button>
             </div>
           </div>
@@ -515,10 +605,10 @@ export default function PurchasesPage() {
                   .patchStatus(row.id, nextStatus)
                   .then(async () => {
                     await refreshPurchases();
-                    toast.success("Purchase status updated.");
+                    toast.success(text.purchaseStatusUpdated);
                   })
                   .catch(() => {
-                    toast.error("Failed to update purchase status.");
+                    toast.error(text.purchaseStatusUpdateError);
                   })
                   .finally(() => undefined);
               }}
@@ -534,10 +624,10 @@ export default function PurchasesPage() {
                 disabled={currentPage <= 1}
                 onClick={() => setPage((prev) => Math.max(1, prev - 1))}
               >
-                Previous
+                {text.previous}
               </Button>
               <div className="text-sm text-slate-600">
-                Page <span className="font-semibold">{currentPage}</span> of{" "}
+                {text.page} <span className="font-semibold">{currentPage}</span> {text.of}{" "}
                 <span className="font-semibold">{totalPages}</span>
               </div>
               <Button
@@ -546,7 +636,7 @@ export default function PurchasesPage() {
                 disabled={currentPage >= totalPages}
                 onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
               >
-                Next
+                {text.next}
               </Button>
             </div>
           </>
@@ -572,8 +662,8 @@ export default function PurchasesPage() {
 
       <ConfirmDeleteModal
         open={deleteOpen}
-        title="Delete Purchase"
-        description="Are you sure you want to delete this purchase order? This action cannot be undone."
+        title={text.deleteTitle}
+        description={text.deleteDescription}
         onClose={() => setDeleteOpen(false)}
         onConfirm={() => {
           if (!rowToDelete) {
@@ -584,24 +674,22 @@ export default function PurchasesPage() {
             .then(async () => {
               await refreshPurchases();
               setDeleteOpen(false);
-              toast.success("Purchase deleted.");
+              toast.success(text.purchaseDeleted);
             })
             .catch(() => {
-              toast.error("Failed to delete purchase.");
+              toast.error(text.purchaseDeleteError);
             })
             .finally(() => undefined);
         }}
       />
 
       <Modal
-        title="Choose Expected Arrival Date"
+        title={text.arrivalModalTitle}
         isOpen={arrivalDateModalOpen}
         onClose={() => setArrivalDateModalOpen(false)}
       >
         <div className="space-y-4">
-          <p className="text-sm text-slate-600">
-            Set expected arrival date before changing status to IN_TRANSIT.
-          </p>
+          <p className="text-sm text-slate-600">{text.arrivalModalDescription}</p>
           <Input
             type="date"
             value={arrivalDateInput}
@@ -617,12 +705,12 @@ export default function PurchasesPage() {
                 setRowForStatusUpdate(null);
               }}
             >
-              Cancel
+              {text.cancel}
             </Button>
             <Button
               onClick={() => {
                 if (!rowForStatusUpdate || !arrivalDateInput) {
-                  toast.error("Please select expected arrival date.");
+                  toast.error(text.selectArrivalError);
                   return;
                 }
                 void purchasesApi
@@ -631,15 +719,15 @@ export default function PurchasesPage() {
                     await refreshPurchases();
                     setArrivalDateModalOpen(false);
                     setRowForStatusUpdate(null);
-                    toast.success("Status updated to IN_TRANSIT.");
+                    toast.success(text.purchaseStatusUpdated);
                   })
                   .catch(() => {
-                    toast.error("Failed to update purchase status.");
+                    toast.error(text.purchaseStatusUpdateError);
                   })
                   .finally(() => undefined);
               }}
             >
-              Confirm
+              {text.confirm}
             </Button>
           </div>
         </div>

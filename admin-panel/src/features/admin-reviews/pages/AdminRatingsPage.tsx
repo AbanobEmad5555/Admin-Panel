@@ -21,6 +21,7 @@ import {
   parseReviewsFiltersFromSearchParams,
 } from "@/features/admin-reviews/utils/adminReviewsUrlState";
 import { getCurrentAdminRole } from "@/features/admin-reviews/utils/adminRole";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 const DEFAULT_FILTERS: AdminReviewsFilters = {
   page: 1,
@@ -36,6 +37,7 @@ const getApiErrorMessage = (error: unknown, fallback: string) => {
 };
 
 export default function AdminRatingsPage() {
+  const { language } = useLocalization();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -50,6 +52,53 @@ export default function AdminRatingsPage() {
 
   const role = useMemo(() => getCurrentAdminRole(), []);
   const isAuthorized = role === "ADMIN";
+  const text = useMemo(
+    () =>
+      language === "ar"
+        ? {
+            pageTitle: "إدارة التقييمات",
+            pageSubtitle: "مراجعة تقييمات العملاء للمنتجات وإدارتها والإشراف عليها.",
+            approved: "تمت الموافقة على التقييم.",
+            approveError: "فشل الموافقة على التقييم.",
+            hidden: "تم إخفاء التقييم.",
+            hideError: "فشل إخفاء التقييم.",
+            deleted: "تم حذف التقييم.",
+            deleteError: "فشل حذف التقييم.",
+            loadError: "فشل تحميل التقييمات.",
+            previous: "السابق",
+            next: "التالي",
+            page: "الصفحة",
+            of: "من",
+            deleteReview: "حذف التقييم",
+            deleteDescription:
+              "هل أنت متأكد أنك تريد حذف هذا التقييم نهائيًا؟ لا يمكن التراجع عن هذا الإجراء.",
+            cancel: "إلغاء",
+            deleting: "جارٍ الحذف...",
+            delete: "حذف",
+          }
+        : {
+            pageTitle: "Ratings Moderation",
+            pageSubtitle: "Review, moderate, and manage customer ratings for products.",
+            approved: "Review approved.",
+            approveError: "Failed to approve review.",
+            hidden: "Review hidden.",
+            hideError: "Failed to hide review.",
+            deleted: "Review deleted.",
+            deleteError: "Failed to delete review.",
+            loadError: "Failed to load reviews.",
+            previous: "Previous",
+            next: "Next",
+            page: "Page",
+            of: "of",
+            deleteReview: "Delete Review",
+            deleteDescription:
+              "Are you sure you want to permanently delete this review? This action cannot be undone.",
+            cancel: "Cancel",
+            deleting: "Deleting...",
+            delete: "Delete",
+          },
+    [language],
+  );
 
   useEffect(() => {
     if (!isAuthorized) {
@@ -97,9 +146,9 @@ export default function AdminRatingsPage() {
             }
           : previous,
       );
-      toast.success("Review approved.");
+      toast.success(text.approved);
     } catch (mutationError) {
-      toast.error(getApiErrorMessage(mutationError, "Failed to approve review."));
+      toast.error(getApiErrorMessage(mutationError, text.approveError));
     } finally {
       setMutatingReviewId(null);
     }
@@ -121,9 +170,9 @@ export default function AdminRatingsPage() {
             }
           : previous,
       );
-      toast.success("Review hidden.");
+      toast.success(text.hidden);
     } catch (mutationError) {
-      toast.error(getApiErrorMessage(mutationError, "Failed to hide review."));
+      toast.error(getApiErrorMessage(mutationError, text.hideError));
     } finally {
       setMutatingReviewId(null);
     }
@@ -140,13 +189,13 @@ export default function AdminRatingsPage() {
         id: reviewToDelete.id,
         productId: reviewToDelete.product.id,
       });
-      toast.success("Review deleted.");
+      toast.success(text.deleted);
       setReviewToDelete(null);
       if (selectedReview?.id === reviewToDelete.id) {
         setSelectedReview(null);
       }
     } catch (mutationError) {
-      toast.error(getApiErrorMessage(mutationError, "Failed to delete review."));
+      toast.error(getApiErrorMessage(mutationError, text.deleteError));
     } finally {
       setMutatingReviewId(null);
     }
@@ -178,10 +227,8 @@ export default function AdminRatingsPage() {
     <AdminLayout>
       <section className="space-y-4">
         <header className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h1 className="text-xl font-semibold text-slate-900">Ratings Moderation</h1>
-          <p className="text-sm text-slate-500">
-            Review, moderate, and manage customer ratings for products.
-          </p>
+          <h1 className="text-xl font-semibold text-slate-900">{text.pageTitle}</h1>
+          <p className="text-sm text-slate-500">{text.pageSubtitle}</p>
         </header>
 
         <ReviewFilters
@@ -195,7 +242,7 @@ export default function AdminRatingsPage() {
           reviews={reviews}
           isLoading={isLoading}
           isError={isError}
-          errorMessage={getApiErrorMessage(error, "Failed to load reviews.")}
+          errorMessage={getApiErrorMessage(error, text.loadError)}
           mutatingReviewId={mutatingReviewId}
           onOpenDetails={(review) => setSelectedReview(review)}
           onApprove={(review) => void handleApprove(review)}
@@ -210,10 +257,10 @@ export default function AdminRatingsPage() {
             disabled={pagination.page <= 1}
             onClick={() => goToPage(pagination.page - 1)}
           >
-            Previous
+            {text.previous}
           </Button>
           <div className="text-sm text-slate-600">
-            Page <span className="font-semibold">{pagination.page}</span> of{" "}
+            {text.page} <span className="font-semibold">{pagination.page}</span> {text.of}{" "}
             <span className="font-semibold">{pagination.totalPages}</span>
           </div>
           <Button
@@ -222,7 +269,7 @@ export default function AdminRatingsPage() {
             disabled={pagination.page >= pagination.totalPages}
             onClick={() => goToPage(pagination.page + 1)}
           >
-            Next
+            {text.next}
           </Button>
         </div>
       </section>
@@ -238,14 +285,12 @@ export default function AdminRatingsPage() {
       />
 
       <Modal
-        title="Delete Review"
+        title={text.deleteReview}
         isOpen={Boolean(reviewToDelete)}
         onClose={() => setReviewToDelete(null)}
       >
         <div className="space-y-4">
-          <p className="text-sm text-slate-700">
-            Are you sure you want to permanently delete this review? This action cannot be undone.
-          </p>
+          <p className="text-sm text-slate-700">{text.deleteDescription}</p>
           <div className="flex justify-end gap-2">
             <Button
               type="button"
@@ -253,7 +298,7 @@ export default function AdminRatingsPage() {
               onClick={() => setReviewToDelete(null)}
               disabled={deleteReview.isPending}
             >
-              Cancel
+              {text.cancel}
             </Button>
             <Button
               type="button"
@@ -261,7 +306,7 @@ export default function AdminRatingsPage() {
               disabled={deleteReview.isPending}
               onClick={() => void confirmDelete()}
             >
-              {deleteReview.isPending ? "Deleting..." : "Delete"}
+              {deleteReview.isPending ? text.deleting : text.delete}
             </Button>
           </div>
         </div>

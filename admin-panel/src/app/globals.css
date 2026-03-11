@@ -25,6 +25,49 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+html[dir="rtl"] {
+  direction: rtl;
+}
+
+html[dir="rtl"] body {
+  text-align: right;
+}
+
+html[dir="rtl"] table {
+  direction: rtl;
+}
+
+html[dir="rtl"] th,
+html[dir="rtl"] td,
+html[dir="rtl"] label,
+html[dir="rtl"] h1,
+html[dir="rtl"] h2,
+html[dir="rtl"] h3,
+html[dir="rtl"] h4,
+html[dir="rtl"] h5,
+html[dir="rtl"] h6,
+html[dir="rtl"] p {
+  text-align: right;
+}
+
+html[dir="rtl"] input:not([type="email"]):not([type="number"]):not([type="date"]):not([type="time"]),
+html[dir="rtl"] textarea,
+html[dir="rtl"] select {
+  text-align: right;
+}
+
+html[dir="rtl"] input[type="email"],
+html[dir="rtl"] input[type="number"],
+html[dir="rtl"] input[type="date"],
+html[dir="rtl"] input[type="time"] {
+  direction: ltr;
+  text-align: left;
+}
+
+html[dir="rtl"] .fc {
+  direction: rtl;
+}
+
 .fc .fc-col-header-cell-cushion,
 .fc .fc-daygrid-day-number {
   color: #0f172a;

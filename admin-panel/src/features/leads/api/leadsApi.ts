@@ -1,5 +1,6 @@
 import { leadsApiClient } from "@/features/leads/api/client";
 import axios from "axios";
+import { getLocalizedValue } from "@/modules/localization/utils";
 import type {
   ApiEnvelope,
   Lead,
@@ -13,6 +14,41 @@ import type {
   User,
 } from "@/features/leads/types";
 import { LEAD_STATUS_ORDER } from "@/features/leads/types";
+
+const LEAD_ENDPOINTS = ["/leads", "/api/leads"] as const;
+
+const requestLeadApi = async <T>(
+  method: "get" | "post" | "patch",
+  path = "",
+  config?: Record<string, unknown>,
+  body?: unknown
+) => {
+  let lastError: unknown;
+
+  for (const endpoint of LEAD_ENDPOINTS) {
+    try {
+      const url = `${endpoint}${path}`;
+
+      if (method === "get") {
+        return await leadsApiClient.get<T>(url, config);
+      }
+
+      if (method === "post") {
+        return await leadsApiClient.post<T>(url, body, config);
+      }
+
+      return await leadsApiClient.patch<T>(url, body, config);
+    } catch (error) {
+      if (!axios.isAxiosError(error) || error.response?.status !== 404) {
+        throw error;
+      }
+
+      lastError = error;
+    }
+  }
+
+  throw lastError;
+};
 
 const toNumber = (value: unknown): number | undefined => {
   if (typeof value === "number" && Number.isFinite(value)) {
@@ -74,6 +110,8 @@ const normalizeUser = (value: unknown): User | undefined => {
   const user = value as Record<string, unknown>;
   const id = toNumber(user.id) ?? toNumber(user.userId);
   const name = firstString(user.name, user.fullName, user.username);
+  const nameEn = firstString(user.nameEn, user.full_name_en, user.fullNameEn);
+  const nameAr = firstString(user.nameAr, user.full_name_ar, user.fullNameAr);
 
   if (!id && !name) {
     return undefined;
@@ -81,7 +119,11 @@ const normalizeUser = (value: unknown): User | undefined => {
 
   return {
     id: id ?? 0,
-    name: name ?? `Admin ${id ?? "-"}`,
+    name:
+      getLocalizedValue({ en: nameEn, ar: nameAr, legacy: name, lang: "en" }) ??
+      `Admin ${id ?? "-"}`,
+    nameEn,
+    nameAr,
     email: firstString(user.email),
   };
 };
@@ -118,9 +160,20 @@ const normalizeLead = (value: unknown): Lead => {
     toNumber(lead.assignedUserId) ??
     assignedTo?.id;
 
+  const nameEn = firstString(lead.nameEn, lead.name_en, lead.fullNameEn, lead.customerNameEn);
+  const nameAr = firstString(lead.nameAr, lead.name_ar, lead.fullNameAr, lead.customerNameAr);
+
   return {
     id: normalizedLeadId,
-    name: firstString(lead.name, lead.fullName, lead.customerName, lead.tempName, lead.userName) ?? "-",
+    name:
+      getLocalizedValue({
+        en: nameEn,
+        ar: nameAr,
+        legacy: firstString(lead.name, lead.fullName, lead.customerName, lead.tempName, lead.userName) ?? "-",
+        lang: "en",
+      }) ?? "-",
+    nameEn,
+    nameAr,
     phone: firstString(lead.phone, lead.phoneNumber, lead.mobile, lead.tempPhone) ?? "-",
     email: firstString(lead.email),
     source: firstString(lead.source, lead.leadSource, lead.channel) ?? "Unknown",
@@ -280,7 +333,7 @@ const normalizePipelinePayload = (payload: unknown): PipelineColumn[] => {
 
 export const leadsApi = {
   async getLeadsList(params: LeadListParams): Promise<LeadsListResult> {
-    const response = await leadsApiClient.get<ApiEnvelope<unknown>>("/api/leads", {
+    const response = await requestLeadApi<ApiEnvelope<unknown>>("get", "", {
       params: toListQueryParams(params),
     });
 
@@ -292,7 +345,7 @@ export const leadsApi = {
   },
 
   async getLeads(filters: LeadFilters): Promise<Lead[]> {
-    const response = await leadsApiClient.get<ApiEnvelope<unknown>>("/api/leads", {
+    const response = await requestLeadApi<ApiEnvelope<unknown>>("get", "", {
       params: toQueryParams(filters),
     });
 
@@ -300,7 +353,7 @@ export const leadsApi = {
   },
 
   async assignLeadAdmin(leadId: number, adminId: number): Promise<void> {
-    await leadsApiClient.patch(`/api/leads/${leadId}/assign-admin`, { adminId });
+    await requestLeadApi("patch", `/${leadId}/assign-admin`, undefined, { adminId });
   },
 
   async getAdminUsers(): Promise<User[]> {
@@ -328,14 +381,14 @@ export const leadsApi = {
   },
 
   async getLeadById(id: number): Promise<Lead | null> {
-    const response = await leadsApiClient.get<ApiEnvelope<unknown>>("/api/leads");
+    const response = await requestLeadApi<ApiEnvelope<unknown>>("get");
     const leads = normalizeLeadList(response.data?.data);
     return leads.find((lead) => lead.id === id) ?? null;
   },
 
   async getPipeline(): Promise<PipelineColumn[]> {
     try {
-      const response = await leadsApiClient.get<ApiEnvelope<unknown>>("/api/leads/pipeline");
+      const response = await requestLeadApi<ApiEnvelope<unknown>>("get", "/pipeline");
       const pipeline = normalizePipelinePayload(response.data?.data);
       if (pipeline.length > 0) {
         return pipeline;
@@ -351,7 +404,7 @@ export const leadsApi = {
       }
     }
 
-    const fallback = await leadsApiClient.get<ApiEnvelope<unknown>>("/api/leads", {
+    const fallback = await requestLeadApi<ApiEnvelope<unknown>>("get", "", {
       params: { page: 1, limit: 500 },
     });
 
@@ -361,16 +414,16 @@ export const leadsApi = {
   },
 
   async createLead(payload: LeadPayload): Promise<Lead> {
-    const response = await leadsApiClient.post<ApiEnvelope<unknown>>("/api/leads", payload);
+    const response = await requestLeadApi<ApiEnvelope<unknown>>("post", "", undefined, payload);
     return normalizeLead(response.data?.data);
   },
 
   async updateLead(id: number, payload: Partial<LeadPayload>): Promise<Lead> {
-    const response = await leadsApiClient.patch<ApiEnvelope<unknown>>(`/api/leads/${id}`, payload);
+    const response = await requestLeadApi<ApiEnvelope<unknown>>("patch", `/${id}`, undefined, payload);
     return normalizeLead(response.data?.data);
   },
 
   async updateLeadStatus(id: number, status: LeadStatus): Promise<void> {
-    await leadsApiClient.patch(`/api/leads/${id}/status`, { status });
+    await requestLeadApi("patch", `/${id}/status`, undefined, { status });
   },
 };

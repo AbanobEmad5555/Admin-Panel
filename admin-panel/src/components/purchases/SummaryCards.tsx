@@ -1,5 +1,16 @@
-import { Banknote, ChartNoAxesCombined, CircleDollarSign, Package, ShoppingBag, TrendingUp, Wallet } from "lucide-react";
+"use client";
+
+import {
+  Banknote,
+  ChartNoAxesCombined,
+  CircleDollarSign,
+  Package,
+  ShoppingBag,
+  TrendingUp,
+  Wallet,
+} from "lucide-react";
 import { formatEGP } from "@/lib/currency";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 type SummaryCardsProps = {
   totalPurchases: number;
@@ -12,8 +23,7 @@ type SummaryCardsProps = {
   totalOrders: number;
 };
 
-const cardBase =
-  "rounded-xl border border-slate-200 bg-white p-4 shadow-sm";
+const cardBase = "rounded-xl border border-slate-200 bg-white p-4 shadow-sm";
 
 export default function SummaryCards({
   totalPurchases,
@@ -25,15 +35,49 @@ export default function SummaryCards({
   avgPurchaseCost,
   totalOrders,
 }: SummaryCardsProps) {
+  const { language } = useLocalization();
+
   const items = [
-    { label: "Total Purchases", value: formatEGP(totalPurchases), icon: Package },
-    { label: "Operational Costs", value: formatEGP(totalOperationalCosts), icon: Wallet },
-    { label: "Total Expenses", value: formatEGP(totalCosts), icon: Wallet },
-    { label: "Revenue", value: formatEGP(revenue), icon: CircleDollarSign },
-    { label: "Gross Profit", value: formatEGP(grossProfit), icon: TrendingUp },
-    { label: "Net Profit", value: formatEGP(netProfit), icon: Banknote },
-    { label: "Average Purchase Cost", value: formatEGP(avgPurchaseCost), icon: ChartNoAxesCombined },
-    { label: "Total Orders", value: String(totalOrders), icon: ShoppingBag },
+    {
+      label: language === "ar" ? "إجمالي المشتريات" : "Total Purchases",
+      value: formatEGP(totalPurchases),
+      icon: Package,
+    },
+    {
+      label: language === "ar" ? "المصاريف التشغيلية" : "Operational Costs",
+      value: formatEGP(totalOperationalCosts),
+      icon: Wallet,
+    },
+    {
+      label: language === "ar" ? "إجمالي المصروفات" : "Total Expenses",
+      value: formatEGP(totalCosts),
+      icon: Wallet,
+    },
+    {
+      label: language === "ar" ? "الإيرادات" : "Revenue",
+      value: formatEGP(revenue),
+      icon: CircleDollarSign,
+    },
+    {
+      label: language === "ar" ? "إجمالي الربح" : "Gross Profit",
+      value: formatEGP(grossProfit),
+      icon: TrendingUp,
+    },
+    {
+      label: language === "ar" ? "صافي الربح" : "Net Profit",
+      value: formatEGP(netProfit),
+      icon: Banknote,
+    },
+    {
+      label: language === "ar" ? "متوسط تكلفة الشراء" : "Average Purchase Cost",
+      value: formatEGP(avgPurchaseCost),
+      icon: ChartNoAxesCombined,
+    },
+    {
+      label: language === "ar" ? "إجمالي الطلبات" : "Total Orders",
+      value: String(totalOrders),
+      icon: ShoppingBag,
+    },
   ];
 
   return (
@@ -43,7 +87,9 @@ export default function SummaryCards({
         return (
           <article key={item.label} className={cardBase}>
             <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{item.label}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {item.label}
+              </p>
               <div className="rounded-lg bg-slate-100 p-2 text-slate-600">
                 <Icon className="h-4 w-4" />
               </div>

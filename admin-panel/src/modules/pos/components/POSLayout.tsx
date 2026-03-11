@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import AdminLayout from "@/components/layout/AdminLayout";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 type POSLayoutProps = {
   title: string;
@@ -10,13 +11,30 @@ type POSLayoutProps = {
 };
 
 const navItems = [
-  { href: "/admin/pos", label: "POS Terminal" },
-  { href: "/admin/pos/daily-report", label: "Daily Report" },
-  { href: "/admin/pos/session-report", label: "Session Report" },
-  { href: "/admin/pos/top-products", label: "Top Products" },
-];
+  { href: "/admin/pos", key: "posTerminal" },
+  { href: "/admin/pos/daily-report", key: "dailyReport" },
+  { href: "/admin/pos/session-report", key: "sessionReport" },
+  { href: "/admin/pos/top-products", key: "topProducts" },
+] as const;
 
 export default function POSLayout({ title, description, children }: POSLayoutProps) {
+  const { language } = useLocalization();
+
+  const labels =
+    language === "ar"
+      ? {
+          posTerminal: "محطة نقطة البيع",
+          dailyReport: "التقرير اليومي",
+          sessionReport: "تقرير الجلسة",
+          topProducts: "أفضل المنتجات",
+        }
+      : {
+          posTerminal: "POS Terminal",
+          dailyReport: "Daily Report",
+          sessionReport: "Session Report",
+          topProducts: "Top Products",
+        };
+
   return (
     <AdminLayout>
       <div className="space-y-4">
@@ -32,7 +50,7 @@ export default function POSLayout({ title, description, children }: POSLayoutPro
               href={item.href}
               className="rounded-md border border-violet-200 bg-white px-3 py-2 text-sm font-medium text-violet-700 transition hover:bg-violet-50"
             >
-              {item.label}
+              {labels[item.key]}
             </Link>
           ))}
         </div>

@@ -6,6 +6,10 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import type { PurchaseFormValue, PurchaseRow, PurchaseStatus } from "@/components/purchases/types";
+import BilingualTextField from "@/modules/shared/components/BilingualTextField";
+import LocalizedFormSection from "@/modules/shared/components/LocalizedFormSection";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
+import { useForm } from "react-hook-form";
 
 type ProductOption = {
   id: number;
@@ -37,14 +41,17 @@ type PurchaseFormModalProps = {
 const initialForm: PurchaseFormValue = {
   productMode: "existing",
   existingProductId: "",
-  productName: "",
+  productNameEn: "",
+  productNameAr: "",
   selectedCategoryId: "",
-  category: "",
+  categoryEn: "",
+  categoryAr: "",
   selectedVariantId: "",
   variant: "",
   priceBeforeDiscount: "",
   priceAfterDiscount: "",
-  supplierName: "",
+  supplierNameEn: "",
+  supplierNameAr: "",
   supplierContact: "",
   supplierEmail: "",
   supplierPhone: "",
@@ -64,14 +71,17 @@ const toFormValue = (initial?: PurchaseRow | null): PurchaseFormValue => {
   return {
     productMode: "existing",
     existingProductId: initial.productId ? String(initial.productId) : "",
-    productName: initial.productName,
+    productNameEn: initial.productNameEn ?? initial.productName,
+    productNameAr: initial.productNameAr ?? "",
     selectedCategoryId: initial.categoryId ? String(initial.categoryId) : "",
-    category: initial.categoryName ?? "",
+    categoryEn: initial.categoryNameEn ?? initial.categoryName ?? "",
+    categoryAr: initial.categoryNameAr ?? "",
     selectedVariantId: initial.variantId ? String(initial.variantId) : "",
     variant: initial.variantName ?? "",
     priceBeforeDiscount: "",
     priceAfterDiscount: "",
-    supplierName: initial.supplierName,
+    supplierNameEn: initial.supplierNameEn ?? initial.supplierName,
+    supplierNameAr: initial.supplierNameAr ?? "",
     supplierContact: initial.supplierContact ?? "",
     supplierEmail: initial.supplierEmail ?? "",
     supplierPhone: initial.supplierPhone ?? "",
@@ -93,17 +103,51 @@ export default function PurchaseFormModal({
   onClose,
   onSubmit,
 }: PurchaseFormModalProps) {
+  const { t } = useLocalization();
+  const text = {
+    title: mode === "create" ? (t("action.addPurchase") || "Add Purchase") : (t("action.edit") || "Edit Purchase"),
+    productSelection: t("field.productSelection") || "Product Selection",
+    existingProduct: t("field.existingProduct") || "Existing Product",
+    newProduct: t("field.newProduct") || "New Product",
+    product: t("field.product") || "Product",
+    selectProduct: t("placeholder.selectProduct") || "Select product",
+    noProducts: t("empty.noProducts") || "No products found.",
+    selectCategory: t("placeholder.selectCategory") || "Select category",
+    selectVariant: t("placeholder.selectVariant") || "Select variant",
+    noCategories: t("empty.noCategories") || "No categories found.",
+    noVariants: t("empty.noVariants") || "No variants found.",
+    priceBeforeDiscount: t("field.priceBeforeDiscount") || "Price Before Discount",
+    priceAfterDiscount: t("field.priceAfterDiscount") || "Price After Discount",
+    supplierInfo: t("section.supplierInfo") || "Supplier Information",
+    supplierContact: t("field.supplierContact") || "Supplier Contact",
+    supplierEmail: t("field.supplierEmail") || "Supplier Email",
+    supplierPhone: t("field.supplierPhone") || "Supplier Phone",
+    purchaseDetails: t("section.purchaseDetails") || "Purchase Details",
+    quantity: t("field.quantity") || "Quantity",
+    unitCost: t("field.unitCost") || "Unit Cost",
+    expectedArrivalDate: t("field.expectedArrivalDate") || "Expected Arrival Date",
+    cancel: t("action.cancel") || "Cancel",
+    addPurchase: t("action.addPurchase") || "Add Purchase",
+    saveChanges: t("action.saveChanges") || "Save Changes",
+    statusLabels: {
+      ORDERED: t("status.ordered") || "Ordered",
+      IN_TRANSIT: t("status.inTransit") || "In Transit",
+      DELIVERED: t("status.delivered") || "Delivered",
+      CANCELLED: t("status.cancelled") || "Cancelled",
+    } satisfies Record<PurchaseStatus, string>,
+  };
   const [form, setForm] = useState<PurchaseFormValue>(() => toFormValue(initial));
+  const hookForm = useForm<PurchaseFormValue>({ values: form });
 
   return (
     <Modal
-      title={mode === "create" ? "Add Purchase" : "Edit Purchase"}
+      title={text.title}
       isOpen={open}
       onClose={onClose}
     >
       <div className="max-h-[70vh] space-y-4 overflow-y-auto pr-1">
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700">Product Selection</label>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">{text.productSelection}</label>
           <div className="flex items-center gap-4 rounded-md border border-slate-200 bg-slate-50 p-2">
             <label className="inline-flex items-center gap-2 text-sm text-slate-700">
               <input
@@ -113,7 +157,7 @@ export default function PurchaseFormModal({
                 onChange={() => setForm((prev) => ({ ...prev, productMode: "existing" }))}
                 className="h-4 w-4 accent-slate-900"
               />
-              Existing Product
+              {text.existingProduct}
             </label>
             <label className="inline-flex items-center gap-2 text-sm text-slate-700">
               <input
@@ -123,14 +167,14 @@ export default function PurchaseFormModal({
                 onChange={() => setForm((prev) => ({ ...prev, productMode: "new" }))}
                 className="h-4 w-4 accent-slate-900"
               />
-              New Product
+              {text.newProduct}
             </label>
           </div>
         </div>
 
         {form.productMode === "existing" ? (
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Product</label>
+            <label className="text-sm font-medium text-slate-700">{text.product}</label>
             <select
               value={form.existingProductId}
               onChange={(event) =>
@@ -141,7 +185,7 @@ export default function PurchaseFormModal({
               }
               className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
             >
-              <option value="">Select product</option>
+              <option value="">{text.selectProduct}</option>
               {existingProducts.map((product) => (
                 <option key={product.id} value={String(product.id)}>
                   {product.label}
@@ -149,16 +193,26 @@ export default function PurchaseFormModal({
               ))}
             </select>
             {!catalogLoading && existingProducts.length === 0 ? (
-              <p className="text-xs text-slate-500">No products found.</p>
+              <p className="text-xs text-slate-500">{text.noProducts}</p>
             ) : null}
           </div>
         ) : (
           <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <Input
-              placeholder="Product Name"
-              value={form.productName}
-              onChange={(event) => setForm((prev) => ({ ...prev, productName: event.target.value }))}
-            />
+            <LocalizedFormSection title={t("field.productName")}>
+              <div
+                onChange={() =>
+                  setForm((prev) => ({ ...prev, ...hookForm.getValues() }))
+                }
+              >
+                <BilingualTextField
+                  register={hookForm.register}
+                  nameEnField="productNameEn"
+                  nameArField="productNameAr"
+                  label={t("field.productName")}
+                  requiredEn
+                />
+              </div>
+            </LocalizedFormSection>
             <div className="grid gap-3 sm:grid-cols-2">
               <select
                 value={form.selectedCategoryId}
@@ -169,12 +223,12 @@ export default function PurchaseFormModal({
                   setForm((prev) => ({
                     ...prev,
                     selectedCategoryId: event.target.value,
-                    category: selected?.name ?? "",
+                    categoryEn: selected?.name ?? "",
                   }));
                 }}
                 className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
               >
-                <option value="">Select category</option>
+                <option value="">{text.selectCategory}</option>
                 {categories.map((category) => (
                   <option key={category.id} value={String(category.id)}>
                     {category.name}
@@ -195,7 +249,7 @@ export default function PurchaseFormModal({
                 }}
                 className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
               >
-                <option value="">Select variant</option>
+                <option value="">{text.selectVariant}</option>
                 {variants.map((variant) => (
                   <option key={variant.id} value={String(variant.id)}>
                     {variant.label}
@@ -204,15 +258,29 @@ export default function PurchaseFormModal({
               </select>
             </div>
             {!catalogLoading && categories.length === 0 ? (
-              <p className="text-xs text-slate-500">No categories found.</p>
+              <p className="text-xs text-slate-500">{text.noCategories}</p>
             ) : null}
             {!catalogLoading && variants.length === 0 ? (
-              <p className="text-xs text-slate-500">No variants found.</p>
+              <p className="text-xs text-slate-500">{text.noVariants}</p>
             ) : null}
+            <LocalizedFormSection title={t("field.categoryName")}>
+              <div
+                onChange={() =>
+                  setForm((prev) => ({ ...prev, ...hookForm.getValues() }))
+                }
+              >
+                <BilingualTextField
+                  register={hookForm.register}
+                  nameEnField="categoryEn"
+                  nameArField="categoryAr"
+                  label={t("field.categoryName")}
+                />
+              </div>
+            </LocalizedFormSection>
             <div className="grid gap-3 sm:grid-cols-2">
               <Input
                 type="number"
-                placeholder="Price Before Discount"
+                placeholder={text.priceBeforeDiscount}
                 value={form.priceBeforeDiscount}
                 onChange={(event) =>
                   setForm((prev) => ({ ...prev, priceBeforeDiscount: event.target.value }))
@@ -220,7 +288,7 @@ export default function PurchaseFormModal({
               />
               <Input
                 type="number"
-                placeholder="Price After Discount"
+                placeholder={text.priceAfterDiscount}
                 value={form.priceAfterDiscount}
                 onChange={(event) =>
                   setForm((prev) => ({ ...prev, priceAfterDiscount: event.target.value }))
@@ -231,28 +299,38 @@ export default function PurchaseFormModal({
         )}
 
         <div className="space-y-3 rounded-lg border border-slate-200 p-3">
-          <h3 className="text-sm font-semibold text-slate-900">Supplier Information</h3>
+          <h3 className="text-sm font-semibold text-slate-900">{text.supplierInfo}</h3>
+          <LocalizedFormSection title={t("field.supplierName")}>
+            <div
+              onChange={() =>
+                setForm((prev) => ({ ...prev, ...hookForm.getValues() }))
+              }
+            >
+              <BilingualTextField
+                register={hookForm.register}
+                nameEnField="supplierNameEn"
+                nameArField="supplierNameAr"
+                label={t("field.supplierName")}
+                requiredEn
+              />
+            </div>
+          </LocalizedFormSection>
           <div className="grid gap-3 sm:grid-cols-2">
             <Input
-              placeholder="Supplier Name"
-              value={form.supplierName}
-              onChange={(event) => setForm((prev) => ({ ...prev, supplierName: event.target.value }))}
-            />
-            <Input
-              placeholder="Supplier Contact"
+              placeholder={text.supplierContact}
               value={form.supplierContact}
               onChange={(event) =>
                 setForm((prev) => ({ ...prev, supplierContact: event.target.value }))
               }
             />
             <Input
-              placeholder="Supplier Email"
+              placeholder={text.supplierEmail}
               type="email"
               value={form.supplierEmail}
               onChange={(event) => setForm((prev) => ({ ...prev, supplierEmail: event.target.value }))}
             />
             <Input
-              placeholder="Supplier Phone"
+              placeholder={text.supplierPhone}
               value={form.supplierPhone}
               onChange={(event) => setForm((prev) => ({ ...prev, supplierPhone: event.target.value }))}
             />
@@ -260,17 +338,17 @@ export default function PurchaseFormModal({
         </div>
 
         <div className="space-y-3 rounded-lg border border-slate-200 p-3">
-          <h3 className="text-sm font-semibold text-slate-900">Purchase Details</h3>
+          <h3 className="text-sm font-semibold text-slate-900">{text.purchaseDetails}</h3>
           <div className="grid gap-3 sm:grid-cols-2">
             <Input
               type="number"
-              placeholder="Quantity"
+              placeholder={text.quantity}
               value={form.quantity}
               onChange={(event) => setForm((prev) => ({ ...prev, quantity: event.target.value }))}
             />
             <Input
               type="number"
-              placeholder="Unit Cost"
+              placeholder={text.unitCost}
               value={form.unitCost}
               onChange={(event) => setForm((prev) => ({ ...prev, unitCost: event.target.value }))}
             />
@@ -288,7 +366,7 @@ export default function PurchaseFormModal({
             >
               {statuses.map((status) => (
                 <option key={status} value={status}>
-                  {status}
+                  {text.statusLabels[status]}
                 </option>
               ))}
             </select>
@@ -308,10 +386,10 @@ export default function PurchaseFormModal({
 
         <div className="flex justify-end gap-2">
           <Button variant="secondary" type="button" onClick={onClose}>
-            Cancel
+            {text.cancel}
           </Button>
           <Button type="button" onClick={() => onSubmit(form)}>
-            {mode === "create" ? "Add Purchase" : "Save Changes"}
+            {mode === "create" ? text.addPurchase : text.saveChanges}
           </Button>
         </div>
       </div>

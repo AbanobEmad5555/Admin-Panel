@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { PosSession } from "@/modules/pos/types";
 import { formatEGP } from "@/lib/currency";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 type CloseSessionModalProps = {
   open: boolean;
@@ -19,6 +20,7 @@ export default function CloseSessionModal({
   onClose,
   onSubmit,
 }: CloseSessionModalProps) {
+  const { language } = useLocalization();
   const [closingBalance, setClosingBalance] = useState(0);
 
   if (!open) {
@@ -28,14 +30,36 @@ export default function CloseSessionModal({
   const expected = session?.expectedClosingBalance ?? 0;
   const sales = session?.totalSales ?? 0;
   const diff = closingBalance - expected;
+  const text =
+    language === "ar"
+      ? {
+          title: "إغلاق الجلسة",
+          totalSales: "إجمالي المبيعات",
+          expectedBalance: "الرصيد المتوقع",
+          closingBalance: "الرصيد الختامي",
+          difference: "الفرق",
+          cancel: "إلغاء",
+          closing: "جارٍ الإغلاق...",
+          closeSession: "إغلاق الجلسة",
+        }
+      : {
+          title: "Close Session",
+          totalSales: "Total Sales",
+          expectedBalance: "Expected Balance",
+          closingBalance: "Closing balance",
+          difference: "Difference",
+          cancel: "Cancel",
+          closing: "Closing...",
+          closeSession: "Close Session",
+        };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4">
       <div className="w-full max-w-lg rounded-xl bg-white p-5 shadow-xl">
-        <h3 className="text-lg font-bold text-slate-900">Close Session</h3>
+        <h3 className="text-lg font-bold text-slate-900">{text.title}</h3>
         <div className="mt-3 space-y-1 rounded bg-slate-50 p-3 text-sm">
-          <p className="flex justify-between"><span>Total Sales</span><span>{formatEGP(sales)}</span></p>
-          <p className="flex justify-between"><span>Expected Balance</span><span>{formatEGP(expected)}</span></p>
+          <p className="flex justify-between"><span>{text.totalSales}</span><span>{formatEGP(sales)}</span></p>
+          <p className="flex justify-between"><span>{text.expectedBalance}</span><span>{formatEGP(expected)}</span></p>
         </div>
 
         <input
@@ -45,16 +69,16 @@ export default function CloseSessionModal({
           value={closingBalance}
           onChange={(event) => setClosingBalance(Number(event.target.value))}
           className="mt-3 w-full rounded border border-slate-300 px-3 py-2 text-sm"
-          placeholder="Closing balance"
+          placeholder={text.closingBalance}
         />
 
         <p className={`mt-2 text-sm ${diff === 0 ? "text-slate-600" : "text-amber-600"}`}>
-          Difference: {formatEGP(diff)}
+          {text.difference}: {formatEGP(diff)}
         </p>
 
         <div className="mt-4 flex gap-2">
           <button type="button" onClick={onClose} className="w-1/2 rounded border px-3 py-2 text-sm">
-            Cancel
+            {text.cancel}
           </button>
           <button
             type="button"
@@ -62,7 +86,7 @@ export default function CloseSessionModal({
             onClick={() => onSubmit(closingBalance)}
             className="w-1/2 rounded bg-violet-600 px-3 py-2 text-sm font-semibold text-white disabled:bg-violet-300"
           >
-            {pending ? "Closing..." : "Close Session"}
+            {pending ? text.closing : text.closeSession}
           </button>
         </div>
       </div>

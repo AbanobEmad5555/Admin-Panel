@@ -31,12 +31,14 @@ import {
   getCachedEmploymentType,
   setCachedEmploymentType,
 } from "@/features/team/utils/employmentTypeCache";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 const getStatus = (error: unknown) => (error as AxiosError)?.response?.status;
-const getErrorMessage = (error: unknown) =>
-  ((error as AxiosError<{ message?: string }>)?.response?.data?.message ?? "Something went wrong.");
+const getErrorMessage = (error: unknown, fallback = "Something went wrong.") =>
+  ((error as AxiosError<{ message?: string }>)?.response?.data?.message ?? fallback);
 
 export default function TeamProfilePage() {
+  const { language } = useLocalization();
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -60,6 +62,116 @@ export default function TeamProfilePage() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [deleteDoc, setDeleteDoc] = useState<EmployeeDocument | null>(null);
   const profileImageInputRef = useRef<HTMLInputElement | null>(null);
+
+  const text = useMemo(
+    () =>
+      language === "ar"
+        ? {
+            genericError: "حدث خطأ غير متوقع.",
+            team: "الفريق",
+            employeeProfile: "ملف الموظف",
+            backToTeam: "العودة إلى الفريق",
+            forbidden: "ممنوع",
+            forbiddenMessage: "ليست لديك صلاحية لعرض هذا الموظف.",
+            notFound: "لم يتم العثور على الموظف.",
+            profileImageUploadFailed: "فشل رفع صورة الملف الشخصي.",
+            profilePictureUpdated: "تم تحديث صورة الملف الشخصي.",
+            profilePictureRemoved: "تم حذف صورة الملف الشخصي.",
+            changePhoto: "تغيير الصورة",
+            uploadPhoto: "رفع صورة",
+            deletePhoto: "حذف الصورة",
+            edit: "تعديل",
+            changeStatus: "تغيير الحالة",
+            employeeDetails: "تفاصيل الموظف",
+            employeeId: "معرّف الموظف:",
+            autoAssigned: "تلقائي",
+            title: "المسمى الوظيفي:",
+            employmentType: "نوع التوظيف:",
+            department: "القسم:",
+            email: "البريد الإلكتروني:",
+            phone: "الهاتف:",
+            salary: "الراتب:",
+            shift: "الوردية:",
+            workingDays: "أيام العمل:",
+            rating: "التقييم:",
+            hireDate: "تاريخ التعيين:",
+            notes: "ملاحظات:",
+            overview: "نظرة عامة",
+            documents: "المستندات",
+            auditLogs: "سجلات المراجعة",
+            overviewHint: "اختر المستندات أو سجلات المراجعة لعرض سجلات الموظف.",
+            uploadDocument: "رفع مستند",
+            loadingDocuments: "جارٍ تحميل المستندات...",
+            noDocuments: "لا توجد مستندات مرفوعة بعد.",
+            loadingAuditLogs: "جارٍ تحميل سجلات المراجعة...",
+            noAuditLogs: "لا توجد سجلات مراجعة.",
+            previous: "السابق",
+            next: "التالي",
+            page: "الصفحة",
+            of: "من",
+            employeeUpdated: "تم تحديث الموظف.",
+            employeeStatusUpdated: "تم تحديث حالة الموظف.",
+            uploadFilesFailed: "فشل رفع الملفات المحددة.",
+            documentsUploaded: (count: number) => `تم رفع ${count} مستندات.`,
+            documentUploaded: "تم رفع المستند.",
+            deleteDocumentTitle: "حذف المستند",
+            deleteDocumentDescription: (title?: string) => `حذف "${title ?? "المستند"}"؟`,
+            documentDeleted: "تم حذف المستند.",
+          }
+        : {
+            genericError: "Something went wrong.",
+            team: "Team",
+            employeeProfile: "Employee Profile",
+            backToTeam: "Back to Team",
+            forbidden: "Forbidden",
+            forbiddenMessage: "You don't have permission to view this employee.",
+            notFound: "Employee not found.",
+            profileImageUploadFailed: "Failed to upload profile image.",
+            profilePictureUpdated: "Profile picture updated.",
+            profilePictureRemoved: "Profile picture removed.",
+            changePhoto: "Change Photo",
+            uploadPhoto: "Upload Photo",
+            deletePhoto: "Delete Photo",
+            edit: "Edit",
+            changeStatus: "Change Status",
+            employeeDetails: "Employee Details",
+            employeeId: "Employee ID:",
+            autoAssigned: "Auto assigned",
+            title: "Title:",
+            employmentType: "Employment Type:",
+            department: "Department:",
+            email: "Email:",
+            phone: "Phone:",
+            salary: "Salary:",
+            shift: "Shift:",
+            workingDays: "Working Days:",
+            rating: "Rating:",
+            hireDate: "Hire Date:",
+            notes: "Notes:",
+            overview: "Overview",
+            documents: "Documents",
+            auditLogs: "Audit Logs",
+            overviewHint: "Select Documents or Audit Logs to view employee records.",
+            uploadDocument: "Upload Document",
+            loadingDocuments: "Loading documents...",
+            noDocuments: "No documents uploaded yet.",
+            loadingAuditLogs: "Loading audit logs...",
+            noAuditLogs: "No audit logs available.",
+            previous: "Previous",
+            next: "Next",
+            page: "Page",
+            of: "of",
+            employeeUpdated: "Employee updated.",
+            employeeStatusUpdated: "Employee status updated.",
+            uploadFilesFailed: "Failed to upload selected files.",
+            documentsUploaded: (count: number) => `${count} documents uploaded.`,
+            documentUploaded: "Document uploaded.",
+            deleteDocumentTitle: "Delete Document",
+            deleteDocumentDescription: (title?: string) => `Delete "${title ?? "document"}"?`,
+            documentDeleted: "Document deleted.",
+          },
+    [language]
+  );
 
   const employee = employeeQuery.data ?? null;
   const forbidden = getStatus(employeeQuery.error) === 403;
@@ -97,14 +209,14 @@ export default function TeamProfilePage() {
       const uploadedUrls = await teamApi.uploadFiles([file]);
       const imageUrl = uploadedUrls[0];
       if (!imageUrl) {
-        toast.error("Failed to upload profile image.");
+        toast.error(text.profileImageUploadFailed);
         return;
       }
 
       await profileImageMutation.mutateAsync({ profileImageUrl: imageUrl });
-      toast.success("Profile picture updated.");
+      toast.success(text.profilePictureUpdated);
     } catch (error) {
-      toast.error(getErrorMessage(error));
+      toast.error(getErrorMessage(error, text.genericError));
     }
   };
 
@@ -112,8 +224,8 @@ export default function TeamProfilePage() {
     profileImageMutation.mutate(
       { profileImageUrl: null },
       {
-        onSuccess: () => toast.success("Profile picture removed."),
-        onError: (error) => toast.error(getErrorMessage(error)),
+        onSuccess: () => toast.success(text.profilePictureRemoved),
+        onError: (error) => toast.error(getErrorMessage(error, text.genericError)),
       }
     );
   };
@@ -124,12 +236,12 @@ export default function TeamProfilePage() {
         <div className="flex items-center justify-between">
           <div className="text-sm text-slate-900">
             <Link href="/admin/team" className="hover:text-slate-900">
-              Team
+              {text.team}
             </Link>{" "}
-            / Employee Profile
+            / {text.employeeProfile}
           </div>
           <Link href="/admin/team" className="text-sm text-slate-900 hover:text-slate-900">
-            Back to Team
+            {text.backToTeam}
           </Link>
         </div>
 
@@ -144,21 +256,21 @@ export default function TeamProfilePage() {
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-amber-800 shadow-sm">
             <div className="flex items-center gap-2 font-medium">
               <ShieldAlert className="h-5 w-5" />
-              Forbidden
+              {text.forbidden}
             </div>
-            <p className="mt-2 text-sm">You don&apos;t have permission to view this employee.</p>
+            <p className="mt-2 text-sm">{text.forbiddenMessage}</p>
           </div>
         ) : null}
 
         {notFound ? (
           <div className="rounded-xl border border-slate-200 bg-white p-6 text-center shadow-sm">
-            Employee not found.
+            {text.notFound}
           </div>
         ) : null}
 
         {employeeQuery.isError && !forbidden && !notFound ? (
           <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-700 shadow-sm">
-            {getErrorMessage(employeeQuery.error)}
+            {getErrorMessage(employeeQuery.error, text.genericError)}
           </div>
         ) : null}
 
@@ -206,7 +318,7 @@ export default function TeamProfilePage() {
                         disabled={profileImageMutation.isPending}
                         onClick={() => profileImageInputRef.current?.click()}
                       >
-                        {employee.profileImageUrl ? "Change Photo" : "Upload Photo"}
+                        {employee.profileImageUrl ? text.changePhoto : text.uploadPhoto}
                       </Button>
                       <Button
                         type="button"
@@ -215,7 +327,7 @@ export default function TeamProfilePage() {
                         disabled={!employee.profileImageUrl || profileImageMutation.isPending}
                         onClick={handleProfileImageDelete}
                       >
-                        Delete Photo
+                        {text.deletePhoto}
                       </Button>
                     </div>
                   </div>
@@ -223,38 +335,38 @@ export default function TeamProfilePage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <Button variant="secondary" className="gap-2" onClick={() => setEditOpen(true)}>
                     <Pencil className="h-4 w-4" />
-                    Edit
+                    {text.edit}
                   </Button>
                   <Button variant="secondary" className="gap-2" onClick={() => setStatusOpen(true)}>
                     <UserRoundX className="h-4 w-4" />
-                    Change Status
+                    {text.changeStatus}
                   </Button>
                 </div>
               </div>
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="text-base font-semibold text-slate-900">Employee Details</h2>
+              <h2 className="text-base font-semibold text-slate-900">{text.employeeDetails}</h2>
               <div className="mt-3 grid gap-3 text-sm text-slate-900 md:grid-cols-2 xl:grid-cols-3">
-                <p><span className="font-medium text-slate-900">Employee ID:</span> {employee.id || "Auto assigned"}</p>
-                <p><span className="font-medium text-slate-900">Title:</span> {employee.title || "-"}</p>
-                <p><span className="font-medium text-slate-900">Employment Type:</span> {displayedEmploymentType ? displayedEmploymentType.replace("_", " ") : "-"}</p>
-                <p><span className="font-medium text-slate-900">Department:</span> {employee.department || "-"}</p>
-                <p><span className="font-medium text-slate-900">Email:</span> {employee.email || "-"}</p>
-                <p><span className="font-medium text-slate-900">Phone:</span> {employee.phone || "-"}</p>
-                <p><span className="font-medium text-slate-900">Salary:</span> {formatEGP(employee.salary)}</p>
-                <p><span className="font-medium text-slate-900">Shift:</span> {employee.shiftStart || "-"} - {employee.shiftEnd || "-"}</p>
-                <p><span className="font-medium text-slate-900">Working Days:</span> {employee.workingDays.join(", ") || "-"}</p>
-                <p><span className="font-medium text-slate-900">Rating:</span> {typeof employee.rating === "number" && employee.rating > 0 ? employee.rating.toFixed(1) : "-"}</p>
-                <p><span className="font-medium text-slate-900">Hire Date:</span> {employee.hireDate || "-"}</p>
+                <p><span className="font-medium text-slate-900">{text.employeeId}</span> {employee.id || text.autoAssigned}</p>
+                <p><span className="font-medium text-slate-900">{text.title}</span> {employee.title || "-"}</p>
+                <p><span className="font-medium text-slate-900">{text.employmentType}</span> {displayedEmploymentType ? displayedEmploymentType.replace("_", " ") : "-"}</p>
+                <p><span className="font-medium text-slate-900">{text.department}</span> {employee.department || "-"}</p>
+                <p><span className="font-medium text-slate-900">{text.email}</span> {employee.email || "-"}</p>
+                <p><span className="font-medium text-slate-900">{text.phone}</span> {employee.phone || "-"}</p>
+                <p><span className="font-medium text-slate-900">{text.salary}</span> {formatEGP(employee.salary)}</p>
+                <p><span className="font-medium text-slate-900">{text.shift}</span> {employee.shiftStart || "-"} - {employee.shiftEnd || "-"}</p>
+                <p><span className="font-medium text-slate-900">{text.workingDays}</span> {employee.workingDays.join(", ") || "-"}</p>
+                <p><span className="font-medium text-slate-900">{text.rating}</span> {typeof employee.rating === "number" && employee.rating > 0 ? employee.rating.toFixed(1) : "-"}</p>
+                <p><span className="font-medium text-slate-900">{text.hireDate}</span> {employee.hireDate || "-"}</p>
               </div>
               <p className="mt-3 text-sm text-slate-900">
-                <span className="font-medium text-slate-900">Notes:</span> {employee.notes || "-"}
+                <span className="font-medium text-slate-900">{text.notes}</span> {employee.notes || "-"}
               </p>
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
-              <div className="flex flex-wrap gap-2">
+              <div className={`flex flex-wrap gap-2 ${language === "ar" ? "justify-end" : ""}`}>
                 <button
                   type="button"
                   onClick={() => changeTab("overview")}
@@ -262,7 +374,7 @@ export default function TeamProfilePage() {
                     tab === "overview" ? "bg-slate-900 text-white" : "text-slate-900 hover:bg-slate-100"
                   }`}
                 >
-                  Overview
+                  {text.overview}
                 </button>
                 <button
                   type="button"
@@ -271,7 +383,7 @@ export default function TeamProfilePage() {
                     tab === "documents" ? "bg-slate-900 text-white" : "text-slate-900 hover:bg-slate-100"
                   }`}
                 >
-                  Documents
+                  {text.documents}
                 </button>
                 <button
                   type="button"
@@ -280,15 +392,14 @@ export default function TeamProfilePage() {
                     tab === "audit" ? "bg-slate-900 text-white" : "text-slate-900 hover:bg-slate-100"
                   }`}
                 >
-                  Audit Logs
+                  {text.auditLogs}
                 </button>
               </div>
             </div>
 
             {tab === "overview" ? (
               <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-900 shadow-sm">
-                Select <span className="font-semibold">Documents</span> or{" "}
-                <span className="font-semibold">Audit Logs</span> to view employee records.
+                {text.overviewHint}
               </div>
             ) : null}
 
@@ -297,18 +408,20 @@ export default function TeamProfilePage() {
                 <div className="flex justify-end">
                   <Button className="gap-2" onClick={() => setUploadOpen(true)}>
                     <FilePlus2 className="h-4 w-4" />
-                    Upload Document
+                    {text.uploadDocument}
                   </Button>
                 </div>
                 {documentsQuery.isLoading ? (
-                  <div className="rounded-xl border border-slate-200 bg-white p-4 text-slate-950 shadow-sm">Loading documents...</div>
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 text-slate-950 shadow-sm">
+                    {text.loadingDocuments}
+                  </div>
                 ) : documentsQuery.isError ? (
                   <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-700 shadow-sm">
-                    {getErrorMessage(documentsQuery.error)}
+                    {getErrorMessage(documentsQuery.error, text.genericError)}
                   </div>
                 ) : documentRows.length === 0 ? (
                   <div className="rounded-xl border border-slate-200 bg-white p-6 text-center text-slate-950 shadow-sm">
-                    No documents uploaded yet.
+                    {text.noDocuments}
                   </div>
                 ) : (
                   <DocumentsTable rows={documentRows} onDelete={(doc) => setDeleteDoc(doc)} />
@@ -317,14 +430,16 @@ export default function TeamProfilePage() {
             ) : (
               <div className="space-y-3">
                 {auditLogsQuery.isLoading ? (
-                  <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">Loading audit logs...</div>
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                    {text.loadingAuditLogs}
+                  </div>
                 ) : auditLogsQuery.isError ? (
                   <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-700 shadow-sm">
-                    {getErrorMessage(auditLogsQuery.error)}
+                    {getErrorMessage(auditLogsQuery.error, text.genericError)}
                   </div>
                 ) : (auditLogsQuery.data?.items?.length ?? 0) === 0 ? (
                   <div className="rounded-xl border border-slate-200 bg-white p-6 text-center shadow-sm">
-                    No audit logs available.
+                    {text.noAuditLogs}
                   </div>
                 ) : (
                   <>
@@ -341,10 +456,10 @@ export default function TeamProfilePage() {
                           router.replace(`/admin/team/${employeeId}?${query.toString()}`);
                         }}
                       >
-                        Previous
+                        {text.previous}
                       </Button>
                       <p className="text-sm text-slate-900">
-                        Page {auditPage} of {auditLogsQuery.data?.totalPages ?? 1}
+                        {text.page} {auditPage} {text.of} {auditLogsQuery.data?.totalPages ?? 1}
                       </p>
                       <Button
                         type="button"
@@ -357,7 +472,7 @@ export default function TeamProfilePage() {
                           router.replace(`/admin/team/${employeeId}?${query.toString()}`);
                         }}
                       >
-                        Next
+                        {text.next}
                       </Button>
                     </div>
                   </>
@@ -377,10 +492,10 @@ export default function TeamProfilePage() {
           updateMutation.mutate(values, {
             onSuccess: () => {
               setCachedEmploymentType(employeeId, values.employmentType);
-              toast.success("Employee updated.");
+              toast.success(text.employeeUpdated);
               setEditOpen(false);
             },
-            onError: (error) => toast.error(getErrorMessage(error)),
+            onError: (error) => toast.error(getErrorMessage(error, text.genericError)),
           });
         }}
       />
@@ -393,10 +508,10 @@ export default function TeamProfilePage() {
         onSubmit={(values) => {
           statusMutation.mutate(values, {
             onSuccess: () => {
-              toast.success("Employee status updated.");
+              toast.success(text.employeeStatusUpdated);
               setStatusOpen(false);
             },
-            onError: (error) => toast.error(getErrorMessage(error)),
+            onError: (error) => toast.error(getErrorMessage(error, text.genericError)),
           });
         }}
       />
@@ -410,7 +525,7 @@ export default function TeamProfilePage() {
             if (payload.sourceMode === "file") {
               const uploadedUrls = await teamApi.uploadFiles(payload.files);
               if (uploadedUrls.length === 0) {
-                toast.error("Failed to upload selected files.");
+                toast.error(text.uploadFilesFailed);
                 return;
               }
 
@@ -426,8 +541,8 @@ export default function TeamProfilePage() {
               }
               toast.success(
                 payload.values.length > 1
-                  ? `${payload.values.length} documents uploaded.`
-                  : "Document uploaded."
+                  ? text.documentsUploaded(payload.values.length)
+                  : text.documentUploaded
               );
               setUploadOpen(false);
               return;
@@ -443,29 +558,29 @@ export default function TeamProfilePage() {
             }
             toast.success(
               payload.values.length > 1
-                ? `${payload.values.length} documents uploaded.`
-                : "Document uploaded."
+                ? text.documentsUploaded(payload.values.length)
+                : text.documentUploaded
             );
             setUploadOpen(false);
           } catch (error) {
-            toast.error(getErrorMessage(error));
+            toast.error(getErrorMessage(error, text.genericError));
           }
         }}
       />
 
       <ConfirmDeleteModal
         open={Boolean(deleteDoc)}
-        title="Delete Document"
-        description={`Delete "${deleteDoc?.title ?? "document"}"?`}
+        title={text.deleteDocumentTitle}
+        description={text.deleteDocumentDescription(deleteDoc?.title)}
         onClose={() => setDeleteDoc(null)}
         onConfirm={() => {
           if (!deleteDoc) return;
           deleteDocMutation.mutate(deleteDoc.id, {
             onSuccess: () => {
-              toast.success("Document deleted.");
+              toast.success(text.documentDeleted);
               setDeleteDoc(null);
             },
-            onError: (error) => toast.error(getErrorMessage(error)),
+            onError: (error) => toast.error(getErrorMessage(error, text.genericError)),
           });
         }}
       />

@@ -1,4 +1,5 @@
 import type { TeamStatus } from "@/features/team/types";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 type StatusBadgeProps = {
   status: TeamStatus;
@@ -12,9 +13,18 @@ const colorMap: Record<TeamStatus, string> = {
 };
 
 export default function StatusBadge({ status }: StatusBadgeProps) {
+  const { language } = useLocalization();
+
+  const labelMap: Record<TeamStatus, { en: string; ar: string }> = {
+    ACTIVE: { en: "ACTIVE", ar: "نشط" },
+    SUSPENDED: { en: "SUSPENDED", ar: "موقوف" },
+    VACATION: { en: "VACATION", ar: "إجازة" },
+    TERMINATED: { en: "TERMINATED", ar: "منتهي" },
+  };
+
   return (
     <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${colorMap[status]}`}>
-      {status}
+      {labelMap[status][language]}
     </span>
   );
 }

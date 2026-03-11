@@ -1,4 +1,5 @@
 import api from "@/services/api";
+import { getLocalizedValue } from "@/modules/localization/utils";
 import type { CostCategory, CostRow, PurchaseRow, PurchaseStatus } from "@/components/purchases/types";
 
 type ApiEnvelope<T> = {
@@ -12,11 +13,17 @@ type PurchaseApiRecord = {
   purchaseId?: string;
   productId?: number | string | null;
   productName?: string | null;
+  productNameEn?: string | null;
+  productNameAr?: string | null;
   categoryId?: number | string | null;
   categoryName?: string | null;
+  categoryNameEn?: string | null;
+  categoryNameAr?: string | null;
   variantId?: number | string | null;
   variantName?: string | null;
   supplierName?: string | null;
+  supplierNameEn?: string | null;
+  supplierNameAr?: string | null;
   supplierContact?: string | null;
   supplierEmail?: string | null;
   supplierPhone?: string | null;
@@ -36,6 +43,8 @@ type PurchaseApiRecord = {
 type CostApiRecord = {
   id?: number | string;
   name?: string | null;
+  costNameEn?: string | null;
+  costNameAr?: string | null;
   category?: string | null;
   amount?: number | string | null;
   date?: string | null;
@@ -83,11 +92,17 @@ export type PurchasesSummaryData = {
 type PurchaseMutationInput = {
   productId?: number;
   productName: string;
+  productNameEn?: string;
+  productNameAr?: string;
   categoryId?: number;
   categoryName?: string;
+  categoryNameEn?: string;
+  categoryNameAr?: string;
   variantId?: number;
   variantName?: string;
   supplierName: string;
+  supplierNameEn?: string;
+  supplierNameAr?: string;
   supplierContact?: string;
   supplierEmail?: string;
   supplierPhone?: string;
@@ -100,6 +115,8 @@ type PurchaseMutationInput = {
 
 type CostMutationInput = {
   name: string;
+  costNameEn?: string;
+  costNameAr?: string;
   category: CostCategory;
   amount: number;
   date: string;
@@ -185,12 +202,34 @@ const normalizePurchase = (record: PurchaseApiRecord): PurchaseRow => ({
   id: String(record.id ?? ""),
   purchaseId: toText(record.purchaseId),
   productId: toOptionalNumber(record.productId),
-  productName: toText(record.productName),
+  productName: getLocalizedValue({
+    en: toText(record.productNameEn),
+    ar: toText(record.productNameAr),
+    legacy: toText(record.productName),
+    lang: "en",
+  }),
+  productNameEn: toText(record.productNameEn) || undefined,
+  productNameAr: toText(record.productNameAr) || undefined,
   categoryId: toOptionalNumber(record.categoryId),
-  categoryName: toText(record.categoryName) || undefined,
+  categoryName:
+    getLocalizedValue({
+      en: toText(record.categoryNameEn),
+      ar: toText(record.categoryNameAr),
+      legacy: toText(record.categoryName),
+      lang: "en",
+    }) || undefined,
+  categoryNameEn: toText(record.categoryNameEn) || undefined,
+  categoryNameAr: toText(record.categoryNameAr) || undefined,
   variantId: toOptionalNumber(record.variantId),
   variantName: toText(record.variantName) || undefined,
-  supplierName: toText(record.supplierName),
+  supplierName: getLocalizedValue({
+    en: toText(record.supplierNameEn),
+    ar: toText(record.supplierNameAr),
+    legacy: toText(record.supplierName),
+    lang: "en",
+  }),
+  supplierNameEn: toText(record.supplierNameEn) || undefined,
+  supplierNameAr: toText(record.supplierNameAr) || undefined,
   supplierContact: toText(record.supplierContact) || undefined,
   supplierEmail: toText(record.supplierEmail) || undefined,
   supplierPhone: toText(record.supplierPhone) || undefined,
@@ -209,7 +248,14 @@ const normalizePurchase = (record: PurchaseApiRecord): PurchaseRow => ({
 
 const normalizeCost = (record: CostApiRecord): CostRow => ({
   id: String(record.id ?? ""),
-  name: toText(record.name),
+  name: getLocalizedValue({
+    en: toText(record.costNameEn),
+    ar: toText(record.costNameAr),
+    legacy: toText(record.name),
+    lang: "en",
+  }),
+  costNameEn: toText(record.costNameEn) || undefined,
+  costNameAr: toText(record.costNameAr) || undefined,
   category: normalizeCostCategory(record.category),
   amount: toNumber(record.amount),
   date: toText(record.date),
@@ -265,11 +311,17 @@ const normalizeSummary = (payload: SummaryResponse): PurchasesSummaryData => ({
 const buildPurchasePayload = (input: PurchaseMutationInput) => ({
   productId: input.productId,
   productName: input.productName,
+  productNameEn: input.productNameEn || input.productName,
+  productNameAr: input.productNameAr || undefined,
   categoryId: input.categoryId,
   categoryName: input.categoryName,
+  categoryNameEn: input.categoryNameEn || input.categoryName,
+  categoryNameAr: input.categoryNameAr || undefined,
   variantId: input.variantId,
   variantName: input.variantName,
   supplierName: input.supplierName,
+  supplierNameEn: input.supplierNameEn || input.supplierName,
+  supplierNameAr: input.supplierNameAr || undefined,
   supplierContact: input.supplierContact,
   supplierEmail: input.supplierEmail,
   supplierPhone: input.supplierPhone,
@@ -344,7 +396,12 @@ export const purchaseCostsApi = {
   async create(input: CostMutationInput) {
     const response = await api.post<ApiEnvelope<CostApiRecord>>(
       "/api/admin/purchases/costs",
-      input
+      {
+        ...input,
+        name: input.name,
+        costNameEn: input.costNameEn || input.name,
+        costNameAr: input.costNameAr || undefined,
+      }
     );
     const payload = response.data?.data ?? response.data;
     return normalizeCost((payload ?? {}) as CostApiRecord);
@@ -353,7 +410,12 @@ export const purchaseCostsApi = {
   async update(id: string, input: CostMutationInput) {
     const response = await api.put<ApiEnvelope<CostApiRecord>>(
       `/api/admin/purchases/costs/${id}`,
-      input
+      {
+        ...input,
+        name: input.name,
+        costNameEn: input.costNameEn || input.name,
+        costNameAr: input.costNameAr || undefined,
+      }
     );
     const payload = response.data?.data ?? response.data;
     return normalizeCost((payload ?? {}) as CostApiRecord);

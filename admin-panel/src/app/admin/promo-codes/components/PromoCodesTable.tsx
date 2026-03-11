@@ -3,6 +3,7 @@
 import Button from "@/components/ui/Button";
 import type { PromoCodeRecord } from "@/services/promoCodesApi";
 import { formatEGP } from "@/lib/currency";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 type PromoCodesTableProps = {
   promoCodes: PromoCodeRecord[];
@@ -53,32 +54,81 @@ export default function PromoCodesTable({
   rowLoading,
   emptyText,
 }: PromoCodesTableProps) {
+  const { language } = useLocalization();
+  const text =
+    language === "ar"
+      ? {
+          loading: "جارٍ تحميل أكواد الخصم...",
+          empty: "لا توجد أكواد خصم بعد.",
+          id: "المعرّف",
+          code: "الكود",
+          type: "النوع",
+          value: "القيمة",
+          minimumOrder: "الحد الأدنى للطلب",
+          maxDiscount: "أقصى خصم",
+          expireDate: "تاريخ الانتهاء",
+          usagePerUser: "استخدام/مستخدم",
+          totalUsage: "إجمالي الاستخدام",
+          status: "الحالة",
+          actions: "الإجراءات",
+          active: "نشط",
+          suspended: "موقوف",
+          edit: "تعديل",
+          delete: "حذف",
+          suspend: "إيقاف",
+          activate: "تفعيل",
+          fixed: "ثابت",
+          percentage: "نسبة مئوية",
+        }
+      : {
+          loading: "Loading promo codes...",
+          empty: "No promo codes yet. Create your first promo code.",
+          id: "ID",
+          code: "Code",
+          type: "Type",
+          value: "Value",
+          minimumOrder: "Minimum Order",
+          maxDiscount: "Max Discount",
+          expireDate: "Expire Date",
+          usagePerUser: "Usage/User",
+          totalUsage: "Total Usage",
+          status: "Status",
+          actions: "Actions",
+          active: "Active",
+          suspended: "Suspended",
+          edit: "Edit",
+          delete: "Delete",
+          suspend: "Suspend",
+          activate: "Activate",
+          fixed: "Fixed",
+          percentage: "Percentage",
+        };
   if (isLoading) {
-    return <p className="text-sm text-slate-600">Loading promo codes...</p>;
+    return <p className="text-sm text-slate-600">{text.loading}</p>;
   }
   if (promoCodes.length === 0) {
     return (
       <p className="text-sm text-slate-600">
-        {emptyText ?? "No promo codes yet. Create your first promo code."}
+        {emptyText ?? text.empty}
       </p>
     );
   }
   return (
     <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
       <table className="min-w-full text-sm">
-        <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <thead className={`bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500 ${language === "ar" ? "text-right" : "text-left"}`}>
           <tr>
-            <th className="px-3 py-3">ID</th>
-            <th className="px-3 py-3">Code</th>
-            <th className="px-3 py-3">Type</th>
-            <th className="px-3 py-3">Value</th>
-            <th className="px-3 py-3">Minimum Order</th>
-            <th className="px-3 py-3">Max Discount</th>
-            <th className="px-3 py-3">Expire Date</th>
-            <th className="px-3 py-3">Usage/User</th>
-            <th className="px-3 py-3">Total Usage</th>
-            <th className="px-3 py-3">Status</th>
-            <th className="px-3 py-3">Actions</th>
+            <th className="px-3 py-3">{text.id}</th>
+            <th className="px-3 py-3">{text.code}</th>
+            <th className="px-3 py-3">{text.type}</th>
+            <th className="px-3 py-3">{text.value}</th>
+            <th className="px-3 py-3">{text.minimumOrder}</th>
+            <th className="px-3 py-3">{text.maxDiscount}</th>
+            <th className="px-3 py-3">{text.expireDate}</th>
+            <th className="px-3 py-3">{text.usagePerUser}</th>
+            <th className="px-3 py-3">{text.totalUsage}</th>
+            <th className="px-3 py-3">{text.status}</th>
+            <th className="px-3 py-3">{text.actions}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100 bg-white">
@@ -90,7 +140,9 @@ export default function PromoCodesTable({
                   {item.id}
                 </td>
                 <td className="px-3 py-2">{item.code}</td>
-                <td className="px-3 py-2">{item.type}</td>
+                <td className="px-3 py-2">
+                  {item.type === "PERCENTAGE" ? text.percentage : text.fixed}
+                </td>
                 <td className="px-3 py-2">{formatValue(item)}</td>
                 <td className="px-3 py-2">
                   {(() => {
@@ -129,8 +181,8 @@ export default function PromoCodesTable({
                     }`}
                   >
                     {selectBoolean(item.is_active, item.isActive)
-                      ? "Active"
-                      : "Suspended"}
+                      ? text.active
+                      : text.suspended}
                   </span>
                 </td>
                 <td className="px-3 py-2">
@@ -141,7 +193,7 @@ export default function PromoCodesTable({
                       disabled={loading}
                       className="text-xs"
                     >
-                      Edit
+                      {text.edit}
                     </Button>
                     <Button
                       variant="danger"
@@ -149,7 +201,7 @@ export default function PromoCodesTable({
                       disabled={loading}
                       className="text-xs"
                     >
-                      Delete
+                      {text.delete}
                     </Button>
                     <Button
                       variant="primary"
@@ -158,8 +210,8 @@ export default function PromoCodesTable({
                       className="text-xs"
                     >
                       {selectBoolean(item.is_active, item.isActive)
-                        ? "Suspend"
-                        : "Activate"}
+                        ? text.suspend
+                        : text.activate}
                     </Button>
                   </div>
                 </td>

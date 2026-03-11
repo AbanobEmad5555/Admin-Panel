@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import { manualEventSchema, type ManualEventFormValues } from "@/modules/calendar/schemas/manualEventSchema";
 import type {
   CalendarEventMutationPayload,
@@ -41,8 +42,45 @@ export default function ManualEventModal({
   onSubmit,
   onDelete,
 }: ManualEventModalProps) {
+  const { language } = useLocalization();
   const startDateRef = useRef<HTMLInputElement | null>(null);
   const endDateRef = useRef<HTMLInputElement | null>(null);
+  const text =
+    language === "ar"
+      ? {
+          editTitle: "تعديل حدث يدوي",
+          createTitle: "إنشاء حدث يدوي",
+          title: "العنوان",
+          titlePlaceholder: "ملاحظة تشغيلية",
+          description: "الوصف",
+          descriptionPlaceholder: "تفاصيل اختيارية",
+          startDate: "تاريخ البدء",
+          endDate: "تاريخ الانتهاء",
+          color: "اللون",
+          deleting: "جارٍ الحذف...",
+          delete: "حذف",
+          cancel: "إلغاء",
+          saving: "جارٍ الحفظ...",
+          saveChanges: "حفظ التغييرات",
+          createEvent: "إنشاء الحدث",
+        }
+      : {
+          editTitle: "Edit Manual Event",
+          createTitle: "Create Manual Event",
+          title: "Title",
+          titlePlaceholder: "Operational note",
+          description: "Description",
+          descriptionPlaceholder: "Optional details",
+          startDate: "Start Date",
+          endDate: "End Date",
+          color: "Color",
+          deleting: "Deleting...",
+          delete: "Delete",
+          cancel: "Cancel",
+          saving: "Saving...",
+          saveChanges: "Save Changes",
+          createEvent: "Create Event",
+        };
 
   const values = useMemo(
     () => (initialEvent ? manualEventToFormValues(initialEvent) : defaultValues),
@@ -92,34 +130,34 @@ export default function ManualEventModal({
 
   return (
     <Modal
-      title={initialEvent ? "Edit Manual Event" : "Create Manual Event"}
+      title={initialEvent ? text.editTitle : text.createTitle}
       isOpen={isOpen}
       onClose={handleClose}
     >
       <form className="space-y-4" onSubmit={handleSubmit((values) => submit(values))}>
         <div className="space-y-1">
-          <label className="block text-sm font-semibold text-slate-900">Title</label>
+          <label className="block text-sm font-semibold text-slate-900">{text.title}</label>
           <input
             {...register("title")}
             className="w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
-            placeholder="Operational note"
+            placeholder={text.titlePlaceholder}
           />
           {errors.title ? <p className="text-xs text-rose-600">{errors.title.message}</p> : null}
         </div>
 
         <div className="space-y-1">
-          <label className="block text-sm font-semibold text-slate-900">Description</label>
+          <label className="block text-sm font-semibold text-slate-900">{text.description}</label>
           <textarea
             rows={3}
             {...register("description")}
             className="w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
-            placeholder="Optional details"
+            placeholder={text.descriptionPlaceholder}
           />
         </div>
 
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <div className="space-y-1">
-            <label className="block text-sm font-semibold text-slate-900">Start Date</label>
+            <label className="block text-sm font-semibold text-slate-900">{text.startDate}</label>
             <input
               ref={startDateRef}
               type="datetime-local"
@@ -134,7 +172,7 @@ export default function ManualEventModal({
           </div>
 
           <div className="space-y-1">
-            <label className="block text-sm font-semibold text-slate-900">End Date</label>
+            <label className="block text-sm font-semibold text-slate-900">{text.endDate}</label>
             <input
               ref={endDateRef}
               type="datetime-local"
@@ -150,7 +188,7 @@ export default function ManualEventModal({
         </div>
 
         <div className="space-y-1">
-          <label className="block text-sm font-semibold text-slate-900">Color</label>
+          <label className="block text-sm font-semibold text-slate-900">{text.color}</label>
           <input
             type="color"
             {...register("color")}
@@ -167,7 +205,7 @@ export default function ManualEventModal({
               onClick={() => void onDelete()}
               disabled={isDeleting || isSubmitting}
             >
-              {isDeleting ? "Deleting..." : "Delete"}
+              {isDeleting ? text.deleting : text.delete}
             </Button>
           ) : (
             <span />
@@ -180,10 +218,14 @@ export default function ManualEventModal({
               onClick={handleClose}
               disabled={isSubmitting || isDeleting}
             >
-              Cancel
+              {text.cancel}
             </Button>
             <Button type="submit" disabled={isSubmitting || isDeleting}>
-              {isSubmitting ? "Saving..." : initialEvent ? "Save Changes" : "Create Event"}
+              {isSubmitting
+                ? text.saving
+                : initialEvent
+                  ? text.saveChanges
+                  : text.createEvent}
             </Button>
           </div>
         </div>

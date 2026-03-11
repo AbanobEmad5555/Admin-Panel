@@ -10,11 +10,13 @@ import type {
   EventContentArg,
   EventInput,
 } from "@fullcalendar/core";
+import arLocale from "@fullcalendar/core/locales/ar";
 import type { RefObject } from "react";
 import type {
   CalendarEventExtendedProps,
   CalendarViewMode,
 } from "@/modules/calendar/types/calendar.types";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import { formatCurrency } from "@/modules/calendar/utils/date";
 
 type CalendarMutationArg = {
@@ -75,6 +77,7 @@ export default function FullCalendarView({
   onEventDrop,
   onEventResize,
 }: FullCalendarViewProps) {
+  const { language } = useLocalization();
   if (loading && events.length === 0) {
     return (
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -95,6 +98,9 @@ export default function FullCalendarView({
       <FullCalendar
         ref={calendarRef}
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+        locales={[arLocale]}
+        locale={language === "ar" ? "ar" : "en"}
+        direction={language === "ar" ? "rtl" : "ltr"}
         initialView={view}
         headerToolbar={false}
         events={events}

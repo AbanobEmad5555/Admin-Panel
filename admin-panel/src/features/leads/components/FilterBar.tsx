@@ -6,6 +6,7 @@ import {
   type LeadFilters,
   type User,
 } from "@/features/leads/types";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 type FilterBarProps = {
   filters: LeadFilters;
@@ -20,6 +21,8 @@ export default function FilterBar({
   admins,
   onFiltersChange,
 }: FilterBarProps) {
+  const { language } = useLocalization();
+
   const updateField =
     (key: keyof LeadFilters) =>
     (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -35,8 +38,8 @@ export default function FilterBar({
         <input
           value={filters.search ?? ""}
           onChange={updateField("search")}
-          placeholder="Search by name or phone"
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none ring-0 focus:border-slate-400"
+          placeholder={language === "ar" ? "ابحث بالاسم أو الهاتف" : "Search by name or phone"}
+          className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none ring-0 placeholder:text-slate-400 focus:border-slate-400"
         />
 
         <select
@@ -44,7 +47,7 @@ export default function FilterBar({
           onChange={updateField("status")}
           className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none ring-0 focus:border-slate-400"
         >
-          <option value="">All Status</option>
+          <option value="">{language === "ar" ? "كل الحالات" : "All Status"}</option>
           {LEAD_STATUS_ORDER.map((status) => (
             <option key={status} value={status}>
               {status}
@@ -57,7 +60,7 @@ export default function FilterBar({
           onChange={updateField("tag")}
           className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none ring-0 focus:border-slate-400"
         >
-          <option value="">All Tags</option>
+          <option value="">{language === "ar" ? "كل الوسوم" : "All Tags"}</option>
           {LEAD_TAGS.map((tag) => (
             <option key={tag} value={tag}>
               {tag}
@@ -70,7 +73,7 @@ export default function FilterBar({
           onChange={updateField("priority")}
           className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none ring-0 focus:border-slate-400"
         >
-          <option value="">All Priorities</option>
+          <option value="">{language === "ar" ? "كل الأولويات" : "All Priorities"}</option>
           {LEAD_PRIORITIES.map((priority) => (
             <option key={priority} value={priority}>
               {priority}
@@ -83,7 +86,7 @@ export default function FilterBar({
           onChange={updateField("assignedTo")}
           className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none ring-0 focus:border-slate-400"
         >
-          <option value="">All Admins</option>
+          <option value="">{language === "ar" ? "كل المسؤولين" : "All Admins"}</option>
           {admins.map((admin) => (
             <option key={admin.id} value={String(admin.id)}>
               {admin.name}
@@ -96,7 +99,7 @@ export default function FilterBar({
           onChange={updateField("source")}
           className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none ring-0 focus:border-slate-400"
         >
-          <option value="">All Sources</option>
+          <option value="">{language === "ar" ? "كل المصادر" : "All Sources"}</option>
           {sources.map((source) => (
             <option key={source} value={source}>
               {source}

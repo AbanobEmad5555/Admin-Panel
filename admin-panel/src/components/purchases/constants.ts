@@ -25,6 +25,15 @@ export const costCategoryLabels: Record<CostCategory, string> = {
   MISCELLANEOUS: "Miscellaneous",
 };
 
+export const costCategoryArabicLabels: Record<CostCategory, string> = {
+  RENT: "إيجار",
+  UTILITIES: "مرافق",
+  SALARY: "رواتب",
+  MARKETING: "تسويق",
+  SHIPPING: "شحن",
+  MISCELLANEOUS: "متنوع",
+};
+
 export const costBreakdownPalette = [
   { key: "RENT", label: "Rent", color: "#334155" },
   { key: "SALARY", label: "Salary", color: "#0f766e" },

@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { X } from "lucide-react";
 import Button from "@/components/ui/Button";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import {
   deliverySettingsSchema,
   type DeliverySettingsFormValues,
@@ -42,6 +43,7 @@ export default function DeliverySettingsPanel({
   onClose,
   onSubmit,
 }: DeliverySettingsPanelProps) {
+  const { language } = useLocalization();
   const {
     register,
     reset,
@@ -51,6 +53,34 @@ export default function DeliverySettingsPanel({
     resolver: zodResolver(deliverySettingsSchema),
     defaultValues: settings ?? emptyValues,
   });
+  const text =
+    language === "ar"
+      ? {
+          closePanel: "إغلاق لوحة إعدادات التوصيل",
+          title: "إعدادات التوصيل",
+          subtitle: "تكوين طريقتي التوصيل العادي والسريع.",
+          defaultMethod: "طريقة التوصيل الافتراضية",
+          standard: "عادي",
+          express: "سريع",
+          deliveryDays: "أيام التوصيل",
+          deliveryCost: "تكلفة التوصيل",
+          close: "إغلاق",
+          saving: "جارٍ الحفظ...",
+          applySettings: "تطبيق الإعدادات",
+        }
+      : {
+          closePanel: "Close delivery settings panel",
+          title: "Delivery Settings",
+          subtitle: "Configure standard and express methods.",
+          defaultMethod: "Default Delivery Method",
+          standard: "STANDARD",
+          express: "EXPRESS",
+          deliveryDays: "Delivery Days",
+          deliveryCost: "Delivery Cost",
+          close: "Close",
+          saving: "Saving...",
+          applySettings: "Apply Settings",
+        };
 
   useEffect(() => {
     reset(settings ?? emptyValues);
@@ -64,16 +94,22 @@ export default function DeliverySettingsPanel({
     <div className="fixed inset-0 z-50">
       <button
         type="button"
-        aria-label="Close delivery settings panel"
+        aria-label={text.closePanel}
         className="absolute inset-0 bg-black/30"
         onClick={onClose}
       />
 
-      <aside className="absolute right-0 top-0 h-full w-full max-w-md overflow-y-auto border-l border-slate-200 bg-white p-5 shadow-xl">
+      <aside
+        className={`absolute top-0 h-full w-full max-w-md overflow-y-auto bg-white p-5 shadow-xl ${
+          language === "ar"
+            ? "left-0 border-r border-slate-200"
+            : "right-0 border-l border-slate-200"
+        }`}
+      >
         <div className="mb-5 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Delivery Settings</h2>
-            <p className="text-sm text-slate-500">Configure standard and express methods.</p>
+            <h2 className="text-lg font-semibold text-slate-900">{text.title}</h2>
+            <p className="text-sm text-slate-500">{text.subtitle}</p>
           </div>
           <button
             type="button"
@@ -103,22 +139,22 @@ export default function DeliverySettingsPanel({
 
             <div className="space-y-1">
               <label className="block text-sm font-medium text-slate-700">
-                Default Delivery Method
+                {text.defaultMethod}
               </label>
               <select
                 {...register("defaultDeliveryMethod")}
                 className="w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
               >
-                <option value="STANDARD">STANDARD</option>
-                <option value="EXPRESS">EXPRESS</option>
+                <option value="STANDARD">{text.standard}</option>
+                <option value="EXPRESS">{text.express}</option>
               </select>
             </div>
 
             <div className="rounded-lg border border-slate-200 p-3">
-              <h3 className="text-sm font-semibold text-slate-900">STANDARD</h3>
+              <h3 className="text-sm font-semibold text-slate-900">{text.standard}</h3>
               <div className="mt-3 grid grid-cols-1 gap-3">
                 <div className="space-y-1">
-                  <label className="block text-sm text-slate-700">Delivery Days</label>
+                  <label className="block text-sm text-slate-700">{text.deliveryDays}</label>
                   <input
                     type="number"
                     min={0}
@@ -133,7 +169,7 @@ export default function DeliverySettingsPanel({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-sm text-slate-700">Delivery Cost</label>
+                  <label className="block text-sm text-slate-700">{text.deliveryCost}</label>
                   <input
                     type="number"
                     step="0.01"
@@ -151,10 +187,10 @@ export default function DeliverySettingsPanel({
             </div>
 
             <div className="rounded-lg border border-slate-200 p-3">
-              <h3 className="text-sm font-semibold text-slate-900">EXPRESS</h3>
+              <h3 className="text-sm font-semibold text-slate-900">{text.express}</h3>
               <div className="mt-3 grid grid-cols-1 gap-3">
                 <div className="space-y-1">
-                  <label className="block text-sm text-slate-700">Delivery Days</label>
+                  <label className="block text-sm text-slate-700">{text.deliveryDays}</label>
                   <input
                     type="number"
                     min={0}
@@ -169,7 +205,7 @@ export default function DeliverySettingsPanel({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-sm text-slate-700">Delivery Cost</label>
+                  <label className="block text-sm text-slate-700">{text.deliveryCost}</label>
                   <input
                     type="number"
                     step="0.01"
@@ -188,10 +224,10 @@ export default function DeliverySettingsPanel({
 
             <div className="flex justify-end gap-2">
               <Button type="button" variant="secondary" onClick={onClose} disabled={isSaving}>
-                Close
+                {text.close}
               </Button>
               <Button type="submit" disabled={isSaving}>
-                {isSaving ? "Saving..." : "Apply Settings"}
+                {isSaving ? text.saving : text.applySettings}
               </Button>
             </div>
           </form>

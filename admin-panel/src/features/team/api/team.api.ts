@@ -1,4 +1,5 @@
 import api from "@/services/api";
+import { getLocalizedValue } from "@/modules/localization/utils";
 import type {
   ApiEnvelope,
   ChangeEmployeeStatusInput,
@@ -150,9 +151,32 @@ const withEmploymentTypeAliases = <T extends { employmentType?: unknown }>(paylo
   return enriched as T;
 };
 
+const withBilingualEmployeeAliases = <
+  T extends {
+    fullNameEn?: unknown;
+    fullNameAr?: unknown;
+    titleEn?: unknown;
+    titleAr?: unknown;
+    departmentEn?: unknown;
+    departmentAr?: unknown;
+  },
+>(
+  payload: T
+) =>
+  ({
+    ...payload,
+    fullName: firstNonEmptyString(payload.fullNameEn),
+    title: firstNonEmptyString(payload.titleEn),
+    department: firstNonEmptyString(payload.departmentEn),
+  }) as T;
+
 const normalizeEmployee = (value: unknown): Employee => {
   const row = (value ?? {}) as Record<string, unknown>;
+  const fullNameEn = firstNonEmptyString(row.fullNameEn, row.full_name_en);
+  const fullNameAr = firstNonEmptyString(row.fullNameAr, row.full_name_ar);
   const rawFullName = firstNonEmptyString(
+    fullNameEn,
+    fullNameAr,
     row.fullName,
     row.full_name,
     row.name,
@@ -162,11 +186,29 @@ const normalizeEmployee = (value: unknown): Employee => {
   const mappedFirstName = firstNonEmptyString(row.firstName, row.first_name);
   const mappedLastName = firstNonEmptyString(row.lastName, row.last_name);
   const nameParts = rawFullName ? rawFullName.split(" ").filter(Boolean) : [];
-  const firstName = mappedFirstName || nameParts[0] || "-";
+  const firstName = mappedFirstName || nameParts[0] || null;
   const lastName =
     mappedLastName ||
-    (nameParts.length > 1 ? nameParts.slice(1).join(" ") : "");
-  const fullName = `${firstName} ${lastName}`.trim() || rawFullName || "-";
+    (nameParts.length > 1 ? nameParts.slice(1).join(" ") : null);
+  const fullName =
+    getLocalizedValue({
+      en: fullNameEn,
+      ar: fullNameAr,
+      legacy:
+        `${firstName ?? ""} ${lastName ?? ""}`.trim() || rawFullName || "-",
+      lang: "en",
+    }) || "-";
+  const titleEn = firstNonEmptyString(row.titleEn, row.title_en, row.title);
+  const titleAr = firstNonEmptyString(row.titleAr, row.title_ar);
+  const departmentEn = firstNonEmptyString(
+    row.departmentEn,
+    row.department_en,
+    row.department,
+    row.departmentName,
+    row.department_name,
+    row.dept
+  );
+  const departmentAr = firstNonEmptyString(row.departmentAr, row.department_ar);
 
   return {
     id: toStringSafe(row.id),
@@ -174,6 +216,8 @@ const normalizeEmployee = (value: unknown): Employee => {
     firstName,
     lastName,
     fullName,
+    fullNameEn: fullNameEn || null,
+    fullNameAr: fullNameAr || null,
     role: toStringSafe(row.role, "EMPLOYEE").toUpperCase() as Employee["role"],
     status: toStringSafe(row.status, "ACTIVE").toUpperCase() as Employee["status"],
     salary: toNumber(row.salary),
@@ -181,7 +225,9 @@ const normalizeEmployee = (value: unknown): Employee => {
     email: toStringSafe(row.email, "") || null,
     phone: toStringSafe(row.phone, "") || null,
     address: toStringSafe(row.address, "") || null,
-    title: toStringSafe(row.title, "") || null,
+    title: titleEn || titleAr || null,
+    titleEn: titleEn || null,
+    titleAr: titleAr || null,
     employmentType: normalizeEmploymentType(
       row.employmentType ??
         row.employment_type ??
@@ -190,9 +236,9 @@ const normalizeEmployee = (value: unknown): Employee => {
         row.employment ??
         row.contract
     ),
-    department:
-      firstNonEmptyString(row.department, row.departmentName, row.department_name, row.dept) ||
-      null,
+    department: departmentEn || departmentAr || null,
+    departmentEn: departmentEn || null,
+    departmentAr: departmentAr || null,
     profileImageUrl: toStringSafe(row.profileImageUrl ?? row.profile_image_url, "") || null,
     hireDate:
       firstNonEmptyString(row.hireDate, row.hire_date, row.startDate, row.start_date) || null,
@@ -297,7 +343,9 @@ export const teamApi = {
   async createEmployee(payload: CreateEmployeeInput): Promise<Employee> {
     const response = await api.post(
       `${TEAM_BASE}/employees`,
-      withEmploymentTypeAliases(withNormalizedRating(payload)),
+      withBilingualEmployeeAliases(
+        withEmploymentTypeAliases(withNormalizedRating(payload))
+      ),
       {
         headers: { "Content-Type": "application/json" },
       }
@@ -308,7 +356,9 @@ export const teamApi = {
   async updateEmployee(id: string, payload: UpdateEmployeeInput): Promise<Employee> {
     const response = await api.patch(
       `${TEAM_BASE}/employees/${id}`,
-      withEmploymentTypeAliases(withNormalizedRating(payload)),
+      withBilingualEmployeeAliases(
+        withEmploymentTypeAliases(withNormalizedRating(payload))
+      ),
       {
         headers: { "Content-Type": "application/json" },
       }

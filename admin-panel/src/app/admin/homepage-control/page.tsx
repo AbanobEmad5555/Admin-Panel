@@ -7,11 +7,17 @@ import Input from "@/components/ui/Input";
 import api from "@/services/api";
 import Modal from "@/components/ui/Modal";
 import { ADMIN_TOKEN_KEY } from "@/lib/auth";
+import LocalizedDisplayText from "@/modules/shared/components/LocalizedDisplayText";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 type HomepagePayload = {
   heroImage?: string | null;
   heroTextPrimary?: string | null;
   heroTextSecondary?: string | null;
+  heroTextPrimaryEn?: string | null;
+  heroTextPrimaryAr?: string | null;
+  heroTextSecondaryEn?: string | null;
+  heroTextSecondaryAr?: string | null;
   showNewCollection?: boolean | null;
   logoUrl?: string | null;
 };
@@ -20,6 +26,8 @@ type HeroStat = {
   id: number;
   value: string;
   text: string;
+  textEn?: string | null;
+  textAr?: string | null;
   order: number;
   isActive: boolean;
 };
@@ -28,6 +36,10 @@ type WhyShopCard = {
   id: number;
   title: string;
   description: string;
+  titleEn?: string | null;
+  titleAr?: string | null;
+  descriptionEn?: string | null;
+  descriptionAr?: string | null;
   order: number;
   isActive: boolean;
 };
@@ -51,12 +63,12 @@ const SOCIAL_PLATFORMS = [
   { key: "snapchat", label: "Snapchat" },
 ] as const;
 
-const getErrorMessage = (error: unknown) => {
+const getErrorMessage = (error: unknown, fallback: string) => {
   if (typeof error === "object" && error !== null) {
     const anyError = error as { response?: { data?: { message?: string } } };
-    return anyError.response?.data?.message ?? "Something went wrong.";
+    return anyError.response?.data?.message ?? fallback;
   }
-  return "Something went wrong.";
+  return fallback;
 };
 
 const adminFetch = async <T,>(
@@ -83,6 +95,149 @@ const adminFetch = async <T,>(
 };
 
 export default function HomepageControlPage() {
+  const { language } = useLocalization();
+  const text =
+    language === "ar"
+      ? {
+          genericError: "حدث خطأ ما.",
+          valueAndTextRequired: "القيمة والنص مطلوبان.",
+          invalidHeroId: "معرّف بيانات البطل غير صالح.",
+          orderMustBeNumber: "يجب أن يكون الترتيب رقمًا.",
+          noChangesToSave: "لا توجد تغييرات للحفظ.",
+          titleAndDescriptionRequired: "العنوان والوصف مطلوبان.",
+          invalidCardId: "معرّف البطاقة غير صالح.",
+          selectLogoFile: "يرجى اختيار ملف شعار للرفع.",
+          logoUpdated: "تم تحديث الشعار بنجاح.",
+          footerUpdated: "تم تحديث إعدادات التذييل.",
+          heroTextRequired: "نصا واجهة البطل مطلوبان.",
+          homepageUpdated: "تم تحديث الصفحة الرئيسية بنجاح.",
+          title: "التحكم في الصفحة الرئيسية",
+          subtitle: "أدر محتوى قسم البطل المعروض على الموقع.",
+          logoControl: "التحكم في الشعار",
+          logoSubtitle: "حدّث الشعار المستخدم في المتجر بالكامل.",
+          uploadLogo: "رفع الشعار",
+          saveLogo: "حفظ الشعار",
+          footerSettings: "إعدادات التذييل",
+          footerSubtitle: "حدّث اسم الموقع ونص حقوق النشر.",
+          websiteName: "اسم الموقع",
+          copyrightText: "نص حقوق النشر",
+          saveFooter: "حفظ التذييل",
+          reset: "إعادة تعيين",
+          heroSection: "التحكم في قسم البطل",
+          noImageSelected: "لم يتم اختيار صورة",
+          heroBannerImage: "صورة بانر البطل",
+          newCollectionIcon: "أيقونة المجموعة الجديدة",
+          heroText1: "نص البطل 1 (العنوان الرئيسي)",
+          heroText2: "نص البطل 2 (العنوان الفرعي)",
+          saveChanges: "حفظ التغييرات",
+          saving: "جارٍ الحفظ...",
+          heroDataControl: "التحكم في بيانات البطل",
+          heroDataSubtitle: "أدر إحصائيات البطل المعروضة في الصفحة الرئيسية.",
+          addHeroData: "إضافة بيانات البطل",
+          noHeroData: "لا توجد بيانات بطل.",
+          value: "القيمة",
+          labelText: "النص",
+          order: "الترتيب",
+          active: "نشط",
+          inactive: "غير نشط",
+          actions: "الإجراءات",
+          edit: "تعديل",
+          delete: "حذف",
+          socialMediaLinks: "روابط التواصل الاجتماعي",
+          socialSubtitle: "تحكم في الأيقونات الاجتماعية المعروضة في تذييل الموقع.",
+          save: "حفظ",
+          whyShop: "لماذا تتسوق معنا",
+          whyShopSubtitle: "أدر البطاقات المعروضة في قسم لماذا تتسوق معنا.",
+          addCard: "إضافة بطاقة",
+          noCards: "لا توجد بطاقات.",
+          description: "الوصف",
+          status: "الحالة",
+          editHeroData: "تعديل بيانات البطل",
+          addHeroDataTitle: "إضافة بيانات البطل",
+          enterValue: "أدخل القيمة",
+          enterText: "أدخل النص",
+          cancel: "إلغاء",
+          editCard: "تعديل البطاقة",
+          addCardTitle: "إضافة بطاقة",
+          enterTitle: "أدخل العنوان",
+          deleteCard: "حذف البطاقة",
+          deleteCardBody: "هل تريد حذف هذه البطاقة؟",
+          deleting: "جارٍ الحذف...",
+          deleteHeroData: "حذف بيانات البطل",
+          deleteHeroDataBody: "هل تريد حذف عنصر بيانات البطل هذا؟",
+          logoPreviewAlt: "معاينة الشعار",
+          heroPreviewAlt: "معاينة صورة البطل",
+        }
+      : {
+          genericError: "Something went wrong.",
+          valueAndTextRequired: "Value and text are required.",
+          invalidHeroId: "Invalid hero data id.",
+          orderMustBeNumber: "Order must be a number.",
+          noChangesToSave: "No changes to save.",
+          titleAndDescriptionRequired: "Title and description are required.",
+          invalidCardId: "Invalid card id.",
+          selectLogoFile: "Please select a logo file to upload.",
+          logoUpdated: "Logo updated successfully.",
+          footerUpdated: "Footer settings updated.",
+          heroTextRequired: "Hero text fields are required.",
+          homepageUpdated: "Homepage updated successfully.",
+          title: "HomePage Control",
+          subtitle: "Manage the hero section content shown on the website.",
+          logoControl: "Logo Control",
+          logoSubtitle: "Update the logo used across the storefront.",
+          uploadLogo: "Upload Logo",
+          saveLogo: "Save Logo",
+          footerSettings: "Footer Settings",
+          footerSubtitle: "Update website name and copyright text.",
+          websiteName: "Website Name",
+          copyrightText: "Copyright Text",
+          saveFooter: "Save Footer",
+          reset: "Reset",
+          heroSection: "Hero Section Control",
+          noImageSelected: "No image selected",
+          heroBannerImage: "Hero Banner Image",
+          newCollectionIcon: "New Collection Icon",
+          heroText1: "Hero Text 1 (Main Header)",
+          heroText2: "Hero Text 2 (Sub Header)",
+          saveChanges: "Save Changes",
+          saving: "Saving...",
+          heroDataControl: "Hero Data Control",
+          heroDataSubtitle: "Manage hero statistics displayed on the homepage.",
+          addHeroData: "Add Hero Data",
+          noHeroData: "No hero data items found.",
+          value: "Value",
+          labelText: "Text",
+          order: "Order",
+          active: "Active",
+          inactive: "Inactive",
+          actions: "Actions",
+          edit: "Edit",
+          delete: "Delete",
+          socialMediaLinks: "Social Media Links",
+          socialSubtitle: "Control the social icons shown in the website footer.",
+          save: "Save",
+          whyShop: "Why Shop With Us",
+          whyShopSubtitle: "Manage the cards shown in the “Why Shop With Us” section.",
+          addCard: "Add Card",
+          noCards: "No cards found.",
+          description: "Description",
+          status: "Status",
+          editHeroData: "Edit Hero Data",
+          addHeroDataTitle: "Add Hero Data",
+          enterValue: "Enter value",
+          enterText: "Enter text",
+          cancel: "Cancel",
+          editCard: "Edit Card",
+          addCardTitle: "Add Card",
+          enterTitle: "Enter title",
+          deleteCard: "Delete Card",
+          deleteCardBody: "Are you sure you want to delete this card?",
+          deleting: "Deleting...",
+          deleteHeroData: "Delete Hero Data",
+          deleteHeroDataBody: "Are you sure you want to delete this hero data item?",
+          logoPreviewAlt: "Logo preview",
+          heroPreviewAlt: "Hero preview",
+        };
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -91,8 +246,10 @@ export default function HomepageControlPage() {
   const [heroImage, setHeroImage] = useState<string>("");
   const [heroImageFile, setHeroImageFile] = useState<File | null>(null);
   const [showNewCollection, setShowNewCollection] = useState(false);
-  const [heroTextPrimary, setHeroTextPrimary] = useState("");
-  const [heroTextSecondary, setHeroTextSecondary] = useState("");
+  const [heroTextPrimaryEn, setHeroTextPrimaryEn] = useState("");
+  const [heroTextPrimaryAr, setHeroTextPrimaryAr] = useState("");
+  const [heroTextSecondaryEn, setHeroTextSecondaryEn] = useState("");
+  const [heroTextSecondaryAr, setHeroTextSecondaryAr] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreviewUrl, setLogoPreviewUrl] = useState("");
@@ -101,11 +258,15 @@ export default function HomepageControlPage() {
   const [logoSuccess, setLogoSuccess] = useState("");
   const [logoImageFailed, setLogoImageFailed] = useState(false);
   const [isLogoSaving, setIsLogoSaving] = useState(false);
-  const [footerWebsiteName, setFooterWebsiteName] = useState("");
-  const [footerCopyright, setFooterCopyright] = useState("");
+  const [footerWebsiteNameEn, setFooterWebsiteNameEn] = useState("");
+  const [footerWebsiteNameAr, setFooterWebsiteNameAr] = useState("");
+  const [footerCopyrightEn, setFooterCopyrightEn] = useState("");
+  const [footerCopyrightAr, setFooterCopyrightAr] = useState("");
   const [footerInitial, setFooterInitial] = useState<{
-    websiteName: string;
-    copyrightText: string;
+    websiteNameEn: string;
+    websiteNameAr: string;
+    copyrightTextEn: string;
+    copyrightTextAr: string;
   } | null>(null);
   const [footerLoading, setFooterLoading] = useState(true);
   const [footerError, setFooterError] = useState("");
@@ -120,7 +281,8 @@ export default function HomepageControlPage() {
   const [isDeleteHeroStatOpen, setIsDeleteHeroStatOpen] = useState(false);
   const [editingHeroStat, setEditingHeroStat] = useState<HeroStat | null>(null);
   const [heroStatValue, setHeroStatValue] = useState("");
-  const [heroStatText, setHeroStatText] = useState("");
+  const [heroStatTextEn, setHeroStatTextEn] = useState("");
+  const [heroStatTextAr, setHeroStatTextAr] = useState("");
   const [heroStatOrder, setHeroStatOrder] = useState("");
   const [heroStatActive, setHeroStatActive] = useState(true);
   const [whyShopCards, setWhyShopCards] = useState<WhyShopCard[]>([]);
@@ -129,8 +291,10 @@ export default function HomepageControlPage() {
   const [isWhyShopModalOpen, setIsWhyShopModalOpen] = useState(false);
   const [isWhyShopDeleteOpen, setIsWhyShopDeleteOpen] = useState(false);
   const [editingWhyShop, setEditingWhyShop] = useState<WhyShopCard | null>(null);
-  const [whyShopTitle, setWhyShopTitle] = useState("");
-  const [whyShopDescription, setWhyShopDescription] = useState("");
+  const [whyShopTitleEn, setWhyShopTitleEn] = useState("");
+  const [whyShopTitleAr, setWhyShopTitleAr] = useState("");
+  const [whyShopDescriptionEn, setWhyShopDescriptionEn] = useState("");
+  const [whyShopDescriptionAr, setWhyShopDescriptionAr] = useState("");
   const [whyShopOrder, setWhyShopOrder] = useState("");
   const [whyShopActive, setWhyShopActive] = useState(true);
   const [whyShopSaving, setWhyShopSaving] = useState<Record<number, boolean>>({});
@@ -156,19 +320,21 @@ export default function HomepageControlPage() {
         );
         const payload = response.data ?? {};
         setHeroImage(payload.heroImage ?? "");
-        setHeroTextPrimary(payload.heroTextPrimary ?? "");
-        setHeroTextSecondary(payload.heroTextSecondary ?? "");
+        setHeroTextPrimaryEn(payload.heroTextPrimaryEn ?? payload.heroTextPrimary ?? "");
+        setHeroTextPrimaryAr(payload.heroTextPrimaryAr ?? "");
+        setHeroTextSecondaryEn(payload.heroTextSecondaryEn ?? payload.heroTextSecondary ?? "");
+        setHeroTextSecondaryAr(payload.heroTextSecondaryAr ?? "");
         setShowNewCollection(Boolean(payload.showNewCollection));
         setInitialState(payload);
       } catch (err) {
-        setError(getErrorMessage(err));
+        setError(getErrorMessage(err, text.genericError));
       } finally {
         setIsLoading(false);
       }
     };
 
     loadHomepage();
-  }, []);
+  }, [text.genericError]);
 
   useEffect(() => {
     const loadLogo = async () => {
@@ -184,14 +350,14 @@ export default function HomepageControlPage() {
         setLogoPreviewUrl("");
         setLogoImageFailed(false);
       } catch (err) {
-        setLogoError(getErrorMessage(err));
+        setLogoError(getErrorMessage(err, text.genericError));
       } finally {
         setLogoLoading(false);
       }
     };
 
     loadLogo();
-  }, []);
+  }, [text.genericError]);
 
   useEffect(() => {
     const loadFooterSettings = async () => {
@@ -199,23 +365,34 @@ export default function HomepageControlPage() {
       setFooterError("");
       try {
         const response = await api.get<
-          ApiResponse<{ websiteName?: string | null; copyrightText?: string | null }>
+          ApiResponse<{
+            websiteName?: string | null;
+            websiteNameEn?: string | null;
+            websiteNameAr?: string | null;
+            copyrightText?: string | null;
+            copyrightTextEn?: string | null;
+            copyrightTextAr?: string | null;
+          }>
         >("/footer-settings");
         const data = response.data?.data ?? {};
-        const websiteName = data.websiteName ?? "";
-        const copyrightText = data.copyrightText ?? "";
-        setFooterWebsiteName(websiteName);
-        setFooterCopyright(copyrightText);
-        setFooterInitial({ websiteName, copyrightText });
+        const websiteNameEn = data.websiteNameEn ?? data.websiteName ?? "";
+        const websiteNameAr = data.websiteNameAr ?? "";
+        const copyrightTextEn = data.copyrightTextEn ?? data.copyrightText ?? "";
+        const copyrightTextAr = data.copyrightTextAr ?? "";
+        setFooterWebsiteNameEn(websiteNameEn);
+        setFooterWebsiteNameAr(websiteNameAr);
+        setFooterCopyrightEn(copyrightTextEn);
+        setFooterCopyrightAr(copyrightTextAr);
+        setFooterInitial({ websiteNameEn, websiteNameAr, copyrightTextEn, copyrightTextAr });
       } catch (err) {
-        setFooterError(getErrorMessage(err));
+        setFooterError(getErrorMessage(err, text.genericError));
       } finally {
         setFooterLoading(false);
       }
     };
 
     loadFooterSettings();
-  }, []);
+  }, [text.genericError]);
 
   useEffect(() => {
     const loadHeroStats = async () => {
@@ -230,14 +407,14 @@ export default function HomepageControlPage() {
           .filter((stat) => Number.isFinite(stat.id));
         setHeroStats(normalized);
       } catch (err) {
-        setHeroStatsError(getErrorMessage(err));
+        setHeroStatsError(getErrorMessage(err, text.genericError));
       } finally {
         setHeroStatsLoading(false);
       }
     };
 
     loadHeroStats();
-  }, []);
+  }, [text.genericError]);
 
   useEffect(() => {
     const loadWhyShop = async () => {
@@ -252,14 +429,14 @@ export default function HomepageControlPage() {
           .filter((card) => Number.isFinite(card.id));
         setWhyShopCards(normalized);
       } catch (err) {
-        setWhyShopError(getErrorMessage(err));
+        setWhyShopError(getErrorMessage(err, text.genericError));
       } finally {
         setWhyShopLoading(false);
       }
     };
 
     loadWhyShop();
-  }, []);
+  }, [text.genericError]);
 
   useEffect(() => {
     const loadSocialLinks = async () => {
@@ -282,7 +459,7 @@ export default function HomepageControlPage() {
         });
         setSocialLinks(normalized);
       } catch (err) {
-        setSocialError(getErrorMessage(err));
+        setSocialError(getErrorMessage(err, text.genericError));
         setSocialLinks(
           SOCIAL_PLATFORMS.map((platform) => ({
             platform: platform.key,
@@ -296,19 +473,22 @@ export default function HomepageControlPage() {
     };
 
     loadSocialLinks();
-  }, []);
+  }, [text.genericError]);
 
   const resetHeroStatForm = () => {
     setHeroStatValue("");
-    setHeroStatText("");
+    setHeroStatTextEn("");
+    setHeroStatTextAr("");
     setHeroStatOrder("");
     setHeroStatActive(true);
     setEditingHeroStat(null);
   };
 
   const resetWhyShopForm = () => {
-    setWhyShopTitle("");
-    setWhyShopDescription("");
+    setWhyShopTitleEn("");
+    setWhyShopTitleAr("");
+    setWhyShopDescriptionEn("");
+    setWhyShopDescriptionAr("");
     setWhyShopOrder("");
     setWhyShopActive(true);
     setEditingWhyShop(null);
@@ -322,7 +502,8 @@ export default function HomepageControlPage() {
   const openEditHeroStat = (stat: HeroStat) => {
     setEditingHeroStat(stat);
     setHeroStatValue(stat.value);
-    setHeroStatText(stat.text);
+    setHeroStatTextEn(stat.textEn ?? stat.text);
+    setHeroStatTextAr(stat.textAr ?? "");
     setHeroStatOrder(String(stat.order));
     setHeroStatActive(stat.isActive);
     setIsHeroStatModalOpen(true);
@@ -340,8 +521,10 @@ export default function HomepageControlPage() {
 
   const openEditWhyShop = (card: WhyShopCard) => {
     setEditingWhyShop(card);
-    setWhyShopTitle(card.title);
-    setWhyShopDescription(card.description);
+    setWhyShopTitleEn(card.titleEn ?? card.title);
+    setWhyShopTitleAr(card.titleAr ?? "");
+    setWhyShopDescriptionEn(card.descriptionEn ?? card.description);
+    setWhyShopDescriptionAr(card.descriptionAr ?? "");
     setWhyShopOrder(String(card.order));
     setWhyShopActive(card.isActive);
     setIsWhyShopModalOpen(true);
@@ -356,8 +539,8 @@ export default function HomepageControlPage() {
     setIsSubmitting(true);
     setHeroStatsError("");
     try {
-      if (!heroStatValue.trim() || !heroStatText.trim()) {
-        setHeroStatsError("Value and text are required.");
+      if (!heroStatValue.trim() || !heroStatTextEn.trim()) {
+        setHeroStatsError(text.valueAndTextRequired);
         return;
       }
       const payload: Partial<HeroStat> & {
@@ -370,14 +553,18 @@ export default function HomepageControlPage() {
       if (editingHeroStat) {
         const editId = Number(editingHeroStat.id);
         if (!Number.isFinite(editId) || editId <= 0) {
-          setHeroStatsError("Invalid hero data id.");
+          setHeroStatsError(text.invalidHeroId);
           return;
         }
         if (heroStatValue.trim() !== editingHeroStat.value) {
           payload.value = heroStatValue.trim();
         }
-        if (heroStatText.trim() !== editingHeroStat.text) {
-          payload.text = heroStatText.trim();
+        if (heroStatTextEn.trim() !== (editingHeroStat.textEn ?? editingHeroStat.text)) {
+          payload.text = heroStatTextEn.trim();
+          payload.textEn = heroStatTextEn.trim();
+        }
+        if (heroStatTextAr.trim() !== (editingHeroStat.textAr ?? "")) {
+          payload.textAr = heroStatTextAr.trim() || null;
         }
         if (
           heroStatOrder.trim() !== "" &&
@@ -385,7 +572,7 @@ export default function HomepageControlPage() {
         ) {
           const orderValue = Number(heroStatOrder);
           if (Number.isNaN(orderValue)) {
-            setHeroStatsError("Order must be a number.");
+            setHeroStatsError(text.orderMustBeNumber);
             return;
           }
           payload.order = orderValue;
@@ -394,18 +581,20 @@ export default function HomepageControlPage() {
           payload.isActive = heroStatActive;
         }
         if (Object.keys(payload).length === 0) {
-          setHeroStatsError("No changes to save.");
+          setHeroStatsError(text.noChangesToSave);
           return;
         }
         await api.put(`/admin/homepage/hero-stats/${editId}`, payload);
       } else {
         payload.value = heroStatValue.trim();
-        payload.text = heroStatText.trim();
+        payload.text = heroStatTextEn.trim();
+        payload.textEn = heroStatTextEn.trim();
+        payload.textAr = heroStatTextAr.trim() || null;
         payload.isActive = heroStatActive;
         if (heroStatOrder.trim() !== "") {
           const orderValue = Number(heroStatOrder);
           if (Number.isNaN(orderValue)) {
-            setHeroStatsError("Order must be a number.");
+            setHeroStatsError(text.orderMustBeNumber);
             return;
           }
           payload.order = orderValue;
@@ -426,7 +615,7 @@ export default function HomepageControlPage() {
         .filter((stat) => Number.isFinite(stat.id));
       setHeroStats(normalized);
     } catch (err) {
-      setHeroStatsError(getErrorMessage(err));
+      setHeroStatsError(getErrorMessage(err, text.genericError));
     } finally {
       setIsSubmitting(false);
     }
@@ -441,7 +630,7 @@ export default function HomepageControlPage() {
     try {
       const deleteId = Number(editingHeroStat.id);
       if (!Number.isFinite(deleteId) || deleteId <= 0) {
-        setHeroStatsError("Invalid hero data id.");
+        setHeroStatsError(text.invalidHeroId);
         return;
       }
       await api.delete(`/admin/homepage/hero-stats/${deleteId}`);
@@ -455,7 +644,7 @@ export default function HomepageControlPage() {
         .filter((stat) => Number.isFinite(stat.id));
       setHeroStats(normalized);
     } catch (err) {
-      setHeroStatsError(getErrorMessage(err));
+      setHeroStatsError(getErrorMessage(err, text.genericError));
     } finally {
       setIsSubmitting(false);
     }
@@ -465,8 +654,8 @@ export default function HomepageControlPage() {
     setIsSubmitting(true);
     setWhyShopError("");
     try {
-      if (!whyShopTitle.trim() || !whyShopDescription.trim()) {
-        setWhyShopError("Title and description are required.");
+      if (!whyShopTitleEn.trim() || !whyShopDescriptionEn.trim()) {
+        setWhyShopError(text.titleAndDescriptionRequired);
         return;
       }
       const payload: Partial<WhyShopCard> & {
@@ -479,14 +668,22 @@ export default function HomepageControlPage() {
       if (editingWhyShop) {
         const editId = Number(editingWhyShop.id);
         if (!Number.isFinite(editId) || editId <= 0) {
-          setWhyShopError("Invalid card id.");
+          setWhyShopError(text.invalidCardId);
           return;
         }
-        if (whyShopTitle.trim() !== editingWhyShop.title) {
-          payload.title = whyShopTitle.trim();
+        if (whyShopTitleEn.trim() !== (editingWhyShop.titleEn ?? editingWhyShop.title)) {
+          payload.title = whyShopTitleEn.trim();
+          payload.titleEn = whyShopTitleEn.trim();
         }
-        if (whyShopDescription.trim() !== editingWhyShop.description) {
-          payload.description = whyShopDescription.trim();
+        if (whyShopTitleAr.trim() !== (editingWhyShop.titleAr ?? "")) {
+          payload.titleAr = whyShopTitleAr.trim() || null;
+        }
+        if (whyShopDescriptionEn.trim() !== (editingWhyShop.descriptionEn ?? editingWhyShop.description)) {
+          payload.description = whyShopDescriptionEn.trim();
+          payload.descriptionEn = whyShopDescriptionEn.trim();
+        }
+        if (whyShopDescriptionAr.trim() !== (editingWhyShop.descriptionAr ?? "")) {
+          payload.descriptionAr = whyShopDescriptionAr.trim() || null;
         }
         if (
           whyShopOrder.trim() !== "" &&
@@ -494,7 +691,7 @@ export default function HomepageControlPage() {
         ) {
           const orderValue = Number(whyShopOrder);
           if (Number.isNaN(orderValue)) {
-            setWhyShopError("Order must be a number.");
+            setWhyShopError(text.orderMustBeNumber);
             return;
           }
           payload.order = orderValue;
@@ -503,18 +700,22 @@ export default function HomepageControlPage() {
           payload.isActive = whyShopActive;
         }
         if (Object.keys(payload).length === 0) {
-          setWhyShopError("No changes to save.");
+          setWhyShopError(text.noChangesToSave);
           return;
         }
         await api.put(`/admin/homepage/why-shop/${editId}`, payload);
       } else {
-        payload.title = whyShopTitle.trim();
-        payload.description = whyShopDescription.trim();
+        payload.title = whyShopTitleEn.trim();
+        payload.titleEn = whyShopTitleEn.trim();
+        payload.titleAr = whyShopTitleAr.trim() || null;
+        payload.description = whyShopDescriptionEn.trim();
+        payload.descriptionEn = whyShopDescriptionEn.trim();
+        payload.descriptionAr = whyShopDescriptionAr.trim() || null;
         payload.isActive = whyShopActive;
         if (whyShopOrder.trim() !== "") {
           const orderValue = Number(whyShopOrder);
           if (Number.isNaN(orderValue)) {
-            setWhyShopError("Order must be a number.");
+            setWhyShopError(text.orderMustBeNumber);
             return;
           }
           payload.order = orderValue;
@@ -535,7 +736,7 @@ export default function HomepageControlPage() {
         .filter((card) => Number.isFinite(card.id));
       setWhyShopCards(normalized);
     } catch (err) {
-      setWhyShopError(getErrorMessage(err));
+      setWhyShopError(getErrorMessage(err, text.genericError));
     } finally {
       setIsSubmitting(false);
     }
@@ -550,7 +751,7 @@ export default function HomepageControlPage() {
     try {
       const deleteId = Number(editingWhyShop.id);
       if (!Number.isFinite(deleteId) || deleteId <= 0) {
-        setWhyShopError("Invalid card id.");
+        setWhyShopError(text.invalidCardId);
         return;
       }
       await api.delete(`/admin/homepage/why-shop/${deleteId}`);
@@ -564,7 +765,7 @@ export default function HomepageControlPage() {
         .filter((card) => Number.isFinite(card.id));
       setWhyShopCards(normalized);
     } catch (err) {
-      setWhyShopError(getErrorMessage(err));
+      setWhyShopError(getErrorMessage(err, text.genericError));
     } finally {
       setIsSubmitting(false);
     }
@@ -577,7 +778,7 @@ export default function HomepageControlPage() {
     }
     const cardId = Number(card.id);
     if (!Number.isFinite(cardId) || cardId <= 0) {
-      setWhyShopError("Invalid card id.");
+      setWhyShopError(text.invalidCardId);
       return;
     }
     setWhyShopSaving((prev) => ({ ...prev, [card.id]: true }));
@@ -593,7 +794,7 @@ export default function HomepageControlPage() {
         )
       );
     } catch (err) {
-      setWhyShopError(getErrorMessage(err));
+      setWhyShopError(getErrorMessage(err, text.genericError));
     } finally {
       setWhyShopSaving((prev) => ({ ...prev, [card.id]: false }));
     }
@@ -625,7 +826,7 @@ export default function HomepageControlPage() {
         isActive: Boolean(link.isActive),
       });
     } catch (err) {
-      setSocialError(getErrorMessage(err));
+      setSocialError(getErrorMessage(err, text.genericError));
     } finally {
       setSocialSaving((prev) => ({ ...prev, [platform]: false }));
     }
@@ -677,8 +878,10 @@ export default function HomepageControlPage() {
       return;
     }
     setHeroImage(initialState.heroImage ?? "");
-    setHeroTextPrimary(initialState.heroTextPrimary ?? "");
-    setHeroTextSecondary(initialState.heroTextSecondary ?? "");
+    setHeroTextPrimaryEn(initialState.heroTextPrimaryEn ?? initialState.heroTextPrimary ?? "");
+    setHeroTextPrimaryAr(initialState.heroTextPrimaryAr ?? "");
+    setHeroTextSecondaryEn(initialState.heroTextSecondaryEn ?? initialState.heroTextSecondary ?? "");
+    setHeroTextSecondaryAr(initialState.heroTextSecondaryAr ?? "");
     setShowNewCollection(Boolean(initialState.showNewCollection));
     setHeroImageFile(null);
     setError("");
@@ -687,7 +890,7 @@ export default function HomepageControlPage() {
 
   const handleLogoSave = async () => {
     if (!logoFile) {
-      setLogoError("Please select a logo file to upload.");
+      setLogoError(text.selectLogoFile);
       setLogoSuccess("");
       return;
     }
@@ -708,9 +911,9 @@ export default function HomepageControlPage() {
       setLogoFile(null);
       setLogoPreviewUrl("");
       setLogoImageFailed(false);
-      setLogoSuccess("Logo updated successfully.");
+      setLogoSuccess(text.logoUpdated);
     } catch (err) {
-      setLogoError(getErrorMessage(err));
+      setLogoError(getErrorMessage(err, text.genericError));
     } finally {
       setIsLogoSaving(false);
     }
@@ -722,16 +925,22 @@ export default function HomepageControlPage() {
     setFooterSuccess("");
     try {
       await api.put("/admin/footer-settings", {
-        websiteName: footerWebsiteName.trim(),
-        copyrightText: footerCopyright.trim(),
+        websiteName: footerWebsiteNameEn.trim(),
+        websiteNameEn: footerWebsiteNameEn.trim(),
+        websiteNameAr: footerWebsiteNameAr.trim() || undefined,
+        copyrightText: footerCopyrightEn.trim(),
+        copyrightTextEn: footerCopyrightEn.trim(),
+        copyrightTextAr: footerCopyrightAr.trim() || undefined,
       });
       setFooterInitial({
-        websiteName: footerWebsiteName.trim(),
-        copyrightText: footerCopyright.trim(),
+        websiteNameEn: footerWebsiteNameEn.trim(),
+        websiteNameAr: footerWebsiteNameAr.trim(),
+        copyrightTextEn: footerCopyrightEn.trim(),
+        copyrightTextAr: footerCopyrightAr.trim(),
       });
-      setFooterSuccess("Footer settings updated.");
+      setFooterSuccess(text.footerUpdated);
     } catch (err) {
-      setFooterError(getErrorMessage(err));
+      setFooterError(getErrorMessage(err, text.genericError));
     } finally {
       setIsFooterSaving(false);
     }
@@ -750,15 +959,15 @@ export default function HomepageControlPage() {
     return () => {
       URL.revokeObjectURL(nextPreview);
     };
-  }, [logoFile]);
+  }, [logoFile, logoPreviewUrl]);
 
   const handleSave = async () => {
     setIsSubmitting(true);
     setError("");
     setSuccess("");
     try {
-      if (!heroTextPrimary.trim() || !heroTextSecondary.trim()) {
-        setError("Hero text fields are required.");
+      if (!heroTextPrimaryEn.trim() || !heroTextSecondaryEn.trim()) {
+        setError(text.heroTextRequired);
         return;
       }
 
@@ -767,34 +976,46 @@ export default function HomepageControlPage() {
         formData.append("heroImage", heroImageFile);
       }
 
-      if (initialState?.heroTextPrimary !== heroTextPrimary.trim()) {
-        formData.append("heroTextPrimary", heroTextPrimary.trim());
+      if ((initialState?.heroTextPrimaryEn ?? initialState?.heroTextPrimary ?? "") !== heroTextPrimaryEn.trim()) {
+        formData.append("heroTextPrimary", heroTextPrimaryEn.trim());
+        formData.append("heroTextPrimaryEn", heroTextPrimaryEn.trim());
       }
-      if (initialState?.heroTextSecondary !== heroTextSecondary.trim()) {
-        formData.append("heroTextSecondary", heroTextSecondary.trim());
+      if ((initialState?.heroTextPrimaryAr ?? "") !== heroTextPrimaryAr.trim()) {
+        formData.append("heroTextPrimaryAr", heroTextPrimaryAr.trim());
+      }
+      if ((initialState?.heroTextSecondaryEn ?? initialState?.heroTextSecondary ?? "") !== heroTextSecondaryEn.trim()) {
+        formData.append("heroTextSecondary", heroTextSecondaryEn.trim());
+        formData.append("heroTextSecondaryEn", heroTextSecondaryEn.trim());
+      }
+      if ((initialState?.heroTextSecondaryAr ?? "") !== heroTextSecondaryAr.trim()) {
+        formData.append("heroTextSecondaryAr", heroTextSecondaryAr.trim());
       }
       if (Boolean(initialState?.showNewCollection) !== showNewCollection) {
         formData.append("showNewCollection", String(showNewCollection));
       }
 
       if (!heroImageFile && formData.entries().next().done) {
-        setError("No changes to save.");
+        setError(text.noChangesToSave);
         return;
       }
 
       await api.put("/admin/homepage", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      setSuccess("Homepage updated successfully.");
+      setSuccess(text.homepageUpdated);
       setHeroImageFile(null);
       setInitialState({
         heroImage,
-        heroTextPrimary: heroTextPrimary.trim(),
-        heroTextSecondary: heroTextSecondary.trim(),
+        heroTextPrimary: heroTextPrimaryEn.trim(),
+        heroTextPrimaryEn: heroTextPrimaryEn.trim(),
+        heroTextPrimaryAr: heroTextPrimaryAr.trim(),
+        heroTextSecondary: heroTextSecondaryEn.trim(),
+        heroTextSecondaryEn: heroTextSecondaryEn.trim(),
+        heroTextSecondaryAr: heroTextSecondaryAr.trim(),
         showNewCollection,
       });
     } catch (err) {
-      setError(getErrorMessage(err));
+      setError(getErrorMessage(err, text.genericError));
     } finally {
       setIsSubmitting(false);
     }
@@ -813,10 +1034,10 @@ export default function HomepageControlPage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">
-            HomePage Control
+            {text.title}
           </h1>
           <p className="text-sm text-slate-500">
-            Manage the hero section content shown on the website.
+            {text.subtitle}
           </p>
         </div>
 
@@ -824,10 +1045,10 @@ export default function HomepageControlPage() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-slate-900">
-                Logo Control
+                {text.logoControl}
               </h2>
               <p className="text-sm text-slate-500">
-                Update the logo used across the storefront.
+                {text.logoSubtitle}
               </p>
             </div>
           </div>
@@ -848,14 +1069,26 @@ export default function HomepageControlPage() {
                       ? "/next.svg"
                       : logoUrl || "/next.svg")
                   }
-                  alt="Logo preview"
+                  alt={text.logoPreviewAlt}
                   className="h-20 max-w-full rounded-md object-contain"
                   onError={() => setLogoImageFailed(true)}
                 />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
-                  Upload Logo
+                  {language === "ar" ? "اسم الموقع (بالعربية)" : "Website Name (Arabic)"}
+                </label>
+                <Input
+                  value={footerWebsiteNameAr}
+                  onChange={(event) => setFooterWebsiteNameAr(event.target.value)}
+                  placeholder={language === "ar" ? "اسم الموقع بالعربية" : "Website name in Arabic"}
+                  dir="rtl"
+                  className="text-right"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">
+                  {text.uploadLogo}
                 </label>
                 <input
                   type="file"
@@ -888,10 +1121,10 @@ export default function HomepageControlPage() {
                   }}
                   disabled={isLogoSaving}
                 >
-                  Reset
+                  {text.reset}
                 </Button>
                 <Button onClick={handleLogoSave} disabled={isLogoSaving}>
-                  {isLogoSaving ? "Saving..." : "Save Logo"}
+                  {isLogoSaving ? text.saving : text.saveLogo}
                 </Button>
               </div>
             </div>
@@ -902,10 +1135,10 @@ export default function HomepageControlPage() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-slate-900">
-                Footer Settings
+                {text.footerSettings}
               </h2>
               <p className="text-sm text-slate-500">
-                Update website name and copyright text.
+                {text.footerSubtitle}
               </p>
             </div>
           </div>
@@ -920,22 +1153,34 @@ export default function HomepageControlPage() {
             <div className="mt-4 space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
-                  Website Name
+                  {text.websiteName}
                 </label>
                 <Input
-                  value={footerWebsiteName}
-                  onChange={(event) => setFooterWebsiteName(event.target.value)}
-                  placeholder="Enter website name"
+                  value={footerWebsiteNameEn}
+                  onChange={(event) => setFooterWebsiteNameEn(event.target.value)}
+                  placeholder={text.websiteName}
                 />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
-                  Copyright Text
+                  {text.copyrightText}
                 </label>
                 <Input
-                  value={footerCopyright}
-                  onChange={(event) => setFooterCopyright(event.target.value)}
+                  value={footerCopyrightEn}
+                  onChange={(event) => setFooterCopyrightEn(event.target.value)}
                   placeholder="© 2026 by Your Name. All rights reserved."
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">
+                  {language === "ar" ? "نص حقوق النشر (بالعربية)" : "Copyright Text (Arabic)"}
+                </label>
+                <Input
+                  value={footerCopyrightAr}
+                  onChange={(event) => setFooterCopyrightAr(event.target.value)}
+                  placeholder={language === "ar" ? "أدخل نص حقوق النشر بالعربية" : "Enter Arabic copyright text"}
+                  dir="rtl"
+                  className="text-right"
                 />
               </div>
               {footerError ? (
@@ -952,17 +1197,19 @@ export default function HomepageControlPage() {
                 <Button
                   variant="secondary"
                   onClick={() => {
-                    setFooterWebsiteName(footerInitial?.websiteName ?? "");
-                    setFooterCopyright(footerInitial?.copyrightText ?? "");
+                    setFooterWebsiteNameEn(footerInitial?.websiteNameEn ?? "");
+                    setFooterWebsiteNameAr(footerInitial?.websiteNameAr ?? "");
+                    setFooterCopyrightEn(footerInitial?.copyrightTextEn ?? "");
+                    setFooterCopyrightAr(footerInitial?.copyrightTextAr ?? "");
                     setFooterError("");
                     setFooterSuccess("");
                   }}
                   disabled={isFooterSaving}
                 >
-                  Reset
+                  {text.reset}
                 </Button>
                 <Button onClick={handleFooterSave} disabled={isFooterSaving}>
-                  {isFooterSaving ? "Saving..." : "Save Footer"}
+                  {isFooterSaving ? text.saving : text.saveFooter}
                 </Button>
               </div>
             </div>
@@ -979,24 +1226,24 @@ export default function HomepageControlPage() {
             <div className="space-y-6">
               <div className="space-y-3">
                 <h2 className="text-lg font-semibold text-slate-900">
-                  Hero Section Control
+                  {text.heroSection}
                 </h2>
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                   {previewUrl ? (
                     <img
                       src={previewUrl}
-                      alt="Hero preview"
+                      alt={text.heroPreviewAlt}
                       className="h-48 w-full rounded-md object-cover"
                     />
                   ) : (
                     <div className="flex h-48 items-center justify-center rounded-md border border-dashed border-slate-300 text-sm text-slate-500">
-                      No image selected
+                      {text.noImageSelected}
                     </div>
                   )}
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">
-                    Hero Banner Image
+                    {text.heroBannerImage}
                   </label>
                   <input
                     type="file"
@@ -1011,7 +1258,7 @@ export default function HomepageControlPage() {
 
               <div className="space-y-3">
                 <label className="flex items-center justify-between gap-4 rounded-md border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700">
-                  New Collection Icon
+                  {text.newCollectionIcon}
                   <input
                     type="checkbox"
                     checked={showNewCollection}
@@ -1024,22 +1271,44 @@ export default function HomepageControlPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">
-                    Hero Text 1 (Main Header)
+                    {language === "ar" ? "النص الرئيسي 1 (بالإنجليزية)" : "Primary Hero Text 1 (English)"}
                   </label>
                   <textarea
-                    value={heroTextPrimary}
-                    onChange={(event) => setHeroTextPrimary(event.target.value)}
+                    value={heroTextPrimaryEn}
+                    onChange={(event) => setHeroTextPrimaryEn(event.target.value)}
                     className="min-h-[90px] w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">
-                    Hero Text 2 (Sub Header)
+                    {language === "ar" ? "النص الرئيسي 1 (بالعربية)" : "Primary Hero Text 1 (Arabic)"}
                   </label>
                   <textarea
-                    value={heroTextSecondary}
-                    onChange={(event) => setHeroTextSecondary(event.target.value)}
+                    value={heroTextPrimaryAr}
+                    onChange={(event) => setHeroTextPrimaryAr(event.target.value)}
+                    dir="rtl"
+                    className="min-h-[90px] w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-right text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">
+                    {language === "ar" ? "النص الثانوي 2 (بالإنجليزية)" : "Secondary Hero Text 2 (English)"}
+                  </label>
+                  <textarea
+                    value={heroTextSecondaryEn}
+                    onChange={(event) => setHeroTextSecondaryEn(event.target.value)}
                     className="min-h-[90px] w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">
+                    {language === "ar" ? "النص الثانوي 2 (بالعربية)" : "Secondary Hero Text 2 (Arabic)"}
+                  </label>
+                  <textarea
+                    value={heroTextSecondaryAr}
+                    onChange={(event) => setHeroTextSecondaryAr(event.target.value)}
+                    dir="rtl"
+                    className="min-h-[90px] w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-right text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
                   />
                 </div>
               </div>
@@ -1061,10 +1330,10 @@ export default function HomepageControlPage() {
                   onClick={handleReset}
                   disabled={isSubmitting}
                 >
-                  Reset
+                  {text.reset}
                 </Button>
                 <Button onClick={handleSave} disabled={isSubmitting}>
-                  {isSubmitting ? "Saving..." : "Save Changes"}
+                  {isSubmitting ? text.saving : text.saveChanges}
                 </Button>
               </div>
             </div>
@@ -1075,13 +1344,13 @@ export default function HomepageControlPage() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-slate-900">
-                Hero Data Control
+                {text.heroDataControl}
               </h2>
               <p className="text-sm text-slate-500">
-                Manage hero statistics displayed on the homepage.
+                {text.heroDataSubtitle}
               </p>
             </div>
-            <Button onClick={openAddHeroStat}>Add Hero Data</Button>
+            <Button onClick={openAddHeroStat}>{text.addHeroData}</Button>
           </div>
 
           {heroStatsLoading ? (
@@ -1093,18 +1362,18 @@ export default function HomepageControlPage() {
             <p className="mt-4 text-sm text-rose-600">{heroStatsError}</p>
           ) : heroStats.length === 0 ? (
             <p className="mt-4 text-sm text-slate-500">
-              No hero data items found.
+              {text.noHeroData}
             </p>
           ) : (
             <div className="mt-4 overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-slate-200 text-slate-500">
                   <tr>
-                    <th className="py-2 pr-4 font-medium">Value</th>
-                    <th className="py-2 pr-4 font-medium">Text</th>
-                    <th className="py-2 pr-4 font-medium">Order</th>
-                    <th className="py-2 pr-4 font-medium">Active</th>
-                    <th className="py-2 font-medium">Actions</th>
+                    <th className="py-2 pr-4 font-medium">{text.value}</th>
+                    <th className="py-2 pr-4 font-medium">{text.labelText}</th>
+                    <th className="py-2 pr-4 font-medium">{text.order}</th>
+                    <th className="py-2 pr-4 font-medium">{text.status}</th>
+                    <th className="py-2 font-medium">{text.actions}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -1114,10 +1383,16 @@ export default function HomepageControlPage() {
                     .map((stat) => (
                       <tr key={stat.id} className="text-slate-700">
                         <td className="py-3 pr-4">{stat.value}</td>
-                        <td className="py-3 pr-4">{stat.text}</td>
+                        <td className="py-3 pr-4">
+                          <LocalizedDisplayText
+                            valueEn={stat.textEn}
+                            valueAr={stat.textAr}
+                            legacyValue={stat.text}
+                          />
+                        </td>
                         <td className="py-3 pr-4">{stat.order}</td>
                         <td className="py-3 pr-4">
-                          {stat.isActive ? "Active" : "Inactive"}
+                          {stat.isActive ? text.active : text.inactive}
                         </td>
                         <td className="py-3">
                           <div className="flex flex-wrap gap-2">
@@ -1125,13 +1400,13 @@ export default function HomepageControlPage() {
                               variant="secondary"
                               onClick={() => openEditHeroStat(stat)}
                             >
-                              Edit
+                              {text.edit}
                             </Button>
                             <Button
                               variant="danger"
                               onClick={() => openDeleteHeroStat(stat)}
                             >
-                              Delete
+                              {text.delete}
                             </Button>
                           </div>
                         </td>
@@ -1147,10 +1422,10 @@ export default function HomepageControlPage() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-slate-900">
-                Social Media Links
+                {text.socialMediaLinks}
               </h2>
               <p className="text-sm text-slate-500">
-                Control the social icons shown in the website footer.
+                {text.socialSubtitle}
               </p>
             </div>
           </div>
@@ -1204,14 +1479,14 @@ export default function HomepageControlPage() {
                         }
                         className="h-4 w-4 accent-slate-900"
                       />
-                      Active
+                      {text.active}
                     </label>
                     <Button
                       variant="secondary"
                       onClick={() => saveSocialLink(link.platform)}
                       disabled={socialSaving[link.platform]}
                     >
-                      {socialSaving[link.platform] ? "Saving..." : "Save"}
+                      {socialSaving[link.platform] ? text.saving : text.save}
                     </Button>
                   </div>
                 );
@@ -1229,13 +1504,13 @@ export default function HomepageControlPage() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-slate-900">
-                Why Shop With Us
+                {text.whyShop}
               </h2>
               <p className="text-sm text-slate-500">
-                Manage the cards shown in the “Why Shop With Us” section.
+                {text.whyShopSubtitle}
               </p>
             </div>
-            <Button onClick={openAddWhyShop}>Add Card</Button>
+            <Button onClick={openAddWhyShop}>{text.addCard}</Button>
           </div>
 
           {whyShopLoading ? (
@@ -1247,18 +1522,18 @@ export default function HomepageControlPage() {
             <p className="mt-4 text-sm text-rose-600">{whyShopError}</p>
           ) : whyShopCards.length === 0 ? (
             <p className="mt-4 text-sm text-slate-500">
-              No cards found.
+              {text.noCards}
             </p>
           ) : (
             <div className="mt-4 overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-slate-200 text-slate-500">
                   <tr>
-                    <th className="py-2 pr-4 font-medium">Title</th>
-                    <th className="py-2 pr-4 font-medium">Description</th>
-                    <th className="py-2 pr-4 font-medium">Order</th>
-                    <th className="py-2 pr-4 font-medium">Status</th>
-                    <th className="py-2 font-medium">Actions</th>
+                    <th className="py-2 pr-4 font-medium">{text.labelText}</th>
+                    <th className="py-2 pr-4 font-medium">{text.description}</th>
+                    <th className="py-2 pr-4 font-medium">{text.order}</th>
+                    <th className="py-2 pr-4 font-medium">{text.status}</th>
+                    <th className="py-2 font-medium">{text.actions}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -1267,8 +1542,20 @@ export default function HomepageControlPage() {
                     .sort((a, b) => a.order - b.order)
                     .map((card) => (
                       <tr key={card.id} className="text-slate-700">
-                        <td className="py-3 pr-4">{card.title}</td>
-                        <td className="py-3 pr-4">{card.description}</td>
+                        <td className="py-3 pr-4">
+                          <LocalizedDisplayText
+                            valueEn={card.titleEn}
+                            valueAr={card.titleAr}
+                            legacyValue={card.title}
+                          />
+                        </td>
+                        <td className="py-3 pr-4">
+                          <LocalizedDisplayText
+                            valueEn={card.descriptionEn}
+                            valueAr={card.descriptionAr}
+                            legacyValue={card.description}
+                          />
+                        </td>
                         <td className="py-3 pr-4">
                           <input
                             type="number"
@@ -1280,12 +1567,12 @@ export default function HomepageControlPage() {
                           />
                           {whyShopSaving[card.id] ? (
                             <span className="ml-2 text-xs text-slate-500">
-                              Saving...
+                              {text.saving}
                             </span>
                           ) : null}
                         </td>
                         <td className="py-3 pr-4">
-                          {card.isActive ? "Active" : "Inactive"}
+                          {card.isActive ? text.active : text.inactive}
                         </td>
                         <td className="py-3">
                           <div className="flex flex-wrap gap-2">
@@ -1293,13 +1580,13 @@ export default function HomepageControlPage() {
                               variant="secondary"
                               onClick={() => openEditWhyShop(card)}
                             >
-                              Edit
+                              {text.edit}
                             </Button>
                             <Button
                               variant="danger"
                               onClick={() => openDeleteWhyShop(card)}
                             >
-                              Delete
+                              {text.delete}
                             </Button>
                           </div>
                         </td>
@@ -1313,38 +1600,52 @@ export default function HomepageControlPage() {
       </div>
 
       <Modal
-        title={editingHeroStat ? "Edit Hero Data" : "Add Hero Data"}
+        title={editingHeroStat ? text.editHeroData : text.addHeroDataTitle}
         isOpen={isHeroStatModalOpen}
         onClose={() => setIsHeroStatModalOpen(false)}
       >
         <div className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Value</label>
+            <label className="text-sm font-medium text-slate-700">{text.value}</label>
             <Input
               value={heroStatValue}
               onChange={(event) => setHeroStatValue(event.target.value)}
-              placeholder="Enter value"
+              placeholder={text.enterValue}
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Text</label>
+            <label className="text-sm font-medium text-slate-700">
+              {language === "ar" ? "النص (بالإنجليزية)" : "Text (English)"}
+            </label>
             <Input
-              value={heroStatText}
-              onChange={(event) => setHeroStatText(event.target.value)}
-              placeholder="Enter text"
+              value={heroStatTextEn}
+              onChange={(event) => setHeroStatTextEn(event.target.value)}
+              placeholder={text.enterText}
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Order</label>
+            <label className="text-sm font-medium text-slate-700">
+              {language === "ar" ? "النص (بالعربية)" : "Text (Arabic)"}
+            </label>
+            <Input
+              value={heroStatTextAr}
+              onChange={(event) => setHeroStatTextAr(event.target.value)}
+              placeholder={text.enterText}
+              dir="rtl"
+              className="text-right"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">{text.order}</label>
             <Input
               type="number"
               value={heroStatOrder}
               onChange={(event) => setHeroStatOrder(event.target.value)}
-              placeholder="Order"
+              placeholder={text.order}
             />
           </div>
           <label className="flex items-center justify-between gap-4 rounded-md border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700">
-            Active
+            {text.active}
             <input
               type="checkbox"
               checked={heroStatActive}
@@ -1363,50 +1664,75 @@ export default function HomepageControlPage() {
               onClick={() => setIsHeroStatModalOpen(false)}
               disabled={isSubmitting}
             >
-              Cancel
+              {text.cancel}
             </Button>
             <Button onClick={saveHeroStat} disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : "Save"}
+              {isSubmitting ? text.saving : text.save}
             </Button>
           </div>
         </div>
       </Modal>
 
       <Modal
-        title={editingWhyShop ? "Edit Card" : "Add Card"}
+        title={editingWhyShop ? text.editCard : text.addCardTitle}
         isOpen={isWhyShopModalOpen}
         onClose={() => setIsWhyShopModalOpen(false)}
       >
         <div className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Title</label>
+            <label className="text-sm font-medium text-slate-700">
+              {language === "ar" ? "العنوان (بالإنجليزية)" : "Title (English)"}
+            </label>
             <Input
-              value={whyShopTitle}
-              onChange={(event) => setWhyShopTitle(event.target.value)}
-              placeholder="Enter title"
+              value={whyShopTitleEn}
+              onChange={(event) => setWhyShopTitleEn(event.target.value)}
+              placeholder={text.enterTitle}
             />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">
-              Description
+              {language === "ar" ? "العنوان (بالعربية)" : "Title (Arabic)"}
+            </label>
+            <Input
+              value={whyShopTitleAr}
+              onChange={(event) => setWhyShopTitleAr(event.target.value)}
+              placeholder={text.enterTitle}
+              dir="rtl"
+              className="text-right"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">
+              {language === "ar" ? "الوصف (بالإنجليزية)" : "Description (English)"}
             </label>
             <textarea
-              value={whyShopDescription}
-              onChange={(event) => setWhyShopDescription(event.target.value)}
+              value={whyShopDescriptionEn}
+              onChange={(event) => setWhyShopDescriptionEn(event.target.value)}
               className="min-h-[90px] w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Order</label>
+            <label className="text-sm font-medium text-slate-700">
+              {language === "ar" ? "الوصف (بالعربية)" : "Description (Arabic)"}
+            </label>
+            <textarea
+              value={whyShopDescriptionAr}
+              onChange={(event) => setWhyShopDescriptionAr(event.target.value)}
+              dir="rtl"
+              className="min-h-[90px] w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-right text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">{text.order}</label>
             <Input
               type="number"
               value={whyShopOrder}
               onChange={(event) => setWhyShopOrder(event.target.value)}
-              placeholder="Order"
+              placeholder={text.order}
             />
           </div>
           <label className="flex items-center justify-between gap-4 rounded-md border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700">
-            Active
+            {text.active}
             <input
               type="checkbox"
               checked={whyShopActive}
@@ -1425,23 +1751,23 @@ export default function HomepageControlPage() {
               onClick={() => setIsWhyShopModalOpen(false)}
               disabled={isSubmitting}
             >
-              Cancel
+              {text.cancel}
             </Button>
             <Button onClick={saveWhyShop} disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : "Save"}
+              {isSubmitting ? text.saving : text.save}
             </Button>
           </div>
         </div>
       </Modal>
 
       <Modal
-        title="Delete Card"
+        title={text.deleteCard}
         isOpen={isWhyShopDeleteOpen}
         onClose={() => setIsWhyShopDeleteOpen(false)}
       >
         <div className="space-y-4">
           <p className="text-sm text-slate-600">
-            Are you sure you want to delete this card?
+            {text.deleteCardBody}
           </p>
           {whyShopError ? (
             <p className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
@@ -1454,27 +1780,27 @@ export default function HomepageControlPage() {
               onClick={() => setIsWhyShopDeleteOpen(false)}
               disabled={isSubmitting}
             >
-              Cancel
+              {text.cancel}
             </Button>
             <Button
               variant="danger"
               onClick={deleteWhyShop}
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Deleting..." : "Delete"}
+              {isSubmitting ? text.deleting : text.delete}
             </Button>
           </div>
         </div>
       </Modal>
 
       <Modal
-        title="Delete Hero Data"
+        title={text.deleteHeroData}
         isOpen={isDeleteHeroStatOpen}
         onClose={() => setIsDeleteHeroStatOpen(false)}
       >
         <div className="space-y-4">
           <p className="text-sm text-slate-600">
-            Are you sure you want to delete this hero data item?
+            {text.deleteHeroDataBody}
           </p>
           {heroStatsError ? (
             <p className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
@@ -1487,14 +1813,14 @@ export default function HomepageControlPage() {
               onClick={() => setIsDeleteHeroStatOpen(false)}
               disabled={isSubmitting}
             >
-              Cancel
+              {text.cancel}
             </Button>
             <Button
               variant="danger"
               onClick={deleteHeroStat}
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Deleting..." : "Delete"}
+              {isSubmitting ? text.deleting : text.delete}
             </Button>
           </div>
         </div>

@@ -1,10 +1,13 @@
 import type { EmployeeAuditLog } from "@/features/team/types";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 type AuditLogsListProps = {
   rows: EmployeeAuditLog[];
 };
 
 export default function AuditLogsList({ rows }: AuditLogsListProps) {
+  const { language } = useLocalization();
+
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <ul className="space-y-3">
@@ -15,7 +18,7 @@ export default function AuditLogsList({ rows }: AuditLogsListProps) {
               <p className="text-xs text-slate-900">{log.createdAt || "-"}</p>
             </div>
             <p className="mt-1 text-xs text-slate-900">
-              By: {log.actorName || "System"} {log.actorRole ? `(${log.actorRole})` : ""}
+              {language === "ar" ? "بواسطة:" : "By:"} {log.actorName || (language === "ar" ? "النظام" : "System")} {log.actorRole ? `(${log.actorRole})` : ""}
             </p>
             {log.details ? <p className="mt-2 text-sm text-slate-900">{log.details}</p> : null}
           </li>

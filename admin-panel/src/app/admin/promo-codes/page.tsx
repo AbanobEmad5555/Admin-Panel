@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import AdminLayout from "@/components/layout/AdminLayout";
 import Button from "@/components/ui/Button";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import promoCodesApi, {
   PromoCodeRecord,
 } from "@/services/promoCodesApi";
@@ -27,6 +28,7 @@ const buildPayload = (values: PromoCodeFormValues) => ({
 });
 
 export default function AdminPromoCodesPage() {
+  const { language } = useLocalization();
   const [promoCodes, setPromoCodes] = useState<PromoCodeRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
@@ -46,6 +48,60 @@ export default function AdminPromoCodesPage() {
     null
   );
   const [rowLoading, setRowLoading] = useState<Record<number, boolean>>({});
+  const text =
+    language === "ar"
+      ? {
+          title: "أكواد الخصم",
+          subtitle:
+            "جلب الأكواد الصالحة عبر GET /promo-codes/valid والمنتهية عبر GET /promo-codes/expired والموقوفة عبر GET /promo-codes/suspended.",
+          addPromoCode: "+ إضافة كود خصم",
+          validTab: "الأكواد الصالحة",
+          expiredTab: "الأكواد المنتهية",
+          suspendedTab: "الأكواد الموقوفة",
+          validWord: "الصالحة",
+          expiredWord: "المنتهية",
+          suspendedWord: "الموقوفة",
+          loadValidError: "فشل تحميل أكواد الخصم الصالحة.",
+          loadExpiredError: "فشل تحميل أكواد الخصم المنتهية.",
+          loadSuspendedError: "فشل تحميل أكواد الخصم الموقوفة.",
+          created: "تم إنشاء كود الخصم بنجاح.",
+          updated: "تم تحديث كود الخصم بنجاح.",
+          suspended: "تم إيقاف كود الخصم.",
+          activated: "تم تفعيل كود الخصم.",
+          deleted: "تم حذف كود الخصم.",
+          genericError: "حدث خطأ غير متوقع.",
+          emptyValid: "لا توجد أكواد خصم صالحة حتى الآن.",
+          emptyExpired: "لا توجد أكواد خصم منتهية حتى الآن.",
+          emptySuspended: "لا توجد أكواد خصم موقوفة حتى الآن.",
+          deleteTitle: "حذف كود الخصم",
+          deleteMessage: "هل أنت متأكد أنك تريد حذف كود الخصم؟ لا يمكن التراجع عن هذا الإجراء.",
+        }
+      : {
+          title: "Promo Codes",
+          subtitle:
+            "Pull valid codes via GET /promo-codes/valid, expired via GET /promo-codes/expired, and suspended via GET /promo-codes/suspended.",
+          addPromoCode: "+ Add Promo Code",
+          validTab: "Valid promo codes",
+          expiredTab: "Expired promo codes",
+          suspendedTab: "Suspended promo codes",
+          validWord: "valid",
+          expiredWord: "expired",
+          suspendedWord: "suspended",
+          loadValidError: "Failed to load valid promo codes.",
+          loadExpiredError: "Failed to load expired promo codes.",
+          loadSuspendedError: "Failed to load suspended promo codes.",
+          created: "Promo code created successfully.",
+          updated: "Promo code updated successfully.",
+          suspended: "Promo code suspended.",
+          activated: "Promo code activated.",
+          deleted: "Promo code deleted.",
+          genericError: "Something went wrong.",
+          emptyValid: "No valid promo codes yet. Create one.",
+          emptyExpired: "No expired promo codes yet.",
+          emptySuspended: "No suspended promo codes yet.",
+          deleteTitle: "Confirm delete",
+          deleteMessage: "This action cannot be undone.",
+        };
 
   const fetchPromoCodes = useCallback(async () => {
     setIsLoading(true);
@@ -59,20 +115,18 @@ export default function AdminPromoCodesPage() {
           : await promoCodesApi.getSuspendedPromoCodes();
       const payload = response.data?.data;
       setPromoCodes(Array.isArray(payload) ? payload : []);
-    } catch (error) {
-        setFetchError(
-        `Failed to load ${
-          activeTab === "valid"
-            ? "valid"
-            : activeTab === "expired"
-            ? "expired"
-            : "suspended"
-        } promo codes.`
+    } catch {
+      setFetchError(
+        activeTab === "valid"
+          ? text.loadValidError
+          : activeTab === "expired"
+            ? text.loadExpiredError
+            : text.loadSuspendedError
       );
     } finally {
       setIsLoading(false);
     }
-  }, [activeTab]);
+  }, [activeTab, text.loadExpiredError, text.loadSuspendedError, text.loadValidError]);
 
   useEffect(() => {
     fetchPromoCodes();
@@ -87,19 +141,19 @@ export default function AdminPromoCodesPage() {
     try {
       if (formMode === "create") {
         await promoCodesApi.createPromoCode(buildPayload(values));
-        setAlert({ type: "success", text: "Promo code created successfully." });
+        setAlert({ type: "success", text: text.created });
       } else if (selectedRecord) {
         await promoCodesApi.updatePromoCode(
           selectedRecord.id,
           buildPayload(values)
         );
-        setAlert({ type: "success", text: "Promo code updated successfully." });
+        setAlert({ type: "success", text: text.updated });
       }
       setIsFormOpen(false);
       await fetchPromoCodes();
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Something went wrong.";
+        error instanceof Error ? error.message : text.genericError;
       setAlert({ type: "error", text: message });
     } finally {
       setFormSubmitting(false);
@@ -123,13 +177,13 @@ export default function AdminPromoCodesPage() {
       setAlert({
         type: "success",
         text: currentActive
-          ? "Promo code suspended."
-          : "Promo code activated.",
+          ? text.suspended
+          : text.activated,
       });
       await fetchPromoCodes();
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Something went wrong.";
+        error instanceof Error ? error.message : text.genericError;
       setAlert({ type: "error", text: message });
     } finally {
       startRowLoading(record.id, false);
@@ -143,12 +197,12 @@ export default function AdminPromoCodesPage() {
     startRowLoading(deleteTarget.id, true);
     try {
       await promoCodesApi.deletePromoCode(deleteTarget.id);
-      setAlert({ type: "success", text: "Promo code deleted." });
+      setAlert({ type: "success", text: text.deleted });
       setDeleteTarget(null);
       await fetchPromoCodes();
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Something went wrong.";
+        error instanceof Error ? error.message : text.genericError;
       setAlert({ type: "error", text: message });
     } finally {
       startRowLoading(deleteTarget.id, false);
@@ -198,15 +252,11 @@ export default function AdminPromoCodesPage() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold text-slate-900">
-              Promo Codes
+              {text.title}
             </h1>
-            <p className="text-sm text-slate-600">
-              Pull valid codes via GET /promo-codes/valid, expired via
-              GET /promo-codes/expired, and suspended via
-              GET /promo-codes/suspended.
-            </p>
+            <p className="text-sm text-slate-600">{text.subtitle}</p>
           </div>
-          <Button onClick={handleOpenCreate}>+ Add Promo Code</Button>
+          <Button onClick={handleOpenCreate}>{text.addPromoCode}</Button>
         </div>
         <div className="flex gap-2">
           <button
@@ -218,7 +268,7 @@ export default function AdminPromoCodesPage() {
                 : "border border-slate-200 text-slate-600 hover:bg-slate-50"
             }`}
           >
-            Valid promo codes
+            {text.validTab}
           </button>
           <button
             type="button"
@@ -229,7 +279,7 @@ export default function AdminPromoCodesPage() {
                 : "border border-slate-200 text-slate-600 hover:bg-slate-50"
             }`}
           >
-            Expired promo codes
+            {text.expiredTab}
           </button>
           <button
             type="button"
@@ -240,7 +290,7 @@ export default function AdminPromoCodesPage() {
                 : "border border-slate-200 text-slate-600 hover:bg-slate-50"
             }`}
           >
-            Suspended promo codes
+            {text.suspendedTab}
           </button>
         </div>
 
@@ -271,14 +321,15 @@ export default function AdminPromoCodesPage() {
           rowLoading={rowLoading}
           emptyText={
             activeTab === "valid"
-              ? "No valid promo codes yet. Create one."
+              ? text.emptyValid
               : activeTab === "expired"
-              ? "No expired promo codes yet."
-              : "No suspended promo codes yet."
+                ? text.emptyExpired
+                : text.emptySuspended
           }
         />
 
         <PromoCodeFormModal
+          key={`${formMode}-${selectedRecord?.id ?? "new"}-${isFormOpen ? "open" : "closed"}`}
           isOpen={isFormOpen}
           mode={formMode}
           initialValues={initialFormValues}
@@ -291,6 +342,8 @@ export default function AdminPromoCodesPage() {
           isOpen={Boolean(deleteTarget)}
           onClose={() => setDeleteTarget(null)}
           onConfirm={handleDelete}
+          title={text.deleteTitle}
+          message={text.deleteMessage}
           isLoading={deleteTarget ? rowLoading[deleteTarget.id] ?? false : false}
         />
       </div>

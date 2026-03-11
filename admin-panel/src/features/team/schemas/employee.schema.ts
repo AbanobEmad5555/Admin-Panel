@@ -2,6 +2,8 @@ import { z } from "zod";
 
 const timePattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const isHttpUrl = (value?: string) => !value || /^https?:\/\//i.test(value);
+const isUrlOrData = (value?: string) =>
+  !value || /^https?:\/\//i.test(value) || /^data:/i.test(value);
 
 export const employeeRoleSchema = z.enum(["ADMIN", "MANAGER", "CASHIER", "EMPLOYEE"]);
 export const employeeStatusSchema = z.enum(["ACTIVE", "SUSPENDED", "VACATION", "TERMINATED"]);
@@ -17,8 +19,8 @@ export const workingDaySchema = z.enum(["SUN", "MON", "TUE", "WED", "THU", "FRI"
 export const documentTypeSchema = z.enum(["CONTRACT", "ID", "CERTIFICATE", "OTHER"]);
 
 export const employeeFormSchema = z.object({
-  firstName: z.string().trim().min(1, "First name is required"),
-  lastName: z.string().trim().min(1, "Last name is required"),
+  fullNameEn: z.string().trim().min(1, "Full name (English) is required"),
+  fullNameAr: z.string().trim().optional().or(z.literal("")),
   role: employeeRoleSchema,
   salary: z.coerce.number().min(0, "Salary must be >= 0"),
   currency: z.string().trim().min(1, "Currency is required"),
@@ -30,9 +32,11 @@ export const employeeFormSchema = z.object({
     .refine((value) => !value || z.string().email().safeParse(value).success, "Invalid email"),
   phone: z.string().trim().optional().or(z.literal("")),
   address: z.string().trim().optional().or(z.literal("")),
-  title: z.string().trim().optional().or(z.literal("")),
+  titleEn: z.string().trim().optional().or(z.literal("")),
+  titleAr: z.string().trim().optional().or(z.literal("")),
   employmentType: employmentTypeSchema.optional(),
-  department: z.string().trim().optional().or(z.literal("")),
+  departmentEn: z.string().trim().optional().or(z.literal("")),
+  departmentAr: z.string().trim().optional().or(z.literal("")),
   profileImageUrl: z
     .string()
     .trim()

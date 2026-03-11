@@ -4,8 +4,15 @@ import { useState } from "react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
-import { costCategories, costCategoryLabels } from "@/components/purchases/constants";
+import {
+  costCategories,
+  costCategoryArabicLabels,
+  costCategoryLabels,
+} from "@/components/purchases/constants";
 import type { CostFormValue, CostRow } from "@/components/purchases/types";
+import { useForm } from "react-hook-form";
+import BilingualTextField from "@/modules/shared/components/BilingualTextField";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 type CostFormModalProps = {
   open: boolean;
@@ -16,7 +23,8 @@ type CostFormModalProps = {
 };
 
 const emptyForm: CostFormValue = {
-  name: "",
+  costNameEn: "",
+  costNameAr: "",
   category: "MISCELLANEOUS",
   amount: "",
   date: "",
@@ -28,7 +36,8 @@ const toFormValue = (initial?: CostRow | null): CostFormValue => {
     return emptyForm;
   }
   return {
-    name: initial.name,
+    costNameEn: initial.costNameEn ?? initial.name,
+    costNameAr: initial.costNameAr ?? "",
     category: initial.category,
     amount: String(initial.amount),
     date: initial.date,
@@ -43,16 +52,30 @@ export default function CostFormModal({
   onClose,
   onSubmit,
 }: CostFormModalProps) {
+  const { language, t } = useLocalization();
+  const text = {
+    title: mode === "create" ? (language === "ar" ? "إضافة مصروف" : "Add Cost") : language === "ar" ? "تعديل المصروف" : "Edit Cost",
+    amountPlaceholder: language === "ar" ? "المبلغ بالجنيه" : "Amount in EGP",
+    notesPlaceholder: language === "ar" ? "ملاحظات" : "Notes",
+    cancel: t("common.cancel") || "Cancel",
+    addCost: language === "ar" ? "إضافة مصروف" : "Add Cost",
+    saveChanges: t("common.saveChanges") || "Save Changes",
+  };
   const [form, setForm] = useState<CostFormValue>(() => toFormValue(initial));
+  const hookForm = useForm<CostFormValue>({ values: form });
 
   return (
-    <Modal title={mode === "create" ? "Add Cost" : "Edit Cost"} isOpen={open} onClose={onClose}>
+    <Modal title={text.title} isOpen={open} onClose={onClose}>
       <div className="space-y-4">
-        <Input
-          placeholder="Cost Name"
-          value={form.name}
-          onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-        />
+        <div onChange={() => setForm((prev) => ({ ...prev, ...hookForm.getValues() }))}>
+          <BilingualTextField
+            register={hookForm.register}
+            nameEnField="costNameEn"
+            nameArField="costNameAr"
+            label={t("field.costName")}
+            requiredEn
+          />
+        </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <select
             value={form.category}
@@ -63,13 +86,15 @@ export default function CostFormModal({
           >
             {costCategories.map((category) => (
               <option key={category} value={category}>
-                {costCategoryLabels[category]}
+                {language === "ar"
+                  ? costCategoryArabicLabels[category]
+                  : costCategoryLabels[category]}
               </option>
             ))}
           </select>
           <Input
             type="number"
-            placeholder="Amount in EGP"
+            placeholder={text.amountPlaceholder}
             value={form.amount}
             onChange={(event) => setForm((prev) => ({ ...prev, amount: event.target.value }))}
           />
@@ -84,15 +109,15 @@ export default function CostFormModal({
         <textarea
           value={form.notes}
           onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))}
-          placeholder="Notes"
+          placeholder={text.notesPlaceholder}
           className="min-h-24 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
         />
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>
-            Cancel
+            {text.cancel}
           </Button>
           <Button onClick={() => onSubmit(form)}>
-            {mode === "create" ? "Add Cost" : "Save Changes"}
+            {mode === "create" ? text.addCost : text.saveChanges}
           </Button>
         </div>
       </div>

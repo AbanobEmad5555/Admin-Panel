@@ -9,6 +9,7 @@ import Modal from "@/components/ui/Modal";
 import RefreshFromSourceButton from "@/app/admin/invoices/components/RefreshFromSourceButton";
 import { addInvoicePaymentSchema, type AddInvoicePaymentSchema } from "@/app/admin/invoices/schemas/createInvoice.schema";
 import type { InvoiceDetails } from "@/app/admin/invoices/services/invoice.types";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 type Props = {
   invoice: InvoiceDetails;
@@ -37,8 +38,47 @@ export default function InvoiceActions({
   onAddPayment,
   onCancel,
 }: Props) {
+  const { language } = useLocalization();
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const isCanceled = invoice.status === "CANCELED";
+  const text =
+    language === "ar"
+      ? {
+          paymentAdded: "تمت إضافة الدفعة بنجاح.",
+          posting: "جارٍ ترحيل الفاتورة...",
+          postInvoice: "ترحيل الفاتورة",
+          sending: "جارٍ إرسال الفاتورة...",
+          sendInvoice: "إرسال الفاتورة",
+          addPayment: "إضافة دفعة",
+          canceling: "جارٍ إلغاء الفاتورة...",
+          cancelInvoice: "إلغاء الفاتورة",
+          modalTitle: "إضافة دفعة",
+          method: "الطريقة",
+          amount: "المبلغ",
+          reference: "المرجع",
+          optionalReference: "مرجع اختياري",
+          close: "إغلاق",
+          saving: "جارٍ الحفظ...",
+          savePayment: "حفظ الدفعة",
+        }
+      : {
+          paymentAdded: "Payment added successfully.",
+          posting: "Posting...",
+          postInvoice: "Post Invoice",
+          sending: "Sending...",
+          sendInvoice: "Send Invoice",
+          addPayment: "Add Payment",
+          canceling: "Canceling...",
+          cancelInvoice: "Cancel Invoice",
+          modalTitle: "Add Payment",
+          method: "Method",
+          amount: "Amount",
+          reference: "Reference",
+          optionalReference: "Optional reference",
+          close: "Close",
+          saving: "Saving...",
+          savePayment: "Save Payment",
+        };
 
   const form = useForm<AddInvoicePaymentSchema>({
     resolver: zodResolver(addInvoicePaymentSchema),
@@ -57,7 +97,7 @@ export default function InvoiceActions({
   const submitPayment = form.handleSubmit(async (values) => {
     try {
       await onAddPayment(values);
-      toast.success("Payment added successfully.");
+      toast.success(text.paymentAdded);
       setPaymentModalOpen(false);
       form.reset({
         method: "CASH",
@@ -79,7 +119,7 @@ export default function InvoiceActions({
               onClick={() => void onPost()}
               disabled={disabledAll}
             >
-              {posting ? "Posting..." : "Post Invoice"}
+              {posting ? text.posting : text.postInvoice}
             </Button>
           ) : null}
 
@@ -98,7 +138,7 @@ export default function InvoiceActions({
               onClick={() => void onSend()}
               disabled={disabledAll}
             >
-              {sending ? "Sending..." : "Send Invoice"}
+              {sending ? text.sending : text.sendInvoice}
             </Button>
           ) : null}
 
@@ -109,7 +149,7 @@ export default function InvoiceActions({
               onClick={() => setPaymentModalOpen(true)}
               disabled={disabledAll}
             >
-              Add Payment
+              {text.addPayment}
             </Button>
           ) : null}
 
@@ -120,20 +160,20 @@ export default function InvoiceActions({
               onClick={() => void onCancel()}
               disabled={disabledAll}
             >
-              {canceling ? "Canceling..." : "Cancel Invoice"}
+              {canceling ? text.canceling : text.cancelInvoice}
             </Button>
           ) : null}
         </div>
       </div>
 
       <Modal
-        title="Add Payment"
+        title={text.modalTitle}
         isOpen={paymentModalOpen}
         onClose={() => setPaymentModalOpen(false)}
       >
         <form className="space-y-3" onSubmit={(event) => void submitPayment(event)}>
           <div>
-            <label className="text-xs font-medium text-slate-600">Method</label>
+            <label className="text-xs font-medium text-slate-600">{text.method}</label>
             <select
               {...form.register("method")}
               className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm"
@@ -149,7 +189,7 @@ export default function InvoiceActions({
           </div>
 
           <div>
-            <label className="text-xs font-medium text-slate-600">Amount</label>
+            <label className="text-xs font-medium text-slate-600">{text.amount}</label>
             <input
               type="number"
               step="0.01"
@@ -162,21 +202,21 @@ export default function InvoiceActions({
           </div>
 
           <div>
-            <label className="text-xs font-medium text-slate-600">Reference</label>
+            <label className="text-xs font-medium text-slate-600">{text.reference}</label>
             <input
               type="text"
               {...form.register("reference")}
               className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm"
-              placeholder="Optional reference"
+              placeholder={text.optionalReference}
             />
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setPaymentModalOpen(false)}>
-              Close
+              {text.close}
             </Button>
             <Button type="submit" disabled={paying || form.formState.isSubmitting}>
-              {paying || form.formState.isSubmitting ? "Saving..." : "Save Payment"}
+              {paying || form.formState.isSubmitting ? text.saving : text.savePayment}
             </Button>
           </div>
         </form>

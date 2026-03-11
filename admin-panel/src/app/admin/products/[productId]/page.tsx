@@ -9,6 +9,7 @@ import Modal from "@/components/ui/Modal";
 import PurchaseStatusBadge from "@/components/purchases/PurchaseStatusBadge";
 import type { PurchaseRow } from "@/components/purchases/types";
 import { purchasesApi } from "@/features/purchases/api/purchases.api";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import api from "@/services/api";
 
 type Product = {
@@ -215,6 +216,7 @@ const resolveVariantDetails = (product: Product) => {
 };
 
 export default function ProductDetailsPage() {
+  const { language } = useLocalization();
   const params = useParams();
   const router = useRouter();
   const productId = Array.isArray(params?.productId)
@@ -247,6 +249,144 @@ export default function ProductDetailsPage() {
   const [editImageInputs, setEditImageInputs] = useState<Array<File | null>>([]);
   const [existingEditImages, setExistingEditImages] = useState<string[]>([]);
   const [imagesTouched, setImagesTouched] = useState(false);
+  const text =
+    language === "ar"
+      ? {
+          invalidProductId: "رقم المنتج غير صالح.",
+          imageUploadFailed: "فشل رفع الصور.",
+          noChanges: "لا توجد تغييرات للتحديث.",
+          updatedSuccess: "تم تحديث المنتج بنجاح.",
+          activated: "تم تفعيل المنتج.",
+          deactivated: "تم تعطيل المنتج.",
+          products: "المنتجات",
+          productDetails: "تفاصيل المنتج",
+          backToProducts: "العودة إلى المنتجات",
+          editProduct: "تعديل المنتج",
+          deactivateProduct: "تعطيل المنتج",
+          activateProduct: "تفعيل المنتج",
+          deleteProduct: "حذف المنتج",
+          overviewTab: "نظرة عامة",
+          purchasesTab: "المشتريات",
+          productNotFound: "المنتج غير موجود.",
+          productOverview: "نظرة عامة على المنتج",
+          productName: "اسم المنتج",
+          status: "الحالة",
+          category: "الفئة",
+          createdAt: "تاريخ الإنشاء",
+          pricingAndStock: "السعر والمخزون",
+          priceBeforeDiscount: "السعر قبل الخصم",
+          priceAfterDiscount: "السعر بعد الخصم",
+          stock: "المخزون",
+          variantDetails: "تفاصيل المتغير",
+          sku: "رمز SKU",
+          size: "المقاس",
+          color: "اللون",
+          material: "الخامة",
+          variantStatus: "حالة المتغير",
+          productImages: "صور المنتج",
+          noImagesAvailable: "لا توجد صور متاحة.",
+          productDescription: "وصف المنتج",
+          noDescription: "لا يوجد وصف.",
+          purchaseHistory: "سجل مشتريات المنتج",
+          purchaseHistorySubtitle: "تتبع أوامر الشراء ووصولات الموردين لهذا المنتج.",
+          purchaseId: "رقم الشراء",
+          supplier: "المورد",
+          quantity: "الكمية",
+          unitCost: "تكلفة الوحدة",
+          arrivalDate: "تاريخ الوصول",
+          noPurchaseHistory: "لا يوجد سجل مشتريات لهذا المنتج.",
+          editProductTitle: "تعديل المنتج",
+          enterProductName: "أدخل اسم المنتج",
+          priceBefore: "السعر قبل الخصم",
+          priceAfter: "السعر بعد الخصم",
+          selectCategory: "اختر الفئة",
+          variant: "المتغير",
+          selectVariant: "اختر المتغير",
+          active: "نشط",
+          inactive: "غير نشط",
+          description: "الوصف",
+          optionalDescription: "وصف اختياري",
+          existingImage: (n: number) => `الصورة الحالية ${n}`,
+          remove: "إزالة",
+          productImage: (n: number) => `صورة المنتج ${n}`,
+          addNewImage: "إضافة صورة جديدة",
+          maxImages: "الحد الأقصى 5 صور",
+          cancel: "إلغاء",
+          updating: "جارٍ التحديث...",
+          update: "تحديث",
+          deleteProductTitle: "حذف المنتج",
+          deleteConfirm: "هل أنت متأكد من حذف هذا المنتج؟ لا يمكن التراجع عن هذا الإجراء.",
+          deleting: "جارٍ الحذف...",
+          delete: "حذف",
+        }
+      : {
+          invalidProductId: "Invalid product id.",
+          imageUploadFailed: "Image upload failed.",
+          noChanges: "No changes to update.",
+          updatedSuccess: "Product updated successfully.",
+          activated: "Product activated.",
+          deactivated: "Product deactivated.",
+          products: "Products",
+          productDetails: "Product Details",
+          backToProducts: "Back to Products",
+          editProduct: "Edit Product",
+          deactivateProduct: "Deactivate Product",
+          activateProduct: "Activate Product",
+          deleteProduct: "Delete Product",
+          overviewTab: "Overview",
+          purchasesTab: "Purchases",
+          productNotFound: "Product not found.",
+          productOverview: "Product Overview",
+          productName: "Product Name",
+          status: "Status",
+          category: "Category",
+          createdAt: "Created At",
+          pricingAndStock: "Pricing & Stock",
+          priceBeforeDiscount: "Price Before Discount",
+          priceAfterDiscount: "Price After Discount",
+          stock: "Stock",
+          variantDetails: "Variant Details",
+          sku: "SKU",
+          size: "Size",
+          color: "Color",
+          material: "Material",
+          variantStatus: "Variant Status",
+          productImages: "Product Images",
+          noImagesAvailable: "No images available.",
+          productDescription: "Product Description",
+          noDescription: "No description provided.",
+          purchaseHistory: "Product Purchase History",
+          purchaseHistorySubtitle: "Track purchase orders and supplier deliveries for this product.",
+          purchaseId: "Purchase ID",
+          supplier: "Supplier",
+          quantity: "Quantity",
+          unitCost: "Unit Cost",
+          arrivalDate: "Arrival Date",
+          noPurchaseHistory: "No purchase history found for this product.",
+          editProductTitle: "Edit Product",
+          enterProductName: "Enter product name",
+          priceBefore: "Price Before",
+          priceAfter: "Price After",
+          selectCategory: "Select category",
+          variant: "Variant",
+          selectVariant: "Select variant",
+          active: "Active",
+          inactive: "Not Active",
+          description: "Description",
+          optionalDescription: "Optional description",
+          existingImage: (n: number) => `Existing ${n}`,
+          remove: "Remove",
+          productImage: (n: number) => `Product Image ${n}`,
+          addNewImage: "Add New Image",
+          maxImages: "Maximum 5 images allowed",
+          cancel: "Cancel",
+          updating: "Updating...",
+          update: "Update",
+          deleteProductTitle: "Delete Product",
+          deleteConfirm: "Are you sure you want to delete this product? This action cannot be undone.",
+          deleting: "Deleting...",
+          delete: "Delete",
+        };
 
   const images = useMemo(() => {
     if (!product) {
@@ -310,7 +450,7 @@ export default function ProductDetailsPage() {
 
   useEffect(() => {
     if (!productId) {
-      setError("Invalid product id.");
+      setError(language === "ar" ? "رقم المنتج غير صالح." : "Invalid product id.");
       setIsLoading(false);
       return;
     }
@@ -371,7 +511,7 @@ export default function ProductDetailsPage() {
     };
 
     loadProduct();
-  }, [productId]);
+  }, [language, productId]);
 
   useEffect(() => {
     if (images.length === 0) {
@@ -426,7 +566,7 @@ export default function ProductDetailsPage() {
       setProduct((prev) =>
         prev ? { ...prev, isActive: nextStatus, status: nextStatus ? "active" : "inactive" } : prev
       );
-      setToastMessage(nextStatus ? "Product activated." : "Product deactivated.");
+      setToastMessage(nextStatus ? text.activated : text.deactivated);
     } catch (err) {
       setToastError(getErrorMessage(err));
     } finally {
@@ -491,7 +631,7 @@ export default function ProductDetailsPage() {
       if (filesToUpload.length > 0) {
         uploadedUrls = await uploadImages(filesToUpload);
         if (uploadedUrls.length === 0) {
-          setActionError("Image upload failed.");
+          setActionError(text.imageUploadFailed);
           return;
         }
       }
@@ -548,7 +688,7 @@ export default function ProductDetailsPage() {
         payload.images = [...existingEditImages, ...uploadedUrls];
       }
       if (Object.keys(payload).length === 0) {
-        setActionError("No changes to update.");
+        setActionError(text.noChanges);
         return;
       }
       await api.put(`/products/${productId}`, payload);
@@ -562,7 +702,7 @@ export default function ProductDetailsPage() {
         setImagesTouched(false);
       }
       setIsEditOpen(false);
-      setToastMessage("Product updated successfully.");
+      setToastMessage(text.updatedSuccess);
     } catch (err) {
       const message = getErrorMessage(err);
       setActionError(message);
@@ -584,13 +724,13 @@ export default function ProductDetailsPage() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="text-sm text-slate-500">
-              <Link href="/admin/products" className="hover:text-slate-700">
-                Products
+                <Link href="/admin/products" className="hover:text-slate-700">
+                {text.products}
               </Link>{" "}
-              / Product Details
+              / {text.productDetails}
             </div>
             <h1 className="text-2xl font-semibold text-slate-900">
-              {product?.name ?? "Product Details"}
+              {product?.name ?? text.productDetails}
             </h1>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -598,10 +738,10 @@ export default function ProductDetailsPage() {
               href="/admin/products"
               className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100"
             >
-              Back to Products
+              {text.backToProducts}
             </Link>
             <Button variant="secondary" onClick={openEditModal} disabled={!product}>
-              Edit Product
+              {text.editProduct}
             </Button>
             <Button
               variant="secondary"
@@ -609,15 +749,15 @@ export default function ProductDetailsPage() {
               disabled={isSubmitting || !product}
             >
               {resolveStatusLabel(product ?? {}) === "Active"
-                ? "Deactivate Product"
-                : "Activate Product"}
+                ? text.deactivateProduct
+                : text.activateProduct}
             </Button>
             <Button
               variant="danger"
               onClick={() => setIsDeleteOpen(true)}
               disabled={isSubmitting || !product}
             >
-              Delete Product
+              {text.deleteProduct}
             </Button>
           </div>
         </div>
@@ -644,7 +784,7 @@ export default function ProductDetailsPage() {
                   : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
               }`}
             >
-              Overview
+              {text.overviewTab}
             </button>
             <button
               type="button"
@@ -655,7 +795,7 @@ export default function ProductDetailsPage() {
                   : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
               }`}
             >
-              Purchases
+              {text.purchasesTab}
             </button>
           </div>
         </div>
@@ -669,7 +809,7 @@ export default function ProductDetailsPage() {
         ) : error ? (
           <p className="text-sm text-rose-600">{error}</p>
         ) : !product ? (
-          <p className="text-sm text-slate-500">Product not found.</p>
+          <p className="text-sm text-slate-500">{text.productNotFound}</p>
         ) : (
           <>
             {activeTab === "overview" ? (
@@ -677,17 +817,17 @@ export default function ProductDetailsPage() {
                 <div className="grid gap-4 lg:grid-cols-3">
                   <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                     <h2 className="text-base font-semibold text-slate-900">
-                      Product Overview
+                      {text.productOverview}
                     </h2>
                     <div className="mt-3 space-y-2 text-sm text-slate-600">
                       <div className="flex items-center justify-between">
-                        <span>Product Name</span>
+                        <span>{text.productName}</span>
                         <span className="font-medium text-slate-900">
                           {product.name ?? "-"}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span>Status</span>
+                        <span>{text.status}</span>
                         <span
                           className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${resolveStatusBadge(
                             product
@@ -697,13 +837,13 @@ export default function ProductDetailsPage() {
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span>Category</span>
+                        <span>{text.category}</span>
                         <span className="text-slate-900">
                           {product.category?.name ?? "-"}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span>Created At</span>
+                        <span>{text.createdAt}</span>
                         <span className="text-slate-900">
                           {formatDate(product.createdAt ?? product.created_at)}
                         </span>
@@ -713,23 +853,23 @@ export default function ProductDetailsPage() {
 
                   <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                     <h2 className="text-base font-semibold text-slate-900">
-                      Pricing & Stock
+                      {text.pricingAndStock}
                     </h2>
                     <div className="mt-3 space-y-2 text-sm text-slate-600">
                       <div className="flex items-center justify-between">
-                        <span>Price Before Discount</span>
+                        <span>{text.priceBeforeDiscount}</span>
                         <span className="text-slate-900">
                           {priceBefore !== null ? formatCurrency(priceBefore) : "-"}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span>Price After Discount</span>
+                        <span>{text.priceAfterDiscount}</span>
                         <span className="text-slate-900">
                           {priceAfter !== null ? formatCurrency(priceAfter) : "-"}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span>Stock</span>
+                        <span>{text.stock}</span>
                         <span className="text-slate-900">
                           {stockValue !== null ? stockValue : "-"}
                         </span>
@@ -739,19 +879,19 @@ export default function ProductDetailsPage() {
 
                   <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                     <h2 className="text-base font-semibold text-slate-900">
-                      Variant Details
+                      {text.variantDetails}
                     </h2>
                     <div className="mt-3 space-y-2 text-sm text-slate-600">
                       <div className="flex items-center justify-between">
-                        <span>SKU</span>
+                        <span>{text.sku}</span>
                         <span className="text-slate-900">{variantDetails.sku}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span>Size</span>
+                        <span>{text.size}</span>
                         <span className="text-slate-900">{variantDetails.size}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span>Color</span>
+                        <span>{text.color}</span>
                         <span className="flex items-center gap-2 text-slate-900">
                           <span
                             className="h-3 w-3 rounded-full border border-slate-200"
@@ -761,13 +901,13 @@ export default function ProductDetailsPage() {
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span>Material</span>
+                        <span>{text.material}</span>
                         <span className="text-slate-900">
                           {variantDetails.material}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span>Variant Status</span>
+                        <span>{text.variantStatus}</span>
                         <span className="text-slate-900">
                           {variantDetails.status}
                         </span>
@@ -779,17 +919,17 @@ export default function ProductDetailsPage() {
                 <div className="grid gap-4 lg:grid-cols-[2fr,1fr]">
                   <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                     <h2 className="text-base font-semibold text-slate-900">
-                      Product Images
+                      {text.productImages}
                     </h2>
                     {images.length === 0 ? (
                       <p className="mt-3 text-sm text-slate-500">
-                        No images available.
+                        {text.noImagesAvailable}
                       </p>
                     ) : (
                       <div className="mt-3 space-y-3">
                         <img
                           src={selectedImage ?? images[0]}
-                          alt={product.name ?? "Product"}
+                          alt={product.name ?? text.productName}
                           className="h-64 w-full rounded-lg object-contain bg-slate-50"
                         />
                         {images.length > 1 ? (
@@ -807,7 +947,7 @@ export default function ProductDetailsPage() {
                               >
                                 <img
                                   src={image}
-                                  alt={product.name ?? "Product"}
+                                  alt={product.name ?? text.productName}
                                   className="h-16 w-16 rounded-md object-contain bg-slate-50"
                                 />
                               </button>
@@ -820,10 +960,10 @@ export default function ProductDetailsPage() {
 
                   <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                     <h2 className="text-base font-semibold text-slate-900">
-                      Product Description
+                      {text.productDescription}
                     </h2>
                     <p className="mt-3 text-sm text-slate-600">
-                      {product.description ?? "No description provided."}
+                      {product.description ?? text.noDescription}
                     </p>
                   </div>
                 </div>
@@ -831,21 +971,21 @@ export default function ProductDetailsPage() {
             ) : (
               <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                 <h2 className="text-base font-semibold text-slate-900">
-                  Product Purchase History
+                  {text.purchaseHistory}
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  Track purchase orders and supplier deliveries for this product.
+                  {text.purchaseHistorySubtitle}
                 </p>
                 <div className="mt-4 overflow-x-auto">
                   <table className="min-w-[720px] w-full text-left text-sm">
                     <thead className="bg-slate-50 text-slate-600">
                       <tr>
-                        <th className="px-4 py-3 font-semibold">Purchase ID</th>
-                        <th className="px-4 py-3 font-semibold">Supplier</th>
-                        <th className="px-4 py-3 font-semibold">Quantity</th>
-                        <th className="px-4 py-3 font-semibold">Unit Cost</th>
-                        <th className="px-4 py-3 font-semibold">Arrival Date</th>
-                        <th className="px-4 py-3 font-semibold">Status</th>
+                        <th className="px-4 py-3 font-semibold">{text.purchaseId}</th>
+                        <th className="px-4 py-3 font-semibold">{text.supplier}</th>
+                        <th className="px-4 py-3 font-semibold">{text.quantity}</th>
+                        <th className="px-4 py-3 font-semibold">{text.unitCost}</th>
+                        <th className="px-4 py-3 font-semibold">{text.arrivalDate}</th>
+                        <th className="px-4 py-3 font-semibold">{text.status}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200">
@@ -865,7 +1005,7 @@ export default function ProductDetailsPage() {
                       ) : (
                         <tr>
                           <td className="px-4 py-6 text-sm text-slate-500" colSpan={6}>
-                            No purchase history found for this product.
+                            {text.noPurchaseHistory}
                           </td>
                         </tr>
                       )}
@@ -879,26 +1019,26 @@ export default function ProductDetailsPage() {
       </div>
 
       <Modal
-        title="Edit Product"
+        title={text.editProductTitle}
         isOpen={isEditOpen}
         onClose={() => setIsEditOpen(false)}
       >
         <div className="space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">
-              Product Name
+              {text.productName}
             </label>
             <input
               value={nameInput}
               onChange={(event) => setNameInput(event.target.value)}
-              placeholder="Enter product name"
+              placeholder={text.enterProductName}
               className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
             />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
-                Price Before
+                {text.priceBefore}
               </label>
               <input
                 type="number"
@@ -910,7 +1050,7 @@ export default function ProductDetailsPage() {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
-                Price After
+                {text.priceAfter}
               </label>
               <input
                 type="number"
@@ -923,7 +1063,7 @@ export default function ProductDetailsPage() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Stock</label>
+              <label className="text-sm font-medium text-slate-700">{text.stock}</label>
               <input
                 type="number"
                 value={stockInput}
@@ -934,14 +1074,14 @@ export default function ProductDetailsPage() {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
-                Category
+                {text.category}
               </label>
               <select
                 value={categoryIdInput}
                 onChange={(event) => setCategoryIdInput(event.target.value)}
                 className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
               >
-                <option value="">Select category</option>
+                <option value="">{text.selectCategory}</option>
                 {categories.map((category) => (
                   <option key={category.id} value={String(category.id)}>
                     {category.name}
@@ -953,14 +1093,14 @@ export default function ProductDetailsPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
-                Variant
+                {text.variant}
               </label>
               <select
                 value={variantIdInput}
                 onChange={(event) => setVariantIdInput(event.target.value)}
                 className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
               >
-                <option value="">Select variant</option>
+                <option value="">{text.selectVariant}</option>
                 {variants.map((variant) => (
                   <option key={variant.id} value={String(variant.id)}>
                     {variant.sku || variant.name || `Variant #${variant.id}`}
@@ -969,7 +1109,7 @@ export default function ProductDetailsPage() {
               </select>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Status</label>
+              <label className="text-sm font-medium text-slate-700">{text.status}</label>
               <div className="flex gap-4">
                 <label className="flex items-center gap-2 text-sm text-slate-700">
                   <input
@@ -980,7 +1120,7 @@ export default function ProductDetailsPage() {
                     onChange={(event) => setStatusInput(event.target.value)}
                     className="h-4 w-4 accent-slate-900"
                   />
-                  Active
+                  {text.active}
                 </label>
                 <label className="flex items-center gap-2 text-sm text-slate-700">
                   <input
@@ -991,25 +1131,25 @@ export default function ProductDetailsPage() {
                     onChange={(event) => setStatusInput(event.target.value)}
                     className="h-4 w-4 accent-slate-900"
                   />
-                  Not Active
+                  {text.inactive}
                 </label>
               </div>
             </div>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">
-              Description
+              {text.description}
             </label>
             <textarea
               value={descriptionInput}
               onChange={(event) => setDescriptionInput(event.target.value)}
-              placeholder="Optional description"
+              placeholder={text.optionalDescription}
               className="min-h-[96px] w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
             />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">
-              Product Images
+              {text.productImages}
             </label>
             <div className="space-y-3">
               {existingEditImages.length > 0 ? (
@@ -1021,7 +1161,7 @@ export default function ProductDetailsPage() {
                     >
                       <img
                         src={resolveImageUrl(url)}
-                        alt={`Existing ${index + 1}`}
+                        alt={text.existingImage(index + 1)}
                         className="h-8 w-8 rounded object-cover"
                       />
                       <button
@@ -1034,7 +1174,7 @@ export default function ProductDetailsPage() {
                         }}
                         className="text-xs text-rose-600 hover:text-rose-800"
                       >
-                        Remove
+                        {text.remove}
                       </button>
                     </div>
                   ))}
@@ -1043,7 +1183,7 @@ export default function ProductDetailsPage() {
               {editImageInputs.map((file, index) => (
                 <div key={`edit-image-${index}`} className="space-y-1">
                   <label className="text-xs font-medium text-slate-500">
-                    {`Product Image ${existingEditImages.length + index + 1}`}
+                    {text.productImage(existingEditImages.length + index + 1)}
                   </label>
                   <input
                     type="file"
@@ -1083,11 +1223,11 @@ export default function ProductDetailsPage() {
                   }
                   className="rounded-md border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 transition disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Add New Image
+                  {text.addNewImage}
                 </button>
                 {existingEditImages.length + editImageInputs.length >= 5 ? (
                   <span className="text-xs text-slate-500">
-                    Maximum 5 images allowed
+                    {text.maxImages}
                   </span>
                 ) : null}
               </div>
@@ -1104,24 +1244,23 @@ export default function ProductDetailsPage() {
               onClick={() => setIsEditOpen(false)}
               disabled={isSubmitting}
             >
-              Cancel
+              {text.cancel}
             </Button>
             <Button onClick={handleEdit} disabled={isSubmitting}>
-              {isSubmitting ? "Updating..." : "Update"}
+              {isSubmitting ? text.updating : text.update}
             </Button>
           </div>
         </div>
       </Modal>
 
       <Modal
-        title="Delete Product"
+        title={text.deleteProductTitle}
         isOpen={isDeleteOpen}
         onClose={() => setIsDeleteOpen(false)}
       >
         <div className="space-y-4">
           <p className="text-sm text-slate-600">
-            Are you sure you want to delete this product? This action cannot be
-            undone.
+            {text.deleteConfirm}
           </p>
           <div className="flex justify-end gap-2">
             <Button
@@ -1129,14 +1268,14 @@ export default function ProductDetailsPage() {
               onClick={() => setIsDeleteOpen(false)}
               disabled={isSubmitting}
             >
-              Cancel
+              {text.cancel}
             </Button>
             <Button
               variant="danger"
               onClick={handleDelete}
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Deleting..." : "Delete"}
+              {isSubmitting ? text.deleting : text.delete}
             </Button>
           </div>
         </div>

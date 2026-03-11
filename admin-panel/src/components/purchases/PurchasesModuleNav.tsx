@@ -3,15 +3,22 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BarChart3, Receipt, Truck } from "lucide-react";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 const tabs = [
-  { href: "/purchases", label: "Purchases", icon: Truck },
-  { href: "/purchases/costs", label: "Operational Costs", icon: Receipt },
-  { href: "/purchases/summary", label: "Summary", icon: BarChart3 },
-];
+  { href: "/purchases", fallbackLabel: "Purchases", icon: Truck },
+  { href: "/purchases/costs", fallbackLabel: "Operational Costs", icon: Receipt },
+  { href: "/purchases/summary", fallbackLabel: "Summary", icon: BarChart3 },
+] as const;
 
 export default function PurchasesModuleNav() {
   const pathname = usePathname();
+  const { t } = useLocalization();
+  const labels = {
+    "/purchases": t("nav.purchases") || "Purchases",
+    "/purchases/costs": t("nav.operationalCosts") || "Operational Costs",
+    "/purchases/summary": t("nav.summary") || "Summary",
+  } as const;
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
@@ -30,7 +37,7 @@ export default function PurchasesModuleNav() {
               }`}
             >
               <Icon className="h-4 w-4" />
-              {tab.label}
+              {labels[tab.href] ?? tab.fallbackLabel}
             </Link>
           );
         })}

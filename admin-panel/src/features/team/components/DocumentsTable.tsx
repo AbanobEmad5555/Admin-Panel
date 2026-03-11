@@ -1,5 +1,6 @@
 import { ExternalLink, Trash2 } from "lucide-react";
 import type { EmployeeDocument } from "@/features/team/types";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 type DocumentsTableProps = {
   rows: EmployeeDocument[];
@@ -7,16 +8,18 @@ type DocumentsTableProps = {
 };
 
 export default function DocumentsTable({ rows, onDelete }: DocumentsTableProps) {
+  const { language } = useLocalization();
+
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
       <div className="overflow-x-auto">
-        <table className="min-w-[720px] w-full text-left text-sm text-slate-950">
+        <table className={`min-w-[720px] w-full text-sm text-slate-950 ${language === "ar" ? "text-right" : "text-left"}`}>
           <thead className="bg-slate-50 text-slate-950">
             <tr>
-              <th className="px-4 py-3 font-semibold">Type</th>
-              <th className="px-4 py-3 font-semibold">Title</th>
-              <th className="px-4 py-3 font-semibold">Expires At</th>
-              <th className="px-4 py-3 font-semibold">Actions</th>
+              <th className="px-4 py-3 font-semibold">{language === "ar" ? "النوع" : "Type"}</th>
+              <th className="px-4 py-3 font-semibold">{language === "ar" ? "العنوان" : "Title"}</th>
+              <th className="px-4 py-3 font-semibold">{language === "ar" ? "تاريخ الانتهاء" : "Expires At"}</th>
+              <th className="px-4 py-3 font-semibold">{language === "ar" ? "الإجراءات" : "Actions"}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">

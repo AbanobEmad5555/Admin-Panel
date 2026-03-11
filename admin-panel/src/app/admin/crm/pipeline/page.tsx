@@ -10,6 +10,7 @@ import {
 } from "@hello-pangea/dnd";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { assignOrderDeliveryDateForOutForDelivery } from "@/lib/deliveryScheduling";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import api from "@/services/api";
 
 type OrderStatus =
@@ -224,7 +225,7 @@ const formatCurrency = (amount: number) => {
   }).format(amount)} EGP`;
 };
 
-const formatDate = (value: string) => {
+const formatDate = (value: string, language: "en" | "ar") => {
   if (!value) {
     return "-";
   }
@@ -234,19 +235,19 @@ const formatDate = (value: string) => {
     return value;
   }
 
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString(language === "ar" ? "ar-EG" : "en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
   });
 };
 
-const getErrorMessage = (error: unknown) => {
+const getErrorMessage = (error: unknown, fallback: string) => {
   if (typeof error === "object" && error !== null) {
     const axiosError = error as { response?: { data?: { message?: string } } };
-    return axiosError.response?.data?.message ?? "Something went wrong.";
+    return axiosError.response?.data?.message ?? fallback;
   }
-  return "Something went wrong.";
+  return fallback;
 };
 
 const getStatusTheme = (status: OrderStatus) => {
@@ -302,11 +303,69 @@ const updateOrderStatus = async (
 };
 
 export default function CrmPipelinePage() {
+  const { language } = useLocalization();
   const [isMounted, setIsMounted] = useState(false);
   const [columns, setColumns] = useState<ColumnsState>(createEmptyColumns);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
+
+  const text = useMemo(
+    () => ({
+      genericError:
+        language === "ar" ? "حدث خطأ غير متوقع." : "Something went wrong.",
+      loadOrdersFailed:
+        language === "ar" ? "تعذر تحميل الطلبات." : "Failed to load orders.",
+      updateStatusFailed:
+        language === "ar" ? "تعذر تحديث حالة الطلب." : "Failed to update order status.",
+      deliveryDateFailed:
+        language === "ar"
+          ? "تم نقل الطلب إلى خارج للتسليم، لكن فشل تعيين تاريخ التسليم."
+          : "Order moved to Out For Delivery, but assigning delivery date failed.",
+      title: language === "ar" ? "مسار إدارة العملاء" : "CRM Pipeline",
+      subtitle:
+        language === "ar"
+          ? "اسحب الطلبات وأفلتها بين مراحل المسار."
+          : "Drag and drop orders across pipeline stages.",
+      pending: language === "ar" ? "قيد الانتظار" : "Pending",
+      confirmed: language === "ar" ? "مؤكد" : "Confirmed",
+      outForDelivery: language === "ar" ? "خارج للتسليم" : "Out For Delivery",
+      delivered: language === "ar" ? "تم التسليم" : "Delivered",
+      completed: language === "ar" ? "مكتمل" : "Completed",
+      canceled: language === "ar" ? "ملغي" : "Canceled",
+      order: language === "ar" ? "طلب" : "order",
+      orders: language === "ar" ? "طلبات" : "orders",
+      noOrdersInStage:
+        language === "ar" ? "لا توجد طلبات في هذه المرحلة." : "No orders in this stage.",
+      total: language === "ar" ? "الإجمالي" : "Total",
+      payment: language === "ar" ? "الدفع" : "Payment",
+      created: language === "ar" ? "تم الإنشاء" : "Created",
+      view: language === "ar" ? "عرض" : "View",
+    }),
+    [language]
+  );
+
+  const getStatusLabel = useCallback(
+    (status: OrderStatus) => {
+      switch (status) {
+        case "Pending":
+          return text.pending;
+        case "Confirmed":
+          return text.confirmed;
+        case "Out For Delivery":
+          return text.outForDelivery;
+        case "Delivered":
+          return text.delivered;
+        case "Completed":
+          return text.completed;
+        case "Canceled":
+          return text.canceled;
+        default:
+          return status;
+      }
+    },
+    [text]
+  );
 
   useEffect(() => {
     setIsMounted(true);
@@ -348,11 +407,11 @@ export default function CrmPipelinePage() {
 
       setColumns(groupOrdersByStatus(normalizedOrders));
     } catch (err) {
-      setError(getErrorMessage(err) || "Failed to load orders.");
+      setError(getErrorMessage(err, text.loadOrdersFailed));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [text.loadOrdersFailed]);
 
   useEffect(() => {
     void fetchOrders();
@@ -412,18 +471,16 @@ export default function CrmPipelinePage() {
           destinationStatus === "Out For Delivery" &&
           !result.deliveryDateAssigned
         ) {
-          setError(
-            "Order moved to Out For Delivery, but assigning delivery date failed.",
-          );
+          setError(text.deliveryDateFailed);
         }
       } catch (err) {
         setColumns(previousColumns);
-        setError(getErrorMessage(err) || "Failed to update order status.");
+        setError(getErrorMessage(err, text.updateStatusFailed));
       } finally {
         setIsUpdating(false);
       }
     },
-    [columns, isUpdating]
+    [columns, isUpdating, text.deliveryDateFailed, text.updateStatusFailed]
   );
 
   const columnTotals = useMemo(() => {
@@ -448,10 +505,8 @@ export default function CrmPipelinePage() {
     <AdminLayout>
       <div className="space-y-4">
         <div className="px-6 pt-2">
-          <h1 className="text-3xl font-bold text-slate-900">CRM Pipeline</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Drag and drop orders across pipeline stages.
-          </p>
+          <h1 className="text-3xl font-bold text-slate-900">{text.title}</h1>
+          <p className="mt-1 text-sm text-slate-500">{text.subtitle}</p>
         </div>
 
         {error ? (
@@ -488,9 +543,11 @@ export default function CrmPipelinePage() {
                       >
                         <div className="mb-4 flex items-start justify-between gap-3">
                           <div>
-                            <h2 className="text-base font-semibold text-slate-900">{status}</h2>
+                            <h2 className="text-base font-semibold text-slate-900">
+                              {getStatusLabel(status)}
+                            </h2>
                             <p className="mt-1 text-xs text-slate-500">
-                              {orders.length} order{orders.length === 1 ? "" : "s"}
+                              {orders.length} {orders.length === 1 ? text.order : text.orders}
                             </p>
                           </div>
                           <span
@@ -503,7 +560,7 @@ export default function CrmPipelinePage() {
                         <div className="space-y-3">
                           {orders.length === 0 ? (
                             <div className="rounded-lg border border-dashed border-slate-300 bg-white/70 px-3 py-6 text-center text-sm text-slate-500">
-                              No orders in this stage.
+                              {text.noOrdersInStage}
                             </div>
                           ) : null}
 
@@ -525,12 +582,12 @@ export default function CrmPipelinePage() {
                                 >
                                   <div className="mb-2 flex items-start justify-between gap-3">
                                     <p className="text-sm font-semibold text-slate-900">
-                                      Order #{order.id}
+                                      {`${text.order} #${order.id}`}
                                     </p>
                                     <span
                                       className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${theme}`}
                                     >
-                                      {status}
+                                      {getStatusLabel(status)}
                                     </span>
                                   </div>
 
@@ -539,9 +596,9 @@ export default function CrmPipelinePage() {
                                   </p>
 
                                   <div className="mt-3 space-y-1 text-xs text-slate-500">
-                                    <p>Total: {formatCurrency(order.total)}</p>
-                                    <p>Payment: {order.paymentMethod}</p>
-                                    <p>Created: {formatDate(order.createdAt)}</p>
+                                    <p>{text.total}: {formatCurrency(order.total)}</p>
+                                    <p>{text.payment}: {order.paymentMethod}</p>
+                                    <p>{text.created}: {formatDate(order.createdAt, language)}</p>
                                   </div>
 
                                   <div className="mt-4">
@@ -549,7 +606,7 @@ export default function CrmPipelinePage() {
                                       href={`/admin/orders/${order.id}`}
                                       className="inline-flex rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
                                     >
-                                      View
+                                      {text.view}
                                     </Link>
                                   </div>
                                 </article>

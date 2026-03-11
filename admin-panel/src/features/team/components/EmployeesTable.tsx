@@ -3,6 +3,8 @@ import { Eye, FileText, History, Pencil, UserRoundX } from "lucide-react";
 import { formatEGP } from "@/lib/currency";
 import StatusBadge from "@/features/team/components/StatusBadge";
 import type { Employee } from "@/features/team/types";
+import LocalizedDisplayText from "@/modules/shared/components/LocalizedDisplayText";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 type EmployeesTableProps = {
   rows: Employee[];
@@ -11,40 +13,66 @@ type EmployeesTableProps = {
 };
 
 export default function EmployeesTable({ rows, onEdit, onChangeStatus }: EmployeesTableProps) {
+  const { language, t } = useLocalization();
+
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
       <div className="overflow-x-auto">
-        <table className="min-w-[1080px] w-full text-left text-sm">
+        <table className={`min-w-[1080px] w-full text-sm ${language === "ar" ? "text-right" : "text-left"}`}>
           <thead className="bg-slate-50 text-slate-900">
             <tr>
-              <th className="px-4 py-3 font-semibold">Employee Name</th>
-              <th className="px-4 py-3 font-semibold">Employee ID</th>
-              <th className="px-4 py-3 font-semibold">Code</th>
-              <th className="px-4 py-3 font-semibold">Role</th>
-              <th className="px-4 py-3 font-semibold">Employment Type</th>
-              <th className="px-4 py-3 font-semibold">Department</th>
-              <th className="px-4 py-3 font-semibold">Shift Hours</th>
-              <th className="px-4 py-3 font-semibold">Start Date</th>
-              <th className="px-4 py-3 font-semibold">Salary</th>
-              <th className="px-4 py-3 font-semibold">Rating</th>
-              <th className="px-4 py-3 font-semibold">Status</th>
-              <th className="px-4 py-3 font-semibold">Actions</th>
+              <th className="px-4 py-3 font-semibold">{t("field.fullName")}</th>
+              <th className="px-4 py-3 font-semibold">{language === "ar" ? "معرّف الموظف" : "Employee ID"}</th>
+              <th className="px-4 py-3 font-semibold">{language === "ar" ? "الكود" : "Code"}</th>
+              <th className="px-4 py-3 font-semibold">{language === "ar" ? "الدور" : "Role"}</th>
+              <th className="px-4 py-3 font-semibold">{language === "ar" ? "نوع التوظيف" : "Employment Type"}</th>
+              <th className="px-4 py-3 font-semibold">{t("field.department")}</th>
+              <th className="px-4 py-3 font-semibold">{language === "ar" ? "ساعات الوردية" : "Shift Hours"}</th>
+              <th className="px-4 py-3 font-semibold">{language === "ar" ? "تاريخ البداية" : "Start Date"}</th>
+              <th className="px-4 py-3 font-semibold">{language === "ar" ? "الراتب" : "Salary"}</th>
+              <th className="px-4 py-3 font-semibold">{language === "ar" ? "التقييم" : "Rating"}</th>
+              <th className="px-4 py-3 font-semibold">{language === "ar" ? "الحالة" : "Status"}</th>
+              <th className="px-4 py-3 font-semibold">{language === "ar" ? "الإجراءات" : "Actions"}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
             {rows.map((row) => (
               <tr key={row.id} className="text-slate-900">
                 <td className="px-4 py-3">
-                  <div className="font-medium text-slate-900">{row.fullName}</div>
+                  <div className="font-medium text-slate-900">
+                    <LocalizedDisplayText
+                      valueEn={row.fullNameEn}
+                      valueAr={row.fullNameAr}
+                      legacyValue={row.fullName}
+                    />
+                  </div>
                   <div className="text-xs text-slate-700">{row.email || "-"}</div>
                 </td>
-                <td className="px-4 py-3">{row.id || "Auto"}</td>
+                <td className="px-4 py-3">{row.id || (language === "ar" ? "تلقائي" : "Auto")}</td>
                 <td className="px-4 py-3">{row.employeeCode || `AUTO-${row.id.slice(0, 6)}`}</td>
                 <td className="px-4 py-3">{row.role}</td>
                 <td className="px-4 py-3">
-                  {row.employmentType ? row.employmentType.replace("_", " ") : "-"}
+                  {row.employmentType
+                    ? row.employmentType === "FULL_TIME"
+                      ? language === "ar"
+                        ? "دوام كامل"
+                        : "FULL TIME"
+                      : row.employmentType === "PART_TIME"
+                        ? language === "ar"
+                          ? "دوام جزئي"
+                          : "PART TIME"
+                        : language === "ar"
+                          ? "متدرب"
+                          : "TRAINEE"
+                    : "-"}
                 </td>
-                <td className="px-4 py-3">{row.department || "Unassigned"}</td>
+                <td className="px-4 py-3">
+                  <LocalizedDisplayText
+                    valueEn={row.departmentEn}
+                    valueAr={row.departmentAr}
+                    legacyValue={row.department || "Unassigned"}
+                  />
+                </td>
                 <td className="px-4 py-3">
                   {row.shiftStart && row.shiftEnd ? `${row.shiftStart} - ${row.shiftEnd}` : "-"}
                 </td>

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import type { PosPaymentLine, PosPaymentMethod } from "@/modules/pos/types";
 import { formatEGP } from "@/lib/currency";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 type PaymentModalProps = {
   open: boolean;
@@ -15,7 +16,36 @@ type PaymentModalProps = {
 const methods: PosPaymentMethod[] = ["CASH", "CARD", "WALLET"];
 
 export default function PaymentModal({ open, total, pending, onClose, onSubmit }: PaymentModalProps) {
+  const { language } = useLocalization();
   const [lines, setLines] = useState<PosPaymentLine[]>([{ method: "CASH", amount: total }]);
+  const text =
+    language === "ar"
+      ? {
+          title: "الدفع",
+          close: "إغلاق",
+          reference: "مرجع",
+          remove: "إزالة",
+          addSplitPayment: "إضافة دفعة مجزأة",
+          total: "الإجمالي",
+          paid: "المدفوع",
+          due: "المتبقي",
+          change: "الباقي",
+          processing: "جارٍ المعالجة...",
+          confirmPayment: "تأكيد الدفع",
+        }
+      : {
+          title: "Payment",
+          close: "Close",
+          reference: "Reference",
+          remove: "Remove",
+          addSplitPayment: "Add split payment",
+          total: "Total",
+          paid: "Paid",
+          due: "Due",
+          change: "Change",
+          processing: "Processing...",
+          confirmPayment: "Confirm Payment",
+        };
 
   const paid = useMemo(
     () => lines.reduce((sum, line) => sum + (Number.isFinite(line.amount) ? line.amount : 0), 0),
@@ -32,8 +62,8 @@ export default function PaymentModal({ open, total, pending, onClose, onSubmit }
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4">
       <div className="w-full max-w-2xl rounded-xl bg-white p-5 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-bold text-slate-900">Payment</h3>
-          <button type="button" onClick={onClose} className="text-sm text-slate-500">Close</button>
+          <h3 className="text-lg font-bold text-slate-900">{text.title}</h3>
+          <button type="button" onClick={onClose} className="text-sm text-slate-500">{text.close}</button>
         </div>
 
         <div className="space-y-3">
@@ -79,7 +109,7 @@ export default function PaymentModal({ open, total, pending, onClose, onSubmit }
                     )
                   )
                 }
-                placeholder="Reference"
+                placeholder={text.reference}
                 className="rounded border border-slate-300 px-2 py-2 text-sm"
               />
               <button
@@ -88,7 +118,7 @@ export default function PaymentModal({ open, total, pending, onClose, onSubmit }
                 disabled={lines.length <= 1}
                 className="rounded border border-rose-200 px-2 py-2 text-xs text-rose-600 disabled:opacity-40"
               >
-                Remove
+                {text.remove}
               </button>
             </div>
           ))}
@@ -99,14 +129,14 @@ export default function PaymentModal({ open, total, pending, onClose, onSubmit }
           onClick={() => setLines((prev) => [...prev, { method: "CARD", amount: 0 }])}
           className="mt-3 rounded border border-violet-200 px-3 py-2 text-sm text-violet-700"
         >
-          Add split payment
+          {text.addSplitPayment}
         </button>
 
         <div className="mt-4 rounded bg-slate-50 p-3 text-sm">
-          <p className="flex justify-between"><span>Total</span><span>{formatEGP(total)}</span></p>
-          <p className="flex justify-between"><span>Paid</span><span>{formatEGP(paid)}</span></p>
-          <p className="flex justify-between"><span>Due</span><span>{formatEGP(due)}</span></p>
-          <p className="flex justify-between font-semibold"><span>Change</span><span>{formatEGP(change)}</span></p>
+          <p className="flex justify-between"><span>{text.total}</span><span>{formatEGP(total)}</span></p>
+          <p className="flex justify-between"><span>{text.paid}</span><span>{formatEGP(paid)}</span></p>
+          <p className="flex justify-between"><span>{text.due}</span><span>{formatEGP(due)}</span></p>
+          <p className="flex justify-between font-semibold"><span>{text.change}</span><span>{formatEGP(change)}</span></p>
         </div>
 
         <button
@@ -115,7 +145,7 @@ export default function PaymentModal({ open, total, pending, onClose, onSubmit }
           disabled={pending || due > 0}
           className="mt-4 w-full rounded-md bg-violet-600 px-4 py-3 text-sm font-bold text-white disabled:bg-violet-300"
         >
-          {pending ? "Processing..." : "Confirm Payment"}
+          {pending ? text.processing : text.confirmPayment}
         </button>
       </div>
     </div>

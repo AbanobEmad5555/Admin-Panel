@@ -16,7 +16,8 @@ const optionalEmail = z
 
 export const leadSchema = z
   .object({
-    name: z.string().trim().min(1, "Name is required"),
+    nameEn: z.string().trim().min(1, "Name (English) is required"),
+    nameAr: z.string().trim().optional().or(z.literal("")),
     phone: z.string().trim().min(1, "Phone is required"),
     email: optionalEmail,
     source: z.string().trim().min(1, "Source is required"),
@@ -34,7 +35,8 @@ export const leadSchema = z
     skipCustomerLinkValidation: z.boolean().optional(),
     customerLinkType: z.enum(["existing", "temp"]),
     userId: z.coerce.number().int().positive().optional(),
-    tempName: z.string().trim().optional(),
+    tempNameEn: z.string().trim().optional(),
+    tempNameAr: z.string().trim().optional(),
     tempPhone: z.string().trim().optional(),
     tempEmail: optionalEmail,
     tagOverride: z.boolean().default(false),
@@ -62,11 +64,11 @@ export const leadSchema = z
     }
 
     if (values.customerLinkType === "temp") {
-      if (!values.tempName?.trim()) {
+      if (!values.tempNameEn?.trim()) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ["tempName"],
-          message: "Temp user name is required",
+          path: ["tempNameEn"],
+          message: "Temp user name (English) is required",
         });
       }
 

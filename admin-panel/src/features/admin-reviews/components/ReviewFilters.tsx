@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
-import type { AdminReviewsFilters, ReviewStatus } from "@/features/admin-reviews/api/adminReviews.types";
+import type {
+  AdminReviewsFilters,
+  ReviewStatus,
+} from "@/features/admin-reviews/api/adminReviews.types";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 type ReviewFiltersProps = {
   value: AdminReviewsFilters;
@@ -31,8 +35,56 @@ const toDraftFromValue = (value: AdminReviewsFilters): AdminReviewsFilters => ({
   endDate: value.endDate,
 });
 
-export default function ReviewFilters({ value, onApply, onClear }: ReviewFiltersProps) {
-  const [draft, setDraft] = useState<AdminReviewsFilters>(() => toDraftFromValue(value));
+export default function ReviewFilters({
+  value,
+  onApply,
+  onClear,
+}: ReviewFiltersProps) {
+  const { language } = useLocalization();
+  const [draft, setDraft] = useState<AdminReviewsFilters>(() =>
+    toDraftFromValue(value)
+  );
+
+  const statusOptions: Array<{ label: string; value: ReviewStatus | "" }> =
+    language === "ar"
+      ? [
+          { label: "الكل", value: "" },
+          { label: "قيد المراجعة", value: "PENDING" },
+          { label: "مقبول", value: "APPROVED" },
+          { label: "مخفي", value: "HIDDEN" },
+        ]
+      : STATUS_OPTIONS;
+
+  const text =
+    language === "ar"
+      ? {
+          reviewId: "معرّف التقييم",
+          status: "الحالة",
+          productId: "معرّف المنتج",
+          userId: "معرّف المستخدم",
+          startDate: "من تاريخ",
+          endDate: "إلى تاريخ",
+          editedReviews: "التقييمات المعدلة",
+          showOnlyEdited: "عرض التقييمات المعدلة فقط",
+          pageSize: "حجم الصفحة",
+          optional: "اختياري",
+          clear: "مسح",
+          filter: "تصفية",
+        }
+      : {
+          reviewId: "Review ID",
+          status: "Status",
+          productId: "Product ID",
+          userId: "User ID",
+          startDate: "Start Date",
+          endDate: "End Date",
+          editedReviews: "Edited Reviews",
+          showOnlyEdited: "Show only edited reviews",
+          pageSize: "Page Size",
+          optional: "Optional",
+          clear: "Clear",
+          filter: "Filter",
+        };
 
   useEffect(() => {
     setDraft(toDraftFromValue(value));
@@ -42,30 +94,39 @@ export default function ReviewFilters({ value, onApply, onClear }: ReviewFilters
     <section className="sticky top-16 z-10 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-8">
         <div>
-          <label className="text-xs font-medium text-slate-600">Review ID</label>
+          <label className="text-xs font-medium text-slate-600">
+            {text.reviewId}
+          </label>
           <input
             value={draft.reviewId ?? ""}
             onChange={(event) =>
-              setDraft((prev) => ({ ...prev, reviewId: event.target.value || undefined }))
+              setDraft((prev) => ({
+                ...prev,
+                reviewId: event.target.value || undefined,
+              }))
             }
-            placeholder="Optional"
+            placeholder={text.optional}
             className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500"
           />
         </div>
 
         <div>
-          <label className="text-xs font-medium text-slate-600">Status</label>
+          <label className="text-xs font-medium text-slate-600">
+            {text.status}
+          </label>
           <select
             value={draft.status ?? ""}
             onChange={(event) =>
               setDraft((prev) => ({
                 ...prev,
-                status: (event.target.value || undefined) as ReviewStatus | undefined,
+                status: (event.target.value || undefined) as
+                  | ReviewStatus
+                  | undefined,
               }))
             }
             className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-900"
           >
-            {STATUS_OPTIONS.map((option) => (
+            {statusOptions.map((option) => (
               <option key={option.label} value={option.value}>
                 {option.label}
               </option>
@@ -74,36 +135,51 @@ export default function ReviewFilters({ value, onApply, onClear }: ReviewFilters
         </div>
 
         <div>
-          <label className="text-xs font-medium text-slate-600">Product ID</label>
+          <label className="text-xs font-medium text-slate-600">
+            {text.productId}
+          </label>
           <input
             value={draft.productId ?? ""}
             onChange={(event) =>
-              setDraft((prev) => ({ ...prev, productId: event.target.value || undefined }))
+              setDraft((prev) => ({
+                ...prev,
+                productId: event.target.value || undefined,
+              }))
             }
-            placeholder="Optional"
+            placeholder={text.optional}
             className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500"
           />
         </div>
 
         <div>
-          <label className="text-xs font-medium text-slate-600">User ID</label>
+          <label className="text-xs font-medium text-slate-600">
+            {text.userId}
+          </label>
           <input
             value={draft.userId ?? ""}
             onChange={(event) =>
-              setDraft((prev) => ({ ...prev, userId: event.target.value || undefined }))
+              setDraft((prev) => ({
+                ...prev,
+                userId: event.target.value || undefined,
+              }))
             }
-            placeholder="Optional"
+            placeholder={text.optional}
             className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500"
           />
         </div>
 
         <div>
-          <label className="text-xs font-medium text-slate-600">Start Date</label>
+          <label className="text-xs font-medium text-slate-600">
+            {text.startDate}
+          </label>
           <input
             type="date"
             value={draft.startDate ?? ""}
             onChange={(event) =>
-              setDraft((prev) => ({ ...prev, startDate: event.target.value || undefined }))
+              setDraft((prev) => ({
+                ...prev,
+                startDate: event.target.value || undefined,
+              }))
             }
             onClick={(event) => {
               event.currentTarget.showPicker?.();
@@ -116,12 +192,17 @@ export default function ReviewFilters({ value, onApply, onClear }: ReviewFilters
         </div>
 
         <div>
-          <label className="text-xs font-medium text-slate-600">End Date</label>
+          <label className="text-xs font-medium text-slate-600">
+            {text.endDate}
+          </label>
           <input
             type="date"
             value={draft.endDate ?? ""}
             onChange={(event) =>
-              setDraft((prev) => ({ ...prev, endDate: event.target.value || undefined }))
+              setDraft((prev) => ({
+                ...prev,
+                endDate: event.target.value || undefined,
+              }))
             }
             onClick={(event) => {
               event.currentTarget.showPicker?.();
@@ -134,26 +215,36 @@ export default function ReviewFilters({ value, onApply, onClear }: ReviewFilters
         </div>
 
         <div>
-          <label className="text-xs font-medium text-slate-600">Edited Reviews</label>
+          <label className="text-xs font-medium text-slate-600">
+            {text.editedReviews}
+          </label>
           <label className="mt-1 inline-flex items-center gap-2 rounded border border-slate-300 px-3 py-2 text-sm text-slate-900">
             <input
               type="checkbox"
               checked={Boolean(draft.onlyEdited)}
               onChange={(event) =>
-                setDraft((prev) => ({ ...prev, onlyEdited: event.target.checked }))
+                setDraft((prev) => ({
+                  ...prev,
+                  onlyEdited: event.target.checked,
+                }))
               }
               className="h-4 w-4 accent-slate-900"
             />
-            Show only edited reviews
+            {text.showOnlyEdited}
           </label>
         </div>
 
         <div>
-          <label className="text-xs font-medium text-slate-600">Page Size</label>
+          <label className="text-xs font-medium text-slate-600">
+            {text.pageSize}
+          </label>
           <select
             value={draft.limit}
             onChange={(event) =>
-              setDraft((prev) => ({ ...prev, limit: Number(event.target.value) }))
+              setDraft((prev) => ({
+                ...prev,
+                limit: Number(event.target.value),
+              }))
             }
             className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-900"
           >
@@ -180,7 +271,7 @@ export default function ReviewFilters({ value, onApply, onClear }: ReviewFilters
             onClear(cleared);
           }}
         >
-          Clear
+          {text.clear}
         </Button>
         <Button
           type="button"
@@ -191,7 +282,7 @@ export default function ReviewFilters({ value, onApply, onClear }: ReviewFilters
             })
           }
         >
-          Filter
+          {text.filter}
         </Button>
       </div>
     </section>

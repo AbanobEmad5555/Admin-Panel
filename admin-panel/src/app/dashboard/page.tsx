@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AdminLayout from "@/components/layout/AdminLayout";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import api from "@/services/api";
 
 type StatsResponse = {
@@ -31,6 +32,13 @@ const statsConfig = [
   { key: "orders", label: "Total Orders" },
   { key: "users", label: "Total Users" },
 ] as const;
+
+const statsLabelMap = {
+  products: { en: "Total Products", ar: "إجمالي المنتجات" },
+  categories: { en: "Total Categories", ar: "إجمالي الفئات" },
+  orders: { en: "Total Orders", ar: "إجمالي الطلبات" },
+  users: { en: "Total Users", ar: "إجمالي المستخدمين" },
+} as const;
 
 const formatCurrency = (value: number) =>
   `${new Intl.NumberFormat("en-EG", {
@@ -147,6 +155,7 @@ const normalizeRecentOrder = (order: any): RecentOrder => {
 };
 
 export default function DashboardPage() {
+  const { language } = useLocalization();
   const [stats, setStats] = useState<StatsResponse | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
   const [statsError, setStatsError] = useState("");
@@ -246,8 +255,12 @@ export default function DashboardPage() {
     <AdminLayout>
       <div className="space-y-8">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Dashboard</h1>
-          <p className="text-sm text-slate-500">Admin Overview</p>
+          <h1 className="text-2xl font-semibold text-slate-900">
+            {language === "ar" ? "لوحة المعلومات" : "Dashboard"}
+          </h1>
+          <p className="text-sm text-slate-500">
+            {language === "ar" ? "نظرة عامة للإدارة" : "Admin Overview"}
+          </p>
         </div>
 
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -256,7 +269,9 @@ export default function DashboardPage() {
               key={item.key}
               className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
             >
-              <p className="text-sm font-medium text-slate-500">{item.label}</p>
+              <p className="text-sm font-medium text-slate-500">
+                {statsLabelMap[item.key][language]}
+              </p>
               {statsLoading ? (
                 <div className="mt-3 h-8 w-24 animate-pulse rounded bg-slate-200" />
               ) : statsError ? (
@@ -274,7 +289,7 @@ export default function DashboardPage() {
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-slate-900">
-                Recent Orders
+                {language === "ar" ? "أحدث الطلبات" : "Recent Orders"}
               </h2>
             </div>
             {ordersLoading ? (
@@ -286,17 +301,19 @@ export default function DashboardPage() {
             ) : ordersError ? (
               <p className="text-sm text-rose-600">{ordersError}</p>
             ) : recentOrders.length === 0 ? (
-              <p className="text-sm text-slate-500">No recent orders.</p>
+              <p className="text-sm text-slate-500">
+                {language === "ar" ? "لا توجد طلبات حديثة." : "No recent orders."}
+              </p>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
+                <table className={`w-full text-sm ${language === "ar" ? "text-right" : "text-left"}`}>
                   <thead className="border-b border-slate-200 text-slate-500">
                     <tr>
-                      <th className="py-2 pr-4 font-medium">Order ID</th>
-                      <th className="py-2 pr-4 font-medium">User Name</th>
-                      <th className="py-2 pr-4 font-medium">Total Price</th>
-                      <th className="py-2 pr-4 font-medium">Status</th>
-                      <th className="py-2 font-medium">Created Date</th>
+                      <th className="py-2 pr-4 font-medium">{language === "ar" ? "رقم الطلب" : "Order ID"}</th>
+                      <th className="py-2 pr-4 font-medium">{language === "ar" ? "اسم المستخدم" : "User Name"}</th>
+                      <th className="py-2 pr-4 font-medium">{language === "ar" ? "إجمالي السعر" : "Total Price"}</th>
+                      <th className="py-2 pr-4 font-medium">{language === "ar" ? "الحالة" : "Status"}</th>
+                      <th className="py-2 font-medium">{language === "ar" ? "تاريخ الإنشاء" : "Created Date"}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
@@ -328,7 +345,7 @@ export default function DashboardPage() {
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-slate-900">
-                Low Stock Products
+                {language === "ar" ? "منتجات منخفضة المخزون" : "Low Stock Products"}
               </h2>
             </div>
             {lowStockLoading ? (
@@ -340,7 +357,9 @@ export default function DashboardPage() {
             ) : lowStockError ? (
               <p className="text-sm text-rose-600">{lowStockError}</p>
             ) : lowStock.length === 0 ? (
-              <p className="text-sm text-slate-500">No low stock products.</p>
+              <p className="text-sm text-slate-500">
+                {language === "ar" ? "لا توجد منتجات منخفضة المخزون." : "No low stock products."}
+              </p>
             ) : (
               <ul className="space-y-3">
                 {lowStock.map((product) => (
@@ -352,7 +371,7 @@ export default function DashboardPage() {
                       {product.name}
                     </span>
                     <span className="text-sm text-slate-500">
-                      Stock: {product.stock}
+                      {language === "ar" ? `المخزون: ${product.stock}` : `Stock: ${product.stock}`}
                     </span>
                   </li>
                 ))}

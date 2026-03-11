@@ -2,6 +2,7 @@
 
 import type { AdminReviewExtended } from "@/features/admin-reviews/api/adminReviews.types";
 import ReviewRow from "@/features/admin-reviews/components/ReviewRow";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 type ReviewsTableProps = {
   reviews: AdminReviewExtended[];
@@ -37,19 +38,34 @@ export default function ReviewsTable({
   onHide,
   onDelete,
 }: ReviewsTableProps) {
+  const { language } = useLocalization();
+  const tableColumns =
+    language === "ar"
+      ? ["معرّف التقييم", "المنتج", "المستخدم", "الهاتف", "التقييم", "الحالة", "التاريخ", "الإجراءات"]
+      : TABLE_COLUMNS;
+  const text =
+    language === "ar"
+      ? {
+          loadError: "فشل تحميل التقييمات.",
+          empty: "لا توجد تقييمات مطابقة للتصفية المحددة.",
+        }
+      : {
+          loadError: "Failed to load reviews.",
+          empty: "No reviews found for selected filters.",
+        };
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
       {isError ? (
         <div className="border-b border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-          {errorMessage || "Failed to load reviews."}
+          {errorMessage || text.loadError}
         </div>
       ) : null}
 
       <div className="overflow-x-auto">
-        <table className="min-w-[1120px] w-full text-left">
+        <table className={`min-w-[1120px] w-full ${language === "ar" ? "text-right" : "text-left"}`}>
           <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
             <tr>
-              {TABLE_COLUMNS.map((column) => (
+              {tableColumns.map((column) => (
                 <th key={column} className="px-3 py-3 font-semibold">
                   {column}
                 </th>
@@ -60,7 +76,7 @@ export default function ReviewsTable({
             {isLoading
               ? Array.from({ length: 6 }).map((_, index) => (
                   <tr key={`skeleton-${index}`}>
-                    {TABLE_COLUMNS.map((column) => (
+                    {tableColumns.map((column) => (
                       <td key={`${column}-${index}`} className="px-3 py-3">
                         <div className="h-4 w-full animate-pulse rounded bg-slate-200" />
                       </td>
@@ -71,10 +87,8 @@ export default function ReviewsTable({
 
             {!isLoading && !isError && reviews.length === 0 ? (
               <tr>
-                <td colSpan={TABLE_COLUMNS.length} className="px-3 py-12 text-center">
-                  <p className="text-base font-semibold text-slate-800">
-                    No reviews found for selected filters.
-                  </p>
+                <td colSpan={tableColumns.length} className="px-3 py-12 text-center">
+                  <p className="text-base font-semibold text-slate-800">{text.empty}</p>
                 </td>
               </tr>
             ) : null}

@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import type {
   CalendarOrderEventExtendedProps,
   UpdateOrderDeliveryDatePayload,
@@ -24,7 +25,26 @@ export default function OrderDeliveryDateModal({
   onClose,
   onSubmit,
 }: OrderDeliveryDateModalProps) {
+  const { language } = useLocalization();
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const text =
+    language === "ar"
+      ? {
+          editDeliveryDate: "تعديل موعد التسليم",
+          deliveryDate: "موعد التسليم",
+          cancel: "إلغاء",
+          saving: "جارٍ الحفظ...",
+          saveDate: "حفظ الموعد",
+          order: "الطلب",
+        }
+      : {
+          editDeliveryDate: "Edit Delivery Date",
+          deliveryDate: "Delivery Date",
+          cancel: "Cancel",
+          saving: "Saving...",
+          saveDate: "Save Date",
+          order: "Order",
+        };
 
   const openNativePicker = () => {
     if (!inputRef.current) {
@@ -49,13 +69,17 @@ export default function OrderDeliveryDateModal({
 
   return (
     <Modal
-      title={order ? `Edit Delivery Date - Order #${order.orderNumber}` : "Edit Delivery Date"}
+      title={
+        order
+          ? `${text.editDeliveryDate} - ${text.order} #${order.orderNumber}`
+          : text.editDeliveryDate
+      }
       isOpen={isOpen}
       onClose={onClose}
     >
       <div className="space-y-4">
         <div className="space-y-1">
-          <label className="block text-sm font-semibold text-slate-900">Delivery Date</label>
+          <label className="block text-sm font-semibold text-slate-900">{text.deliveryDate}</label>
           <input
             key={order?.orderId ?? "delivery-date"}
             ref={inputRef}
@@ -69,14 +93,14 @@ export default function OrderDeliveryDateModal({
 
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>
-            Cancel
+            {text.cancel}
           </Button>
           <Button
             type="button"
             onClick={() => void handleSubmit()}
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Saving..." : "Save Date"}
+            {isSubmitting ? text.saving : text.saveDate}
           </Button>
         </div>
       </div>

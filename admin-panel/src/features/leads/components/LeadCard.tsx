@@ -4,6 +4,7 @@ import { CalendarDays, Phone } from "lucide-react";
 import PriorityBadge from "@/features/leads/components/PriorityBadge";
 import TagBadge from "@/features/leads/components/TagBadge";
 import type { Lead } from "@/features/leads/types";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 type LeadCardProps = {
   lead: Lead;
@@ -37,6 +38,19 @@ export default function LeadCard({
   dragHandleProps,
   isDragging = false,
 }: LeadCardProps) {
+  const { language } = useLocalization();
+  const text =
+    language === "ar"
+      ? {
+          unassigned: "غير معيّن",
+          followUp: "المتابعة",
+          view: "عرض",
+        }
+      : {
+          unassigned: "Unassigned",
+          followUp: "Follow up",
+          view: "View",
+        };
   return (
     <div
       ref={innerRef}
@@ -64,13 +78,13 @@ export default function LeadCard({
             {lead.assignedTo.name}
           </Link>
         ) : (
-          <span className="text-xs text-slate-500">{lead.assignedTo?.name ?? "Unassigned"}</span>
+          <span className="text-xs text-slate-500">{lead.assignedTo?.name ?? text.unassigned}</span>
         )}
       </div>
 
       <div className="mt-3 flex items-center gap-1 text-xs text-slate-500">
         <CalendarDays className="h-3.5 w-3.5" />
-        <span>Follow up: {formatDate(lead.followUpDate)}</span>
+        <span>{text.followUp}: {formatDate(lead.followUpDate)}</span>
       </div>
 
       <div className="mt-4">
@@ -78,7 +92,7 @@ export default function LeadCard({
           href={`/admin/crm/leads/${lead.id}`}
           className="inline-flex rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
         >
-          View
+          {text.view}
         </Link>
       </div>
     </div>

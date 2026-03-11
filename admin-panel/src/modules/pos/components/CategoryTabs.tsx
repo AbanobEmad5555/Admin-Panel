@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
+
 type CategoryTabsProps = {
   categories: string[];
   activeCategory: string;
@@ -7,6 +9,7 @@ type CategoryTabsProps = {
 };
 
 export default function CategoryTabs({ categories, activeCategory, onChange }: CategoryTabsProps) {
+  const { language } = useLocalization();
   return (
     <div className="flex flex-wrap gap-2 rounded-xl bg-white p-3 shadow-sm">
       {categories.map((category) => (
@@ -20,7 +23,7 @@ export default function CategoryTabs({ categories, activeCategory, onChange }: C
               : "bg-violet-50 text-violet-700 hover:bg-violet-100"
           }`}
         >
-          {category}
+          {language === "ar" && category === "All" ? "الكل" : category}
         </button>
       ))}
     </div>
