@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import GradientCard from "@/components/ui/GradientCard";
+import GlassTable from "@/components/ui/GlassTable";
 import type { DashboardOrderPreviewItem } from "@/modules/dashboard/api/dashboard.types";
 import {
   formatDashboardCurrency,
@@ -38,73 +42,92 @@ export default function DashboardOrdersPreviewTable({
   viewAllHref,
 }: DashboardOrdersPreviewTableProps) {
   const router = useRouter();
-  const { language, t } = useLocalization();
+  const { language } = useLocalization();
+  const text =
+    language === "ar"
+      ? {
+          viewAll: "عرض الكل",
+          order: "الطلب",
+          customer: "العميل",
+          status: "الحالة",
+          payment: "الدفع",
+          total: "الإجمالي",
+          createdAt: "تاريخ الإنشاء",
+        }
+      : {
+          viewAll: "View all",
+          order: "Order",
+          customer: "Customer",
+          status: "Status",
+          payment: "Payment",
+          total: "Total",
+          createdAt: "Created At",
+        };
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <GradientCard as="section" glow padding="md">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
-            <span className="inline-flex min-w-8 items-center justify-center rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
+            <h3 className="text-sm font-semibold text-slate-50">{title}</h3>
+            <Badge tone="info" className="min-w-8 justify-center px-2">
               {count}
-            </span>
+            </Badge>
           </div>
-          <p className="text-xs text-slate-500">{description}</p>
+          <p className="text-xs text-slate-400">{description}</p>
         </div>
-        <Link
-          href={viewAllHref}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100"
-        >
-          {t("dashboard.orders.viewAll", "View all")}
+        <Link href={viewAllHref}>
+          <Button variant="secondary" size="sm">
+            {text.viewAll}
+          </Button>
         </Link>
       </div>
 
       {items.length === 0 ? (
-        <div className="mt-4 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+        <div className="mt-4 rounded-2xl border border-dashed border-white/10 bg-white/5 px-4 py-8 text-center text-sm text-slate-400">
           {emptyText}
         </div>
       ) : (
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-[720px] text-left text-sm">
-            <thead className="border-b border-slate-200 text-slate-500">
-              <tr>
-                <th className="py-2 pr-4 font-medium">{t("dashboard.orders.orderNumber", "Order")}</th>
-                <th className="py-2 pr-4 font-medium">{t("dashboard.orders.customer", "Customer")}</th>
-                <th className="py-2 pr-4 font-medium">{t("dashboard.orders.status", "Status")}</th>
-                <th className="py-2 pr-4 font-medium">{t("dashboard.orders.payment", "Payment")}</th>
-                <th className="py-2 pr-4 font-medium">{t("dashboard.orders.total", "Total")}</th>
-                <th className="py-2 pr-4 font-medium">{t("dashboard.orders.createdAt", "Created At")}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200 text-slate-700">
-              {items.map((item) => (
-                <tr
-                  key={`${item.orderType}-${item.id}`}
-                  className="cursor-pointer transition hover:bg-slate-50"
-                  onClick={() => router.push(getOrderHref(item))}
-                >
-                  <td className="py-3 pr-4 font-medium text-slate-900">{item.orderNumber}</td>
-                  <td className="py-3 pr-4">{item.customerName}</td>
-                  <td className="py-3 pr-4">
-                    <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
-                      {formatDashboardStatus(item.status)}
-                    </span>
-                  </td>
-                  <td className="py-3 pr-4">
-                    <div className="space-y-1">
-                      <p>{formatDashboardStatus(item.paymentType)}</p>
-                      <p className="text-xs text-slate-500">{formatDashboardStatus(item.paymentStatus)}</p>
-                    </div>
-                  </td>
-                  <td className="py-3 pr-4">{formatDashboardCurrency(item.total)}</td>
-                  <td className="py-3 pr-4">{formatDashboardDateTime(item.createdAt, language)}</td>
+        <div className="mt-4">
+          <GlassTable className="rounded-2xl bg-white/[0.04]">
+            <table className="w-full min-w-[720px] text-left text-sm">
+              <thead className="border-b border-white/10 text-slate-500">
+                <tr>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em]">{text.order}</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em]">{text.customer}</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em]">{text.status}</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em]">{text.payment}</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em]">{text.total}</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em]">{text.createdAt}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-white/10 text-slate-200">
+                {items.map((item) => (
+                  <tr
+                    key={`${item.orderType}-${item.id}`}
+                    className="cursor-pointer transition hover:bg-white/6"
+                    onClick={() => router.push(getOrderHref(item))}
+                  >
+                    <td className="px-4 py-3 font-medium text-slate-50">{item.orderNumber}</td>
+                    <td className="px-4 py-3">{item.customerName}</td>
+                    <td className="px-4 py-3">
+                      <Badge>{formatDashboardStatus(item.status)}</Badge>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="space-y-1">
+                        <p>{formatDashboardStatus(item.paymentType)}</p>
+                        <p className="text-xs text-slate-500">{formatDashboardStatus(item.paymentStatus)}</p>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">{formatDashboardCurrency(item.total)}</td>
+                    <td className="px-4 py-3">{formatDashboardDateTime(item.createdAt, language)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </GlassTable>
         </div>
       )}
-    </section>
+    </GradientCard>
   );
 }

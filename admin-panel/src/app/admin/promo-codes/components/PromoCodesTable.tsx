@@ -1,6 +1,8 @@
 "use client";
 
+import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
+import GlassTable from "@/components/ui/GlassTable";
 import type { PromoCodeRecord } from "@/services/promoCodesApi";
 import { formatEGP } from "@/lib/currency";
 import { useLocalization } from "@/modules/localization/LocalizationProvider";
@@ -103,20 +105,19 @@ export default function PromoCodesTable({
           fixed: "Fixed",
           percentage: "Percentage",
         };
+
   if (isLoading) {
-    return <p className="text-sm text-slate-600">{text.loading}</p>;
+    return <p className="text-sm text-slate-300">{text.loading}</p>;
   }
+
   if (promoCodes.length === 0) {
-    return (
-      <p className="text-sm text-slate-600">
-        {emptyText ?? text.empty}
-      </p>
-    );
+    return <p className="text-sm text-slate-300">{emptyText ?? text.empty}</p>;
   }
+
   return (
-    <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
+    <GlassTable>
       <table className="min-w-full text-sm">
-        <thead className={`bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500 ${language === "ar" ? "text-right" : "text-left"}`}>
+        <thead className={`bg-white/[0.06] text-xs font-semibold uppercase tracking-[0.16em] text-slate-400 ${language === "ar" ? "text-right" : "text-left"}`}>
           <tr>
             <th className="px-3 py-3">{text.id}</th>
             <th className="px-3 py-3">{text.code}</th>
@@ -131,20 +132,20 @@ export default function PromoCodesTable({
             <th className="px-3 py-3">{text.actions}</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100 bg-white">
+        <tbody className="divide-y divide-white/10 text-slate-200">
           {promoCodes.map((item) => {
             const loading = rowLoading[item.id] ?? false;
+            const isActive = selectBoolean(item.is_active, item.isActive);
+
             return (
-              <tr key={item.id}>
-                <td className="px-3 py-2 font-semibold text-slate-900">
-                  {item.id}
-                </td>
-                <td className="px-3 py-2">{item.code}</td>
-                <td className="px-3 py-2">
+              <tr key={item.id} className="transition hover:bg-white/[0.04]">
+                <td className="px-3 py-3 font-semibold text-slate-50">{item.id}</td>
+                <td className="px-3 py-3">{item.code}</td>
+                <td className="px-3 py-3">
                   {item.type === "PERCENTAGE" ? text.percentage : text.fixed}
                 </td>
-                <td className="px-3 py-2">{formatValue(item)}</td>
-                <td className="px-3 py-2">
+                <td className="px-3 py-3">{formatValue(item)}</td>
+                <td className="px-3 py-3">
                   {(() => {
                     const value = selectNumber(
                       item.minimum_order_price,
@@ -153,7 +154,7 @@ export default function PromoCodesTable({
                     return value !== null ? formatNumber(value) : "-";
                   })()}
                 </td>
-                <td className="px-3 py-2">
+                <td className="px-3 py-3">
                   {(() => {
                     const value = selectNumber(
                       item.max_discount_amount,
@@ -162,30 +163,21 @@ export default function PromoCodesTable({
                     return value !== null ? formatNumber(value) : "-";
                   })()}
                 </td>
-                <td className="px-3 py-2">
+                <td className="px-3 py-3">
                   {formatDate(item.expire_date ?? item.expireDate)}
                 </td>
-                <td className="px-3 py-2">
-                  {selectNumber(item.max_usage_per_user, item.maxUsagePerUser) ??
-                    "-"}
+                <td className="px-3 py-3">
+                  {selectNumber(item.max_usage_per_user, item.maxUsagePerUser) ?? "-"}
                 </td>
-                <td className="px-3 py-2">
+                <td className="px-3 py-3">
                   {selectNumber(item.max_total_usage, item.maxTotalUsage) ?? "-"}
                 </td>
-                <td className="px-3 py-2">
-                  <span
-                    className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wider ${
-                      selectBoolean(item.is_active, item.isActive)
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                        : "border-rose-200 bg-rose-50 text-rose-700"
-                    }`}
-                  >
-                    {selectBoolean(item.is_active, item.isActive)
-                      ? text.active
-                      : text.suspended}
-                  </span>
+                <td className="px-3 py-3">
+                  <Badge tone={isActive ? "success" : "danger"}>
+                    {isActive ? text.active : text.suspended}
+                  </Badge>
                 </td>
-                <td className="px-3 py-2">
+                <td className="px-3 py-3">
                   <div className="flex flex-wrap gap-2">
                     <Button
                       variant="secondary"
@@ -209,9 +201,7 @@ export default function PromoCodesTable({
                       disabled={loading}
                       className="text-xs"
                     >
-                      {selectBoolean(item.is_active, item.isActive)
-                        ? text.suspend
-                        : text.activate}
+                      {isActive ? text.suspend : text.activate}
                     </Button>
                   </div>
                 </td>
@@ -220,6 +210,6 @@ export default function PromoCodesTable({
           })}
         </tbody>
       </table>
-    </div>
+    </GlassTable>
   );
 }

@@ -11,9 +11,9 @@ import { useLatestNotifications } from "@/modules/notifications/hooks/useLatestN
 import { useMarkAllNotificationsRead } from "@/modules/notifications/hooks/useMarkAllNotificationsRead";
 import { useMarkNotificationRead } from "@/modules/notifications/hooks/useMarkNotificationRead";
 import { useNotificationsPolling } from "@/modules/notifications/hooks/useNotificationsPolling";
+import type { NotificationItem } from "@/modules/notifications/types/notifications.types";
 import { formatUnreadCount } from "@/modules/notifications/utils/notificationFormat";
 import { handleNotificationClick } from "@/modules/notifications/utils/notificationRedirect";
-import type { NotificationItem } from "@/modules/notifications/types/notifications.types";
 
 const getErrorMessage = (error: unknown, fallback: string) => {
   if (!error || typeof error !== "object") {
@@ -100,7 +100,7 @@ export default function NotificationBell() {
   };
 
   if (!mounted) {
-    return <div className="h-10 w-10 rounded-full border border-slate-200 bg-white" aria-hidden="true" />;
+    return <div className="h-11 w-11 rounded-xl border border-white/10 bg-white/6" aria-hidden="true" />;
   }
 
   return (
@@ -118,11 +118,11 @@ export default function NotificationBell() {
         aria-expanded={open}
         aria-haspopup="dialog"
         onClick={() => setOpen((current) => !current)}
-        className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+        className="relative inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/6 text-slate-300 shadow-[0_12px_30px_rgba(2,6,23,0.28)] transition-all duration-300 hover:-translate-y-0.5 hover:border-cyan-300/20 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
       >
         <Bell className="h-5 w-5" aria-hidden="true" />
         {unreadCount > 0 ? (
-          <span className="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-rose-600 px-1.5 py-0.5 text-[11px] font-semibold text-white">
+          <span className="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-[linear-gradient(135deg,rgba(251,113,133,0.95),rgba(236,72,153,0.95))] px-1.5 py-0.5 text-[11px] font-semibold text-white shadow-[0_0_24px_rgba(244,63,94,0.32)]">
             {unreadLabel}
           </span>
         ) : null}

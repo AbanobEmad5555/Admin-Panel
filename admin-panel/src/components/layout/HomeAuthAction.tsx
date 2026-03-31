@@ -38,7 +38,7 @@ export default function HomeAuthAction() {
   };
 
   if (!mounted) {
-    return <div className="h-9 w-20 rounded-md border border-slate-300 bg-white" aria-hidden="true" />;
+    return <div className="h-10 w-24 rounded-xl border border-white/10 bg-white/8" aria-hidden="true" />;
   }
 
   if (isSignedIn) {
@@ -46,7 +46,7 @@ export default function HomeAuthAction() {
       <button
         type="button"
         onClick={handleSignOut}
-        className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 transition hover:bg-slate-100"
+        className="rounded-xl border border-white/12 bg-white/8 px-4 py-2 text-sm font-medium text-slate-100 transition hover:bg-white/12"
       >
         {language === "ar" ? "تسجيل الخروج" : "Sign out"}
       </button>
@@ -56,7 +56,7 @@ export default function HomeAuthAction() {
   return (
     <Link
       href="/login"
-      className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 transition hover:bg-slate-100"
+      className="rounded-xl border border-white/12 bg-white/8 px-4 py-2 text-sm font-medium text-slate-100 transition hover:bg-white/12"
     >
       {language === "ar" ? "تسجيل الدخول" : "Sign in"}
     </Link>

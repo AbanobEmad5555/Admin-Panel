@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import AdminLayout from "@/components/layout/AdminLayout";
+import Button from "@/components/ui/Button";
+import GlassTable from "@/components/ui/GlassTable";
+import PageHeader from "@/components/ui/PageHeader";
 import FilterBar from "@/features/leads/components/FilterBar";
 import PriorityBadge from "@/features/leads/components/PriorityBadge";
 import StatusBadge from "@/features/leads/components/StatusBadge";
@@ -155,30 +158,68 @@ export default function LeadsListPage() {
   const showingFrom = filteredLeads.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
   const showingTo = Math.min(safePage * PAGE_SIZE, filteredLeads.length);
 
+  const text =
+    language === "ar"
+      ? {
+          title: "إدارة العملاء المحتملين",
+          subtitle: "تابع العملاء المحتملين وعيّنهم وحرّكهم خلال مراحل البيع.",
+          newLead: "عميل محتمل جديد",
+          name: "الاسم",
+          phone: "الهاتف",
+          tag: "الوسم",
+          status: "الحالة",
+          priority: "الأولوية",
+          assignedAdmin: "المسؤول المعيّن",
+          followUpDate: "تاريخ المتابعة",
+          actions: "الإجراءات",
+          unassigned: "غير معيّن",
+          view: "عرض",
+          edit: "تعديل",
+          empty: "لا يوجد عملاء محتملون.",
+          loadError: "فشل تحميل العملاء المحتملين.",
+          showing: `عرض ${showingFrom} - ${showingTo} من ${filteredLeads.length}`,
+          previous: "السابق",
+          next: "التالي",
+          page: `الصفحة ${safePage} / ${totalPages}`,
+        }
+      : {
+          title: "Leads Management",
+          subtitle: "Track, assign, and progress your sales leads.",
+          newLead: "New Lead",
+          name: "Name",
+          phone: "Phone",
+          tag: "Tag",
+          status: "Status",
+          priority: "Priority",
+          assignedAdmin: "Assigned Admin",
+          followUpDate: "Follow Up Date",
+          actions: "Actions",
+          unassigned: "Unassigned",
+          view: "View",
+          edit: "Edit",
+          empty: "No leads found.",
+          loadError: "Failed to load leads.",
+          showing: `Showing ${showingFrom} - ${showingTo} of ${filteredLeads.length}`,
+          previous: "Previous",
+          next: "Next",
+          page: `Page ${safePage} / ${totalPages}`,
+        };
+
   return (
     <AdminLayout requiredPermissions={["leads.view"]}>
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">
-              {language === "ar" ? "إدارة العملاء المحتملين" : "Leads Management"}
-            </h1>
-            <p className="text-sm text-slate-500">
-              {language === "ar"
-                ? "تابع العملاء المحتملين وعيّنهم وحرّكهم خلال مراحل البيع."
-                : "Track, assign, and progress your sales leads."}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Link
-              href="/admin/crm/leads/new"
-              className="inline-flex items-center gap-2 rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
-            >
-              <Plus className="h-4 w-4" /> {language === "ar" ? "عميل محتمل جديد" : "New Lead"}
+      <div className="space-y-6">
+        <PageHeader
+          eyebrow="CRM"
+          title={text.title}
+          description={text.subtitle}
+          actions={
+            <Link href="/admin/crm/leads/new">
+              <Button size="sm">
+                <Plus className="h-4 w-4" /> {text.newLead}
+              </Button>
             </Link>
-          </div>
-        </div>
+          }
+        />
 
         <FilterBar
           filters={filters}
@@ -187,150 +228,136 @@ export default function LeadsListPage() {
           onFiltersChange={handleFiltersChange}
         />
 
-        <div className="overflow-hidden rounded-xl bg-white shadow">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200">
-              <thead className="bg-slate-50">
+        <GlassTable>
+          <table className="min-w-full text-sm">
+            <thead className="bg-white/[0.06]">
+              <tr>
+                {[
+                  text.name,
+                  text.phone,
+                  text.tag,
+                  text.status,
+                  text.priority,
+                  text.assignedAdmin,
+                  text.followUpDate,
+                  text.actions,
+                ].map((header) => (
+                  <th
+                    key={header}
+                    className={`px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400 ${language === "ar" ? "text-right" : "text-left"}`}
+                  >
+                    {header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-white/10 text-slate-200">
+              {isLoading
+                ? Array.from({ length: 8 }).map((_, index) => (
+                    <tr key={`skeleton-${index}`}>
+                      <td colSpan={8} className="px-4 py-4">
+                        <div className="h-10 animate-pulse rounded-2xl bg-white/8" />
+                      </td>
+                    </tr>
+                  ))
+                : null}
+
+              {!isLoading && pageRows.length === 0 ? (
                 <tr>
-                  {[
-                    language === "ar" ? "الاسم" : "Name",
-                    language === "ar" ? "الهاتف" : "Phone",
-                    language === "ar" ? "الوسم" : "Tag",
-                    language === "ar" ? "الحالة" : "Status",
-                    language === "ar" ? "الأولوية" : "Priority",
-                    language === "ar" ? "المسؤول المعيّن" : "Assigned Admin",
-                    language === "ar" ? "تاريخ المتابعة" : "Follow Up Date",
-                    language === "ar" ? "الإجراءات" : "Actions",
-                  ].map((header) => (
-                    <th
-                      key={header}
-                      className={`px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 ${language === "ar" ? "text-right" : "text-left"}`}
-                    >
-                      {header}
-                    </th>
-                  ))}
+                  <td colSpan={8} className="px-4 py-12 text-center text-sm text-slate-300">
+                    {isError ? text.loadError : text.empty}
+                  </td>
                 </tr>
-              </thead>
+              ) : null}
 
-              <tbody className="divide-y divide-slate-100">
-                {isLoading
-                  ? Array.from({ length: 8 }).map((_, index) => (
-                      <tr key={`skeleton-${index}`}>
-                        <td colSpan={8} className="px-4 py-4">
-                          <div className="h-8 animate-pulse rounded bg-slate-100" />
-                        </td>
-                      </tr>
-                    ))
-                  : null}
+              {!isLoading
+                ? pageRows.map((lead) => (
+                    <tr key={lead.id} className="transition hover:bg-white/[0.04]">
+                      <td className="px-4 py-3 text-sm font-medium text-slate-50">{lead.name}</td>
+                      <td className="px-4 py-3 text-sm text-slate-300">{lead.phone}</td>
+                      <td className="px-4 py-3 text-sm">
+                        <TagBadge tag={lead.tag} />
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <StatusBadge status={lead.status} />
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <PriorityBadge priority={lead.priority} />
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-300">
+                        <select
+                          value={lead.assignedToId ?? ""}
+                          onChange={(event) =>
+                            void handleAssignedAdminChange(lead.id, event.target.value)
+                          }
+                          disabled={assignLeadAdmin.isPending && updatingLeadId === lead.id}
+                          className="glass-input min-w-[180px] rounded-xl border border-white/10 bg-white/6 px-3 py-2 text-sm text-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <option value="">{text.unassigned}</option>
+                          {admins.map((admin) => (
+                            <option key={admin.id} value={admin.id}>
+                              {admin.name}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-300">
+                        <input
+                          type="date"
+                          value={toDateInput(lead.followUpDate)}
+                          onChange={(event) =>
+                            void handleFollowUpDateChange(lead.id, event.target.value)
+                          }
+                          disabled={updateLead.isPending && updatingFollowUpLeadId === lead.id}
+                          className="glass-input min-w-[160px] rounded-xl border border-white/10 bg-white/6 px-3 py-2 text-sm text-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <div className="flex items-center gap-2">
+                          <Link href={`/admin/crm/leads/${lead.id}`}>
+                            <Button variant="secondary" size="sm">
+                              {text.view}
+                            </Button>
+                          </Link>
+                          <Link href={`/admin/crm/leads/${lead.id}?mode=edit`}>
+                            <Button variant="ghost" size="sm">
+                              {text.edit}
+                            </Button>
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                : null}
+            </tbody>
+          </table>
 
-                {!isLoading && pageRows.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="px-4 py-12 text-center text-sm text-slate-500">
-                      {isError
-                        ? language === "ar"
-                          ? "فشل تحميل العملاء المحتملين."
-                          : "Failed to load leads."
-                        : language === "ar"
-                          ? "لا يوجد عملاء محتملون."
-                          : "No leads found."}
-                    </td>
-                  </tr>
-                ) : null}
-
-                {!isLoading
-                  ? pageRows.map((lead) => (
-                      <tr key={lead.id} className="hover:bg-slate-50/70">
-                        <td className="px-4 py-3 text-sm font-medium text-slate-900">{lead.name}</td>
-                        <td className="px-4 py-3 text-sm text-slate-600">{lead.phone}</td>
-                        <td className="px-4 py-3 text-sm">
-                          <TagBadge tag={lead.tag} />
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <StatusBadge status={lead.status} />
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <PriorityBadge priority={lead.priority} />
-                        </td>
-                        <td className="px-4 py-3 text-sm text-slate-600">
-                          <select
-                            value={lead.assignedToId ?? ""}
-                            onChange={(event) =>
-                              void handleAssignedAdminChange(lead.id, event.target.value)
-                            }
-                            disabled={assignLeadAdmin.isPending && updatingLeadId === lead.id}
-                            className="min-w-[180px] rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700 disabled:cursor-not-allowed disabled:bg-slate-100"
-                          >
-                            <option value="">{language === "ar" ? "غير معيّن" : "Unassigned"}</option>
-                            {admins.map((admin) => (
-                              <option key={admin.id} value={admin.id}>
-                                {admin.name}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-slate-600">
-                          <input
-                            type="date"
-                            value={toDateInput(lead.followUpDate)}
-                            onChange={(event) =>
-                              void handleFollowUpDateChange(lead.id, event.target.value)
-                            }
-                            disabled={updateLead.isPending && updatingFollowUpLeadId === lead.id}
-                            className="min-w-[150px] rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700 disabled:cursor-not-allowed disabled:bg-slate-100"
-                          />
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <div className="flex items-center gap-2">
-                            <Link
-                              href={`/admin/crm/leads/${lead.id}`}
-                              className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-700 transition hover:bg-slate-100"
-                            >
-                              {language === "ar" ? "عرض" : "View"}
-                            </Link>
-                            <Link
-                              href={`/admin/crm/leads/${lead.id}?mode=edit`}
-                              className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-700 transition hover:bg-slate-100"
-                            >
-                              {language === "ar" ? "تعديل" : "Edit"}
-                            </Link>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  : null}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3">
-            <p className="text-xs text-slate-500">
-              {language === "ar"
-                ? `عرض ${showingFrom} - ${showingTo} من ${filteredLeads.length}`
-                : `Showing ${showingFrom} - ${showingTo} of ${filteredLeads.length}`}
-            </p>
+          <div className="flex items-center justify-between border-t border-white/10 px-4 py-3">
+            <p className="text-xs text-slate-400">{text.showing}</p>
             <div className="flex items-center gap-2">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={() => setPage((prev) => Math.max(1, prev - 1))}
                 disabled={safePage <= 1}
-                className="rounded-md border border-slate-300 px-3 py-1.5 text-xs text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {language === "ar" ? "السابق" : "Previous"}
-              </button>
-              <span className="text-xs text-slate-600">
-                {language === "ar" ? `الصفحة ${safePage} / ${totalPages}` : `Page ${safePage} / ${totalPages}`}
-              </span>
-              <button
+                {text.previous}
+              </Button>
+              <span className="text-xs text-slate-300">{text.page}</span>
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
                 disabled={safePage >= totalPages}
-                className="rounded-md border border-slate-300 px-3 py-1.5 text-xs text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {language === "ar" ? "التالي" : "Next"}
-              </button>
+                {text.next}
+              </Button>
             </div>
           </div>
-        </div>
+        </GlassTable>
       </div>
     </AdminLayout>
   );

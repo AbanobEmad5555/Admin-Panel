@@ -1,3 +1,4 @@
+import Badge from "@/components/ui/Badge";
 import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import {
   getTransactionSourceLabel,
@@ -27,20 +28,16 @@ export function LoyaltyStatusBadge({ value, variant }: LoyaltyBadgeProps) {
         ? getTransactionStatusLabel(value as LoyaltyTransactionStatus, t)
         : getTransactionSourceLabel(value as LoyaltyTransactionSource, t);
 
-  const toneClass =
+  const tone =
     value === "AVAILABLE" || value === "EARN" || value === "MANUAL_ADD"
-      ? "bg-emerald-100 text-emerald-700"
+      ? "success"
       : value === "PENDING"
-        ? "bg-amber-100 text-amber-700"
+        ? "warning"
         : value === "EXPIRED" || value === "MANUAL_EXPIRE" || value === "RESET"
-          ? "bg-rose-100 text-rose-700"
+          ? "danger"
           : value === "CONSUMED"
-            ? "bg-sky-100 text-sky-700"
-          : "bg-slate-100 text-slate-700";
+            ? "info"
+            : "neutral";
 
-  return (
-    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${toneClass}`}>
-      {label}
-    </span>
-  );
+  return <Badge tone={tone}>{label}</Badge>;
 }

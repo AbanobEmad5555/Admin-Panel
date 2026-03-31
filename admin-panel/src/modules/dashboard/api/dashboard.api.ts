@@ -86,7 +86,10 @@ const normalizeSeriesPoint = (value: unknown): DashboardSeriesPoint => {
 const normalizeOrderPreviewItem = (value: unknown): DashboardOrderPreviewItem => {
   const row = (value ?? {}) as Record<string, unknown>;
   return {
-    id: row.id ?? "",
+    id:
+      typeof row.id === "number" || typeof row.id === "string"
+        ? row.id
+        : toStringSafe(row.id),
     orderType: toStringSafe(row.orderType, "ONLINE") as DashboardOrderPreviewItem["orderType"],
     orderNumber: toStringSafe(row.orderNumber, toStringSafe(row.id, "-")),
     customerName: toStringSafe(row.customerName, "Unknown"),

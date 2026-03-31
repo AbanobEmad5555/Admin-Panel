@@ -3,9 +3,25 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
+import {
+  Bell,
+  Boxes,
+  CalendarDays,
+  CreditCard,
+  Gem,
+  Globe,
+  LayoutDashboard,
+  MonitorSmartphone,
+  ShieldCheck,
+  ShoppingBag,
+  TicketPercent,
+  Users,
+  Wallet,
+} from "lucide-react";
 import { useAdminAuth } from "@/features/admin-auth/AdminAuthProvider";
-import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import type { AdminNavigationLink, AdminNavigationModule } from "@/features/admin-auth/types";
+import { cn } from "@/lib/cn";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 const SIDEBAR_SCROLL_STORAGE_KEY = "admin-sidebar-scroll-top";
 
@@ -59,6 +75,21 @@ const LINK_PRESENTATION_OVERRIDES: Record<
     label: "Team",
   },
 };
+
+const moduleIcons = {
+  dashboards: LayoutDashboard,
+  inventory: Boxes,
+  crm: Users,
+  calendar: CalendarDays,
+  pos: MonitorSmartphone,
+  invoices: CreditCard,
+  purchases: Wallet,
+  website: Globe,
+  "promo-codes": TicketPercent,
+  team: ShieldCheck,
+  "loyalty-program": Gem,
+  system: Bell,
+} as const;
 
 const getModuleOrder = (moduleId: string) => {
   const index = MODULE_DISPLAY_ORDER.indexOf(moduleId as (typeof MODULE_DISPLAY_ORDER)[number]);
@@ -114,10 +145,7 @@ const normalizePathname = (value: string) => {
   return value.endsWith("/") ? value.slice(0, -1) : value;
 };
 
-export const getActiveSidebarHref = (
-  pathname: string,
-  links: Array<Pick<AdminNavigationLink, "href">>
-) => {
+export const getActiveSidebarHref = (pathname: string, links: Array<Pick<AdminNavigationLink, "href">>) => {
   const normalizedPath = normalizePathname(pathname);
 
   return (
@@ -125,10 +153,7 @@ export const getActiveSidebarHref = (
       .map((link) => getSidebarLinkHref(link))
       .filter((href) => {
         const normalizedHref = normalizePathname(href);
-        return (
-          normalizedPath === normalizedHref ||
-          (normalizedHref !== "/" && normalizedPath.startsWith(`${normalizedHref}/`))
-        );
+        return normalizedPath === normalizedHref || (normalizedHref !== "/" && normalizedPath.startsWith(`${normalizedHref}/`));
       })
       .sort((left, right) => normalizePathname(right).length - normalizePathname(left).length)[0] ?? null
   );
@@ -190,10 +215,7 @@ export default function Sidebar() {
     }
 
     const handleScroll = () => {
-      window.sessionStorage.setItem(
-        SIDEBAR_SCROLL_STORAGE_KEY,
-        String(navElement.scrollTop)
-      );
+      window.sessionStorage.setItem(SIDEBAR_SCROLL_STORAGE_KEY, String(navElement.scrollTop));
     };
 
     navElement.addEventListener("scroll", handleScroll, { passive: true });
@@ -204,37 +226,60 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={`hidden w-64 shrink-0 bg-white md:block ${
-        direction === "rtl" ? "border-l border-slate-200" : "border-r border-slate-200"
+      className={`sticky top-0 hidden h-screen w-72 shrink-0 px-4 py-4 md:block ${
+        direction === "rtl" ? "border-l border-white/10" : "border-r border-white/10"
       }`}
     >
       <Link
         href="/"
-        className="flex h-16 items-center px-6 text-lg font-semibold text-slate-900 transition hover:text-slate-700"
+        className="group mb-4 flex items-center gap-3 rounded-3xl border border-white/10 bg-white/6 px-5 py-4 shadow-[0_18px_40px_rgba(2,6,23,0.36)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/8"
       >
-        {t("app.name")}
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-400/30 bg-[linear-gradient(135deg,rgba(6,182,212,0.2),rgba(168,85,247,0.22))] shadow-[0_0_24px_rgba(56,189,248,0.22)]">
+          <ShoppingBag className="h-5 w-5 text-cyan-100" />
+        </div>
+        <div className="space-y-1">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-200/70">Control Center</p>
+          <p className="text-lg font-semibold tracking-[-0.03em] text-slate-50">{t("app.name")}</p>
+        </div>
       </Link>
-      <nav ref={navRef} className="h-[calc(100vh-4rem)] overflow-y-auto px-3 pb-4">
+      <nav
+        ref={navRef}
+        className="admin-scrollbar h-[calc(100vh-7rem)] overflow-y-auto rounded-[2rem] border border-white/8 bg-white/[0.04] px-3 py-4 backdrop-blur-xl"
+      >
         {modules.map((moduleItem) => (
           <div key={moduleItem.moduleId} className="mb-5">
-            <p className="mb-2 px-3 text-base font-extrabold uppercase tracking-wide text-slate-800">
+            <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
               {moduleItem.label}
             </p>
             <div>
               {moduleItem.links.map((link) => {
                 const linkHref = getSidebarLinkHref(link);
                 const isActive = activeHref === linkHref;
+                const Icon = moduleIcons[moduleItem.moduleId as keyof typeof moduleIcons] ?? LayoutDashboard;
+
                 return (
                   <Link
                     key={link.id}
                     href={linkHref}
-                    className={`mb-1 flex items-center rounded-md px-3 py-2.5 text-[15px] font-medium leading-6 transition ${
+                    className={cn(
+                      "relative mb-1.5 flex items-center gap-3 overflow-hidden rounded-2xl border px-3 py-3 text-sm font-medium tracking-[-0.02em] transition-all duration-300",
                       isActive
-                        ? "bg-slate-900 text-white"
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                    }`}
+                        ? cn(
+                            "border-cyan-300/20 bg-[linear-gradient(135deg,rgba(34,211,238,0.16),rgba(59,130,246,0.12),rgba(168,85,247,0.14))] text-slate-50 shadow-[0_12px_30px_rgba(2,6,23,0.3),0_0_28px_rgba(56,189,248,0.12)] before:absolute before:inset-y-3 before:w-0.5 before:rounded-full before:bg-cyan-300 before:content-['']",
+                            direction === "rtl" ? "before:right-1.5" : "before:left-1.5"
+                          )
+                        : "border-transparent text-slate-300 hover:-translate-y-0.5 hover:border-white/10 hover:bg-white/7 hover:text-white"
+                    )}
                   >
-                    {getSidebarLinkLabel(link)}
+                    <span
+                      className={cn(
+                        "flex h-9 w-9 items-center justify-center rounded-xl border text-slate-400 transition-all",
+                        isActive ? "border-cyan-300/20 bg-cyan-400/12 text-cyan-100" : "border-white/10 bg-white/6"
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span className="truncate">{getSidebarLinkLabel(link)}</span>
                   </Link>
                 );
               })}

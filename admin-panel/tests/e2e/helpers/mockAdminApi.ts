@@ -1063,8 +1063,8 @@ const defaultDashboardLayout = (): DashboardLayoutItem[] => [
   { moduleId: "loyalty-program", position: 11, isVisible: true },
 ];
 
-const defaultLocalizationSettings = () => ({
-  language: "en" as const,
+const defaultLocalizationSettings = (): { language: "en" | "ar" } => ({
+  language: "en",
 });
 
 const defaultCalendarSettings = () => ({

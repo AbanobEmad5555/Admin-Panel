@@ -1,4 +1,6 @@
 import type { ChangeEvent } from "react";
+import GradientCard from "@/components/ui/GradientCard";
+import Input from "@/components/ui/Input";
 import {
   LEAD_PRIORITIES,
   LEAD_STATUS_ORDER,
@@ -33,19 +35,18 @@ export default function FilterBar({
     };
 
   return (
-    <div className="rounded-xl bg-white p-4 shadow">
+    <GradientCard padding="md">
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
-        <input
+        <Input
           value={filters.search ?? ""}
           onChange={updateField("search")}
           placeholder={language === "ar" ? "ابحث بالاسم أو الهاتف" : "Search by name or phone"}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none ring-0 placeholder:text-slate-400 focus:border-slate-400"
         />
 
         <select
           value={filters.status ?? ""}
           onChange={updateField("status")}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none ring-0 focus:border-slate-400"
+          className="glass-input rounded-xl border border-white/10 bg-white/6 px-3 py-2.5 text-sm text-slate-50 outline-none focus:border-cyan-300/50 focus:ring-2 focus:ring-cyan-400/20"
         >
           <option value="">{language === "ar" ? "كل الحالات" : "All Status"}</option>
           {LEAD_STATUS_ORDER.map((status) => (
@@ -58,7 +59,7 @@ export default function FilterBar({
         <select
           value={filters.tag ?? ""}
           onChange={updateField("tag")}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none ring-0 focus:border-slate-400"
+          className="glass-input rounded-xl border border-white/10 bg-white/6 px-3 py-2.5 text-sm text-slate-50 outline-none focus:border-cyan-300/50 focus:ring-2 focus:ring-cyan-400/20"
         >
           <option value="">{language === "ar" ? "كل الوسوم" : "All Tags"}</option>
           {LEAD_TAGS.map((tag) => (
@@ -71,7 +72,7 @@ export default function FilterBar({
         <select
           value={filters.priority ?? ""}
           onChange={updateField("priority")}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none ring-0 focus:border-slate-400"
+          className="glass-input rounded-xl border border-white/10 bg-white/6 px-3 py-2.5 text-sm text-slate-50 outline-none focus:border-cyan-300/50 focus:ring-2 focus:ring-cyan-400/20"
         >
           <option value="">{language === "ar" ? "كل الأولويات" : "All Priorities"}</option>
           {LEAD_PRIORITIES.map((priority) => (
@@ -84,7 +85,7 @@ export default function FilterBar({
         <select
           value={filters.assignedTo ?? ""}
           onChange={updateField("assignedTo")}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none ring-0 focus:border-slate-400"
+          className="glass-input rounded-xl border border-white/10 bg-white/6 px-3 py-2.5 text-sm text-slate-50 outline-none focus:border-cyan-300/50 focus:ring-2 focus:ring-cyan-400/20"
         >
           <option value="">{language === "ar" ? "كل المسؤولين" : "All Admins"}</option>
           {admins.map((admin) => (
@@ -97,7 +98,7 @@ export default function FilterBar({
         <select
           value={filters.source ?? ""}
           onChange={updateField("source")}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none ring-0 focus:border-slate-400"
+          className="glass-input rounded-xl border border-white/10 bg-white/6 px-3 py-2.5 text-sm text-slate-50 outline-none focus:border-cyan-300/50 focus:ring-2 focus:ring-cyan-400/20"
         >
           <option value="">{language === "ar" ? "كل المصادر" : "All Sources"}</option>
           {sources.map((source) => (
@@ -107,6 +108,6 @@ export default function FilterBar({
           ))}
         </select>
       </div>
-    </div>
+    </GradientCard>
   );
 }

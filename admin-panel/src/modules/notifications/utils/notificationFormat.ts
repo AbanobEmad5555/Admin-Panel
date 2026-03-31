@@ -62,7 +62,7 @@ const orderStatusLabels: Record<AdminLanguage, Record<string, string>> = {
     DELIVERED: "تم التسليم",
     PENDING: "قيد الانتظار",
     CANCELLED: "ملغي",
-    OUT_FOR_DELIVERY: "خرج للتسليم",
+    OUT_FOR_DELIVERY: "خارج للتسليم",
   },
 };
 

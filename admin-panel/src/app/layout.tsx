@@ -40,7 +40,7 @@ export default function RootLayout({
         </Script>
       </head>
       <body
-        className="min-h-screen bg-slate-100 text-slate-900 antialiased"
+        className="min-h-screen bg-background text-foreground antialiased"
         suppressHydrationWarning
       >
         <AppProviders>{children}</AppProviders>

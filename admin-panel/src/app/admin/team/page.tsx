@@ -7,6 +7,8 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import AdminLayout from "@/components/layout/AdminLayout";
 import Button from "@/components/ui/Button";
+import GradientCard from "@/components/ui/GradientCard";
+import PageHeader from "@/components/ui/PageHeader";
 import { useAssignStaffUserRole } from "@/features/admin-auth/hooks/useStaffRoles";
 import CreateEmployeeDrawer from "@/features/team/components/CreateEmployeeDrawer";
 import EditEmployeeDrawer from "@/features/team/components/EditEmployeeDrawer";
@@ -170,26 +172,24 @@ function TeamPageContent() {
 
   return (
     <AdminLayout requiredPermissions={["team.view"]}>
-      <section className="space-y-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">
-                {language === "ar" ? "الفريق" : "Team"}
-              </h1>
-              <p className="text-sm text-slate-900">
-                {language === "ar"
-                  ? "إدارة الموظفين والأدوار والمستندات والحالة." : "Manage employees, roles, documents and status."}
-              </p>
-            </div>
-            {canCreate ? (
+      <section className="space-y-6">
+        <PageHeader
+          eyebrow={language === "ar" ? "إدارة الفريق" : "Team Management"}
+          title={language === "ar" ? "الفريق" : "Team"}
+          description={
+            language === "ar"
+              ? "إدارة الموظفين والأدوار والمستندات والحالة."
+              : "Manage employees, roles, documents and status."
+          }
+          actions={
+            canCreate ? (
               <Button type="button" className="gap-2" onClick={() => setCreateOpen(true)}>
                 <Plus className="h-4 w-4" />
                 {language === "ar" ? "إضافة موظف" : "Add Employee"}
               </Button>
-            ) : null}
-          </div>
-        </div>
+            ) : null
+          }
+        />
 
         <EmployeesFiltersBar
           value={localFilters}
@@ -204,42 +204,42 @@ function TeamPageContent() {
         />
 
         {listQuery.isLoading ? (
-          <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="h-9 animate-pulse rounded bg-slate-200" />
-            <div className="h-9 animate-pulse rounded bg-slate-200" />
-            <div className="h-9 animate-pulse rounded bg-slate-200" />
-          </div>
+          <GradientCard padding="md" className="space-y-2">
+            <div className="h-9 animate-pulse rounded-2xl bg-white/8" />
+            <div className="h-9 animate-pulse rounded-2xl bg-white/8" />
+            <div className="h-9 animate-pulse rounded-2xl bg-white/8" />
+          </GradientCard>
         ) : null}
 
         {listQuery.isError && statusCode === 403 ? (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-amber-800 shadow-sm">
+          <GradientCard padding="md" className="border-amber-300/20 bg-amber-500/12 text-amber-100">
             {language === "ar"
               ? "ليس لديك صلاحية للوصول إلى إدارة الفريق." : "You do not have permission to access team management."}
-          </div>
+          </GradientCard>
         ) : null}
 
         {listQuery.isError && statusCode === 404 ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <GradientCard padding="lg" className="text-center">
             {language === "ar" ? "لم يتم العثور على واجهة الفريق." : "Team module endpoint not found."}
-          </div>
+          </GradientCard>
         ) : null}
 
         {listQuery.isError && statusCode !== 403 && statusCode !== 404 ? (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 shadow-sm">
+          <GradientCard padding="md" className="border-rose-300/20 bg-rose-500/12 text-sm text-rose-100">
             {getErrorMessage(listQuery.error)}
-          </div>
+          </GradientCard>
         ) : null}
 
         {!listQuery.isLoading && !listQuery.isError && filteredRows.length === 0 ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-900">
+          <GradientCard padding="lg" className="text-center">
+            <h2 className="text-lg font-semibold text-slate-50">
               {language === "ar" ? "لا يوجد موظفون" : "No employees found"}
             </h2>
-            <p className="mt-1 text-sm text-slate-900">
+            <p className="mt-1 text-sm text-slate-300">
               {language === "ar"
                 ? "جرّب تغيير الفلاتر أو إضافة موظف جديد." : "Try changing filters or add a new employee."}
             </p>
-          </div>
+          </GradientCard>
         ) : null}
 
         {!listQuery.isLoading && !listQuery.isError && filteredRows.length > 0 ? (
@@ -250,7 +250,7 @@ function TeamPageContent() {
               onEdit={(row) => setEditingEmployeeId(row.id)}
               onChangeStatus={(row) => setStatusEmployee(row)}
             />
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+            <GradientCard padding="sm" className="flex flex-wrap items-center justify-between gap-3">
               <Button
                 type="button"
                 variant="secondary"
@@ -268,7 +268,7 @@ function TeamPageContent() {
               >
                 {language === "ar" ? "التالي" : "Next"}
               </Button>
-            </div>
+            </GradientCard>
           </>
         ) : null}
       </section>

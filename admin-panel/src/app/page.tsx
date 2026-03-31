@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { Loader2, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import HomeAuthAction from "@/components/layout/HomeAuthAction";
+import Button from "@/components/ui/Button";
+import GradientCard from "@/components/ui/GradientCard";
 import { useAdminAuth } from "@/features/admin-auth/AdminAuthProvider";
 import {
   canRenderDashboardModuleEntry,
@@ -17,7 +19,10 @@ import { useDashboardLayout } from "@/modules/dashboard-layout/hooks/useDashboar
 import { useSaveDashboardLayout } from "@/modules/dashboard-layout/hooks/useSaveDashboardLayout";
 import { useUpdateDashboardModuleVisibility } from "@/modules/dashboard-layout/hooks/useUpdateDashboardModuleVisibility";
 import { useAdminTokenPresence } from "@/lib/useAdminTokenPresence";
-import type { DashboardLayoutItem } from "@/modules/dashboard-layout/types/dashboardLayout.types";
+import type {
+  DashboardLayoutItem,
+  DashboardModuleRecord,
+} from "@/modules/dashboard-layout/types/dashboardLayout.types";
 import {
   ensureLayoutHasNavigationModules,
   getHiddenModules,
@@ -41,7 +46,6 @@ const copy = {
     loadError: "Unable to load your dashboard layout.",
     saveError: "Unable to save dashboard layout.",
     visibilityError: "Unable to update module visibility.",
-    retry: "Retry",
   },
   ar: {
     title: "وحدات الإدارة",
@@ -52,7 +56,6 @@ const copy = {
     loadError: "تعذر تحميل تخطيط اللوحة.",
     saveError: "تعذر حفظ تخطيط اللوحة.",
     visibilityError: "تعذر تحديث ظهور الوحدة.",
-    retry: "إعادة المحاولة",
   },
 } as const;
 
@@ -66,10 +69,12 @@ export default function HomePage() {
   const updateDashboardModuleVisibilityMutation = useUpdateDashboardModuleVisibility();
   const [optimisticLayout, setOptimisticLayout] = useState<DashboardLayoutItem[] | null>(null);
   const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
+
   const navigationLayout = useMemo(
     () => getNavigationDashboardLayout(profile?.navigation),
     [profile?.navigation]
   );
+
   const queryLayout = useMemo(() => {
     const serverLayout = (dashboardLayoutQuery.data as DashboardLayoutItem[] | undefined) ?? [];
     return ensureLayoutHasNavigationModules(
@@ -77,6 +82,7 @@ export default function HomePage() {
       navigationLayout
     );
   }, [dashboardLayoutQuery.data, navigationLayout]);
+
   const layout = useMemo(
     () =>
       (optimisticLayout ?? queryLayout).filter((item) =>
@@ -88,14 +94,22 @@ export default function HomePage() {
   const isSaving =
     saveDashboardLayoutMutation.isPending || updateDashboardModuleVisibilityMutation.isPending;
   const canCustomizeDashboard = !hasToken || !dashboardLayoutQuery.isError;
-  const visibleModules = useMemo(
+
+  const visibleModules = useMemo<DashboardModuleRecord[]>(
     () =>
-      toDashboardModuleRecords(getVisibleModules(layout)).map((module) => ({
-        ...module,
-        route: getDashboardModuleRoute(module.moduleId, profile),
-      })),
+      toDashboardModuleRecords(getVisibleModules(layout))
+        .map((module) => ({
+          ...module,
+          route: getDashboardModuleRoute(module.moduleId, profile),
+        }))
+        .filter(
+          (
+            module
+          ): module is DashboardModuleRecord => typeof module.route === "string"
+        ),
     [layout, profile]
   );
+
   const hiddenModules = useMemo(
     () => toDashboardModuleRecords(getHiddenModules(layout)),
     [layout]
@@ -182,47 +196,65 @@ export default function HomePage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50/80 px-6 py-10 md:px-10 lg:px-14">
-      <div className="mx-auto w-full max-w-7xl">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <HomeAuthAction />
-            {hasPermission(["notifications.view", "notifications.preferences"]) ? <NotificationBell /> : null}
-            <button
-              type="button"
-              onClick={() => setIsCustomizeOpen(true)}
-              disabled={!canCustomizeDashboard}
-              className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 transition hover:bg-slate-100"
-            >
-              <Settings2 className="h-4 w-4" />
-              {text.customize}
-            </button>
-            {isSaving ? (
-              <span className="inline-flex items-center gap-2 text-sm text-slate-500">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                {text.saving}
-              </span>
-            ) : null}
-          </div>
-          <LanguageSwitcher />
-        </div>
+    <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.18),transparent_26%),radial-gradient(circle_at_top_right,rgba(168,85,247,0.22),transparent_28%),linear-gradient(180deg,#0f172a_0%,#020617_100%)] px-6 py-8 md:px-10 lg:px-14">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(34,211,238,0.08),transparent_24%),radial-gradient(circle_at_78%_16%,rgba(168,85,247,0.12),transparent_22%),radial-gradient(circle_at_50%_100%,rgba(236,72,153,0.08),transparent_30%)]"
+      />
 
-        <header className="mb-10 text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
+      <div className="relative mx-auto w-full max-w-7xl space-y-6">
+        <GradientCard padding="md" glow className="rounded-[2rem]">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <HomeAuthAction />
+              {hasPermission(["notifications.view", "notifications.preferences"]) ? (
+                <NotificationBell />
+              ) : null}
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsCustomizeOpen(true)}
+                disabled={!canCustomizeDashboard}
+              >
+                <Settings2 className="h-4 w-4" />
+                {text.customize}
+              </Button>
+              {isSaving ? (
+                <span className="inline-flex items-center gap-2 text-sm text-slate-300">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {text.saving}
+                </span>
+              ) : null}
+            </div>
+            <LanguageSwitcher />
+          </div>
+        </GradientCard>
+
+        <GradientCard as="header" padding="lg" glow className="text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200/80">
+            Control Center
+          </p>
+          <h1 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-slate-50 md:text-4xl">
             {text.title}
           </h1>
-          <p className="mx-auto mt-3 max-w-2xl text-sm text-slate-500 md:text-base">
+          <p className="mx-auto mt-3 max-w-2xl text-sm text-slate-300 md:text-base">
             {text.subtitle}
           </p>
-        </header>
+        </GradientCard>
 
-        {renderContent()}
+        <div className="space-y-6">
+          {renderContent()}
 
-        {hasToken && dashboardLayoutQuery.isError && navigationLayout.length === 0 ? (
-          <div className="mx-auto mt-6 max-w-2xl rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            {text.loadError}
-          </div>
-        ) : null}
+          {hasToken && dashboardLayoutQuery.isError && navigationLayout.length === 0 ? (
+            <GradientCard
+              padding="md"
+              className="mx-auto max-w-2xl border-amber-300/25 bg-amber-500/12 text-sm text-amber-100"
+            >
+              {text.loadError}
+            </GradientCard>
+          ) : null}
+        </div>
       </div>
 
       <CustomizeDashboardPanel

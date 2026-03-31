@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Button from "@/components/ui/Button";
+import GradientCard from "@/components/ui/GradientCard";
 import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import NotificationListItem from "@/modules/notifications/components/NotificationListItem";
 import NotificationsEmptyState from "@/modules/notifications/components/NotificationsEmptyState";
@@ -28,16 +29,16 @@ export default function NotificationsDropdown({
   const { t } = useLocalization();
 
   return (
-    <div className="w-[min(92vw,24rem)] rounded-2xl border border-slate-200 bg-white shadow-xl">
-      <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+    <GradientCard glow padding="none" className="w-[min(92vw,26rem)] overflow-hidden">
+      <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
         <div>
-          <h2 className="text-sm font-semibold text-slate-900">{t("notifications.title")}</h2>
-          <p className="text-xs text-slate-500">{t("notifications.latestActivity")}</p>
+          <h2 className="text-sm font-semibold text-slate-50">{t("notifications.title")}</h2>
+          <p className="text-xs text-slate-400">{t("notifications.latestActivity")}</p>
         </div>
         <Button
           type="button"
           variant="secondary"
-          className="px-3 py-1 text-xs"
+          size="sm"
           onClick={onMarkAllAsRead}
           disabled={isMarkingAllAsRead || notifications.length === 0}
         >
@@ -45,7 +46,7 @@ export default function NotificationsDropdown({
         </Button>
       </div>
 
-      <div className="max-h-[26rem] overflow-y-auto p-3">
+      <div className="admin-scrollbar max-h-[26rem] overflow-y-auto p-3">
         {isLoading ? <NotificationsSkeleton compact rows={4} /> : null}
         {!isLoading && isError ? (
           <NotificationsEmptyState
@@ -76,14 +77,11 @@ export default function NotificationsDropdown({
         ) : null}
       </div>
 
-      <div className="border-t border-slate-200 px-4 py-3">
-        <Link
-          href="/admin/notifications"
-          className="inline-flex w-full items-center justify-center rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
-        >
-          {t("notifications.viewAll")}
+      <div className="border-t border-white/10 px-4 py-4">
+        <Link href="/admin/notifications" className="block">
+          <Button className="w-full">{t("notifications.viewAll")}</Button>
         </Link>
       </div>
-    </div>
+    </GradientCard>
   );
 }

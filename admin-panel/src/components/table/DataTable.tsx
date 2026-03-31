@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import GlassTable from "@/components/ui/GlassTable";
 
 type Column<T> = {
   key: keyof T;
@@ -13,20 +14,23 @@ type DataTableProps<T> = {
 
 export default function DataTable<T>({ columns, rows }: DataTableProps<T>) {
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-      <table className="w-full text-left text-sm">
-        <thead className="bg-slate-50 text-slate-600">
+    <GlassTable>
+      <table className="w-full text-left text-sm text-slate-200">
+        <thead className="bg-white/6 text-slate-400">
           <tr>
             {columns.map((column) => (
-              <th key={String(column.key)} className="px-4 py-3 font-medium">
+              <th
+                key={String(column.key)}
+                className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em]"
+              >
                 {column.header}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-200">
+        <tbody className="divide-y divide-white/10">
           {rows.map((row, rowIndex) => (
-            <tr key={rowIndex} className="text-slate-700">
+            <tr key={rowIndex} className="text-slate-200 transition hover:bg-white/6">
               {columns.map((column) => (
                 <td key={String(column.key)} className="px-4 py-3">
                   {column.render
@@ -38,6 +42,6 @@ export default function DataTable<T>({ columns, rows }: DataTableProps<T>) {
           ))}
         </tbody>
       </table>
-    </div>
+    </GlassTable>
   );
 }

@@ -1,22 +1,32 @@
+import Badge from "@/components/ui/Badge";
 import type { LeadTag } from "@/features/leads/types";
+import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 type TagBadgeProps = {
   tag: LeadTag | string;
 };
 
-const tagStyles: Record<LeadTag, string> = {
-  Potential: "bg-slate-100 text-slate-700",
-  Customer: "bg-blue-100 text-blue-700",
-  VIP: "bg-gradient-to-r from-yellow-200 to-amber-300 text-amber-900",
-};
+const normalizeTag = (tag: LeadTag | string) =>
+  tag === "CUSTOMER" ? "Customer" : tag === "POTENTIAL" ? "Potential" : tag;
 
 export default function TagBadge({ tag }: TagBadgeProps) {
-  const normalizedTag = tag === "CUSTOMER" ? "Customer" : tag === "POTENTIAL" ? "Potential" : tag;
-  const badgeClass = tagStyles[normalizedTag as LeadTag] ?? "bg-slate-100 text-slate-700";
+  const { language } = useLocalization();
+  const normalizedTag = normalizeTag(tag);
+  const localizedTag =
+    language === "ar"
+      ? {
+          Potential: "محتمل",
+          Customer: "عميل",
+          VIP: "كبار العملاء",
+        }[normalizedTag as LeadTag] ?? normalizedTag
+      : normalizedTag;
 
-  return (
-    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${badgeClass}`}>
-      {normalizedTag}
-    </span>
-  );
+  const tone =
+    normalizedTag === "VIP"
+      ? "warning"
+      : normalizedTag === "Customer"
+        ? "info"
+        : "neutral";
+
+  return <Badge tone={tone}>{localizedTag}</Badge>;
 }

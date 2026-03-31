@@ -46,7 +46,7 @@ export default function CustomizeDashboardPanel({
   return (
     <Modal title={text.title} isOpen={isOpen} onClose={onClose} panelClassName="max-w-5xl">
       <div className="space-y-6">
-        <p className="text-sm text-slate-500">{text.description}</p>
+        <p className="text-sm text-slate-300">{text.description}</p>
         <HiddenModulesList
           key={`visible-${visibleModules.map((module) => module.moduleId).join("-")}`}
           title={text.visibleModules}

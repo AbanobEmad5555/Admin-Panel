@@ -6,6 +6,7 @@ import Header from "./Header";
 import Sidebar from "./Sidebar";
 import { canAccessPath } from "@/features/admin-auth/permissions";
 import { useAuth } from "@/hooks/useAuth";
+import { cn } from "@/lib/cn";
 import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 type AdminLayoutProps = {
@@ -49,8 +50,8 @@ export default function AdminLayout({ children, title, requiredPermissions }: Ad
 
   if (isAuthPending) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100">
-        <div className="rounded-xl border border-slate-200 bg-white px-6 py-4 text-sm text-slate-600 shadow-sm">
+      <div className="admin-shell admin-theme flex min-h-screen items-center justify-center px-6">
+        <div className="rounded-3xl border border-white/10 bg-white/5 px-6 py-4 text-sm text-slate-300 shadow-[0_20px_50px_rgba(2,6,23,0.42)] backdrop-blur-xl">
           Loading admin session...
         </div>
       </div>
@@ -59,8 +60,8 @@ export default function AdminLayout({ children, title, requiredPermissions }: Ad
 
   if (!canAccess) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100" dir={direction}>
-        <div className="rounded-xl border border-slate-200 bg-white px-6 py-4 text-sm text-slate-600 shadow-sm">
+      <div className="admin-shell admin-theme flex min-h-screen items-center justify-center px-6" dir={direction}>
+        <div className="rounded-3xl border border-white/10 bg-white/5 px-6 py-4 text-sm text-slate-300 shadow-[0_20px_50px_rgba(2,6,23,0.42)] backdrop-blur-xl">
           Redirecting...
         </div>
       </div>
@@ -68,13 +69,13 @@ export default function AdminLayout({ children, title, requiredPermissions }: Ad
   }
 
   return (
-    <div className="min-h-screen bg-slate-100" dir={direction}>
-      <div className="flex">
+    <div className="admin-shell admin-theme min-h-screen" dir={direction}>
+      <div className="flex min-h-screen">
         <Sidebar />
-        <div className="flex min-h-screen flex-1 flex-col">
+        <div className="relative flex min-h-screen min-w-0 flex-1 flex-col">
           <Header />
-          <main className={`flex-1 p-6 ${direction === "rtl" ? "text-right" : ""}`}>
-            {children}
+          <main className={cn("flex-1 px-4 pb-8 pt-4 sm:px-6 lg:px-8", direction === "rtl" ? "text-right" : "")}>
+            <div className="mx-auto w-full max-w-[1600px] space-y-6">{children}</div>
           </main>
         </div>
       </div>

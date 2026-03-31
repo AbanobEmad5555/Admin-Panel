@@ -284,19 +284,19 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 const getStatusTheme = (status: OrderStatus) => {
   switch (status) {
     case "Pending":
-      return "bg-slate-100 text-slate-700";
+      return "border border-slate-400/20 bg-slate-500/15 text-slate-100";
     case "Confirmed":
-      return "bg-blue-100 text-blue-700";
+      return "border border-cyan-400/25 bg-cyan-500/15 text-cyan-100";
     case "Out For Delivery":
-      return "bg-orange-100 text-orange-700";
+      return "border border-amber-400/25 bg-amber-500/15 text-amber-100";
     case "Delivered":
-      return "bg-purple-100 text-purple-700";
+      return "border border-violet-400/25 bg-violet-500/15 text-violet-100";
     case "Completed":
-      return "bg-emerald-100 text-emerald-700";
+      return "border border-emerald-400/25 bg-emerald-500/15 text-emerald-100";
     case "Canceled":
-      return "bg-rose-100 text-rose-700";
+      return "border border-rose-400/25 bg-rose-500/15 text-rose-100";
     default:
-      return "bg-slate-100 text-slate-700";
+      return "border border-slate-400/20 bg-slate-500/15 text-slate-100";
   }
 };
 
@@ -531,7 +531,7 @@ export default function CrmPipelinePage() {
     return (
       <AdminLayout requiredPermissions={["orders.view", "temp_orders.view"]}>
         <div className="flex min-h-[420px] items-center justify-center p-6">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-slate-600" />
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-white/10 border-t-cyan-300" />
         </div>
       </AdminLayout>
     );
@@ -539,25 +539,25 @@ export default function CrmPipelinePage() {
 
   return (
     <AdminLayout requiredPermissions={["orders.view", "temp_orders.view"]}>
-      <div className="space-y-4">
-        <div className="px-6 pt-2">
-          <h1 className="text-3xl font-bold text-slate-900">{text.title}</h1>
-          <p className="mt-1 text-sm text-slate-500">{text.subtitle}</p>
+      <div className="space-y-6">
+        <div className="rounded-3xl border border-white/10 bg-white/5 px-6 py-6 shadow-[0_18px_40px_rgba(2,6,23,0.32)] backdrop-blur-xl">
+          <h1 className="text-3xl font-semibold tracking-[-0.04em] text-slate-50">{text.title}</h1>
+          <p className="mt-1 text-sm text-slate-300">{text.subtitle}</p>
         </div>
 
         {error ? (
-          <div className="mx-6 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <div className="rounded-2xl border border-rose-300/20 bg-rose-500/12 px-4 py-3 text-sm text-rose-100">
             {error}
           </div>
         ) : null}
 
         {loading ? (
-          <div className="flex min-h-[420px] items-center justify-center px-6 pb-6">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-slate-600" />
+          <div className="flex min-h-[420px] items-center justify-center pb-6">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-white/10 border-t-cyan-300" />
           </div>
         ) : (
           <DragDropContext onDragEnd={(result) => void onDragEnd(result)}>
-            <div className="flex gap-6 overflow-x-auto p-6">
+            <div className="flex gap-6 overflow-x-auto pb-6">
               {STATUS_ORDER.map((status) => {
                 const orders = columns[status] ?? [];
                 const theme = getStatusTheme(status);
@@ -573,16 +573,16 @@ export default function CrmPipelinePage() {
                       <section
                         ref={dropProvided.innerRef}
                         {...dropProvided.droppableProps}
-                        className={`w-[350px] shrink-0 rounded-xl bg-gray-50 p-4 shadow-sm transition ${
-                          dropSnapshot.isDraggingOver ? "ring-2 ring-slate-300" : ""
+                        className={`w-[350px] shrink-0 rounded-3xl border border-white/10 bg-white/5 p-4 shadow-[0_18px_40px_rgba(2,6,23,0.32)] backdrop-blur-xl transition ${
+                          dropSnapshot.isDraggingOver ? "ring-2 ring-cyan-300/40 bg-white/8" : ""
                         }`}
                       >
                         <div className="mb-4 flex items-start justify-between gap-3">
                           <div>
-                            <h2 className="text-base font-semibold text-slate-900">
+                            <h2 className="text-base font-semibold text-slate-50">
                               {getStatusLabel(status)}
                             </h2>
-                            <p className="mt-1 text-xs text-slate-500">
+                            <p className="mt-1 text-xs text-slate-400">
                               {orders.length} {orders.length === 1 ? text.order : text.orders}
                             </p>
                           </div>
@@ -595,7 +595,7 @@ export default function CrmPipelinePage() {
 
                         <div className="space-y-3">
                           {orders.length === 0 ? (
-                            <div className="rounded-lg border border-dashed border-slate-300 bg-white/70 px-3 py-6 text-center text-sm text-slate-500">
+                            <div className="rounded-2xl border border-dashed border-white/10 bg-white/4 px-3 py-6 text-center text-sm text-slate-400">
                               {text.noOrdersInStage}
                             </div>
                           ) : null}
@@ -612,12 +612,12 @@ export default function CrmPipelinePage() {
                                   ref={dragProvided.innerRef}
                                   {...dragProvided.draggableProps}
                                   {...dragProvided.dragHandleProps}
-                                  className={`cursor-pointer rounded-lg bg-white p-4 shadow transition hover:shadow-md ${
-                                    dragSnapshot.isDragging ? "rotate-1 shadow-lg" : ""
+                                  className={`cursor-pointer rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(30,41,59,0.88))] p-4 shadow-[0_18px_36px_rgba(2,6,23,0.34)] transition hover:-translate-y-0.5 hover:bg-[linear-gradient(180deg,rgba(15,23,42,0.96),rgba(30,41,59,0.94))] ${
+                                    dragSnapshot.isDragging ? "rotate-1 ring-2 ring-cyan-300/40 shadow-[0_22px_48px_rgba(2,6,23,0.42)]" : ""
                                   }`}
                                 >
                                   <div className="mb-2 flex items-start justify-between gap-3">
-                                    <p className="text-sm font-semibold text-slate-900">
+                                    <p className="text-sm font-semibold text-slate-50">
                                       {`${text.order} #${order.id}`}
                                     </p>
                                     <span
@@ -627,11 +627,11 @@ export default function CrmPipelinePage() {
                                     </span>
                                   </div>
 
-                                  <p className="text-sm font-medium text-slate-700">
+                                  <p className="text-sm font-medium text-slate-200">
                                     {order.customerName}
                                   </p>
 
-                                  <div className="mt-3 space-y-1 text-xs text-slate-500">
+                                  <div className="mt-3 space-y-1 text-xs text-slate-400">
                                     <p>{text.total}: {formatCurrency(order.total)}</p>
                                     <p>{text.payment}: {order.paymentMethod}</p>
                                     <p>{text.created}: {formatDate(order.createdAt, language)}</p>
@@ -640,7 +640,7 @@ export default function CrmPipelinePage() {
                                   <div className="mt-4">
                                     <Link
                                       href={`/admin/orders/${order.id}`}
-                                      className="inline-flex rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
+                                      className="inline-flex rounded-xl border border-white/10 bg-white/8 px-3 py-1.5 text-xs font-medium text-slate-100 transition hover:bg-white/12"
                                     >
                                       {text.view}
                                     </Link>

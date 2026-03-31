@@ -1,5 +1,6 @@
 "use client";
 
+import GradientCard from "@/components/ui/GradientCard";
 import type { DashboardSeriesPoint } from "@/modules/dashboard/api/dashboard.types";
 import { formatDashboardCurrency } from "@/modules/dashboard/utils/dashboardFormatters";
 import { useLocalization } from "@/modules/localization/LocalizationProvider";
@@ -43,7 +44,7 @@ export default function DashboardSeriesChart({
   fill,
   series,
 }: DashboardSeriesChartProps) {
-  const { t } = useLocalization();
+  const { language } = useLocalization();
   const values = series.map((point) => point.value);
   const total = values.reduce((sum, value) => sum + value, 0);
   const width = 560;
@@ -51,17 +52,17 @@ export default function DashboardSeriesChart({
   const maxValue = Math.max(...values, 1);
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <GradientCard as="section" glow padding="md">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
-          <p className="text-xs text-slate-500">{subtitle}</p>
+          <h3 className="text-sm font-semibold text-slate-50">{title}</h3>
+          <p className="text-xs text-slate-400">{subtitle}</p>
         </div>
         <div className="text-right">
-          <p className="text-xs uppercase tracking-wide text-slate-500">
-            {t("dashboard.orders.total", "Total")}
+          <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
+            {language === "ar" ? "الإجمالي" : "Total"}
           </p>
-          <p className="text-lg font-semibold text-slate-900">{formatDashboardCurrency(total)}</p>
+          <p className="text-lg font-semibold text-slate-50">{formatDashboardCurrency(total)}</p>
         </div>
       </div>
       <div className="overflow-x-auto">
@@ -84,6 +85,6 @@ export default function DashboardSeriesChart({
           })}
         </svg>
       </div>
-    </section>
+    </GradientCard>
   );
 }

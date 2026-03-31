@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import AdminLayout from "@/components/layout/AdminLayout";
@@ -356,7 +356,7 @@ const isTempStatusOptionDisabled = (
   return !(normalizedTarget in TEMP_STATUS_ENDPOINTS);
 };
 
-export default function AdminOrdersPage() {
+function AdminOrdersPageContent() {
   const { language } = useLocalization();
   const searchParams = useSearchParams();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -1778,5 +1778,13 @@ export default function AdminOrdersPage() {
         </div>
       </Modal>
     </AdminLayout>
+  );
+}
+
+export default function AdminOrdersPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminOrdersPageContent />
+    </Suspense>
   );
 }
