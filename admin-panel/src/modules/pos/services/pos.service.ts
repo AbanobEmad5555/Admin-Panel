@@ -1,4 +1,5 @@
 import api from "@/services/api";
+import { extractList } from "@/lib/extractList";
 import type {
   CloseSessionInput,
   CreateOrderInput,
@@ -26,6 +27,37 @@ const unwrap = <T>(value: unknown): T => {
     return (envelope.data ?? ({} as T)) as T;
   }
   return value as T;
+};
+
+const extractPaginationMeta = (payload: unknown) => {
+  const record = (payload ?? {}) as Record<string, unknown>;
+  const pagination =
+    (record.pagination && typeof record.pagination === "object"
+      ? (record.pagination as Record<string, unknown>)
+      : null) ??
+    ({
+      page: record.page,
+      limit: record.limit,
+      totalItems: record.totalItems,
+      totalPages: record.totalPages,
+    } as Record<string, unknown>);
+
+  return {
+    page: Math.max(1, toNumber(pagination.page ?? pagination.currentPage ?? 1)),
+    limit: Math.max(1, toNumber(pagination.limit ?? 1)),
+    totalItems: Math.max(0, toNumber(pagination.totalItems ?? pagination.count ?? 0)),
+    totalPages: Math.max(
+      1,
+      toNumber(
+        pagination.totalPages ??
+          pagination.pages ??
+          Math.ceil(
+            toNumber(pagination.totalItems ?? 0) /
+              Math.max(1, toNumber(pagination.limit ?? 1))
+          ),
+      ) || 1,
+    ),
+  };
 };
 
 const extractImageValue = (value: unknown): string => {
@@ -299,6 +331,64 @@ const normalizeDailyReport = (value: unknown, date: string): DailyReport => {
   };
 };
 
+const normalizeSessionReport = (value: unknown): SessionReport => {
+  const payload = (value ?? {}) as Record<string, unknown>;
+  const session =
+    payload.session && typeof payload.session === "object"
+      ? (payload.session as Record<string, unknown>)
+      : null;
+  const ordersSource = Array.isArray(payload.orders)
+    ? payload.orders
+    : Array.isArray(session?.orders)
+      ? session.orders
+      : [];
+
+  return {
+    sessionId: String(payload.sessionId ?? session?.id ?? ""),
+    totalSales: toNumber(payload.totalSales ?? payload.sales ?? payload.totalAmount),
+    totalTax: toNumber(payload.totalTax ?? payload.taxAmount ?? payload.tax),
+    totalDiscount: toNumber(
+      payload.totalDiscount ?? payload.discountAmount ?? payload.discount
+    ),
+    ordersCount: Math.max(
+      0,
+      toNumber(payload.ordersCount ?? payload.totalOrders ?? ordersSource.length)
+    ),
+    paymentBreakdown: normalizePaymentBreakdown(payload.paymentBreakdown),
+    orders: ordersSource.map((order) => normalizePosOrder(order)),
+  };
+};
+
+const normalizeTopProductsResult = (value: unknown): TopProductsResult => {
+  const payload = (value ?? {}) as Record<string, unknown>;
+  const itemsSource = Array.isArray(payload.items)
+    ? payload.items
+    : extractList<unknown>(payload);
+  const pagination = extractPaginationMeta(payload);
+  const items = itemsSource.map((item) => {
+    const row = (item ?? {}) as Record<string, unknown>;
+    return {
+      productId: String(row.productId ?? row.id ?? ""),
+      name: String(row.name ?? row.productName ?? "Unknown Product"),
+      qtySold: Math.max(0, toNumber(row.qtySold ?? row.quantitySold ?? row.quantity)),
+      revenue: Math.max(0, toNumber(row.revenue ?? row.grossSales ?? row.total)),
+    };
+  });
+
+  return {
+    items,
+    page: pagination.page,
+    totalPages:
+      Object.prototype.hasOwnProperty.call(payload, "totalPages") || payload.pagination
+        ? pagination.totalPages
+        : Math.max(1, toNumber(payload.totalPages ?? payload.pages ?? 1)),
+    totalItems:
+      Object.prototype.hasOwnProperty.call(payload, "totalItems") || payload.pagination
+        ? Math.max(items.length, pagination.totalItems)
+        : Math.max(items.length, toNumber(payload.totalItems ?? payload.count ?? items.length)),
+  };
+};
+
 const toDateKey = (value: unknown): string | null => {
   if (typeof value !== "string" || !value.trim()) {
     return null;
@@ -322,29 +412,30 @@ const normalizeMethod = (value: unknown): "CASH" | "CARD" | "WALLET" | null => {
 };
 
 const fetchPosOrdersList = async (): Promise<PosOrder[]> => {
-  const endpoints = ["/api/pos/order?page=1&limit=1000", "/api/pos/orders?page=1&limit=1000", "/admin/pos/orders?page=1&limit=1000"];
-  let lastError: unknown = null;
+  const items: PosOrder[] = [];
+  let page = 1;
+  let totalPages = 1;
 
-  for (const endpoint of endpoints) {
-    try {
-      const response = await api.get(endpoint);
-      const payload = unwrap<unknown>(response.data);
-      const record = (payload ?? {}) as Record<string, unknown>;
-      const raw =
-        (Array.isArray(payload) ? payload : null) ??
-        (Array.isArray(record.orders) ? record.orders : null) ??
-        (Array.isArray(record.posOrders) ? record.posOrders : null) ??
-        (Array.isArray(record.items) ? record.items : null) ??
-        (Array.isArray(record.data) ? record.data : null) ??
-        [];
+  do {
+    const response = await api.get("/api/pos/orders", {
+      params: { page, limit: 10 },
+    });
+    const payload = unwrap<unknown>(response.data);
+    const record = (payload ?? {}) as Record<string, unknown>;
+    const raw =
+      extractList<unknown>(payload).length > 0
+        ? extractList<unknown>(payload)
+        : Array.isArray(record.posOrders)
+          ? record.posOrders
+          : [];
 
-      return raw.map((item) => normalizePosOrder(item));
-    } catch (error) {
-      lastError = error;
-    }
-  }
+    items.push(...raw.map((item) => normalizePosOrder(item)));
+    const meta = extractPaginationMeta(payload);
+    page += 1;
+    totalPages = meta.totalPages;
+  } while (page <= totalPages);
 
-  throw lastError ?? new Error("Failed to fetch POS orders");
+  return items;
 };
 
 const sortByCreatedAtDesc = (orders: PosOrder[]) => {
@@ -417,16 +508,30 @@ export const posService = {
   },
 
   getProducts: async () => {
-    const response = await api.get("/products?page=1&limit=500");
-    const payload = unwrap<unknown>(response.data);
-    const record = (payload ?? {}) as Record<string, unknown>;
-    const raw =
-      (Array.isArray(payload) ? payload : null) ??
-      (Array.isArray(record.products) ? record.products : null) ??
-      (Array.isArray(record.items) ? record.items : null) ??
-      (Array.isArray(record.rows) ? record.rows : null) ??
-      (Array.isArray(record.data) ? record.data : null) ??
-      [];
+    const raw: unknown[] = [];
+    let page = 1;
+    let totalPages = 1;
+
+    do {
+      const response = await api.get("/products", {
+        params: { page, limit: 100 },
+      });
+      const payload = unwrap<unknown>(response.data);
+      raw.push(...extractList<unknown>(payload));
+      const pagination = extractPaginationMeta(payload);
+      const nextTotalPages = Number(
+        pagination.totalPages ??
+          Math.ceil(
+            Number(pagination.totalItems ?? raw.length) /
+              Math.max(1, Number(pagination.limit ?? 100))
+          )
+      );
+      totalPages =
+        Number.isFinite(nextTotalPages) && nextTotalPages > 0
+          ? nextTotalPages
+          : page;
+      page += 1;
+    } while (page <= totalPages);
 
     return raw
       .map((item) => {
@@ -551,11 +656,16 @@ export const posService = {
 
   getSessionReport: async (sessionId: string) => {
     const response = await api.get(`/api/pos/report/session/${sessionId}`);
-    return unwrap<SessionReport>(response.data);
+    return normalizeSessionReport(unwrap<unknown>(response.data));
   },
 
   getTopProducts: async (params: TopProductsParams) => {
     const response = await api.get("/api/pos/report/top-products", { params });
-    return unwrap<TopProductsResult>(response.data);
+    return normalizeTopProductsResult(unwrap<unknown>(response.data));
   },
+};
+
+export const __testing = {
+  normalizeSessionReport,
+  normalizeTopProductsResult,
 };

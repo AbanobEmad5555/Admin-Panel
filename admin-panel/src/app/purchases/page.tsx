@@ -67,6 +67,12 @@ type ApiListResponse<T> = {
   success?: boolean;
   data?: T | { data?: T; items?: T; list?: T; products?: T };
   message?: string;
+  pagination?: {
+    totalItems?: number;
+    currentPage?: number;
+    totalPages?: number;
+    limit?: number;
+  };
 };
 
 const defaultFilters: PurchaseFiltersValue = {
@@ -101,6 +107,29 @@ const extractList = <T,>(payload: unknown): T[] => {
     }
   }
   return [];
+};
+
+const extractPaginationMeta = (payload: unknown) => {
+  if (!payload || typeof payload !== "object") {
+    return {};
+  }
+  const record = payload as {
+    pagination?: {
+      totalItems?: number;
+      currentPage?: number;
+      totalPages?: number;
+      limit?: number;
+    };
+    data?: {
+      pagination?: {
+        totalItems?: number;
+        currentPage?: number;
+        totalPages?: number;
+        limit?: number;
+      };
+    };
+  };
+  return record.pagination ?? record.data?.pagination ?? {};
 };
 
 const formatVariantLabel = (variant?: VariantOption | CatalogProduct["variant"], fallback = "") => {
@@ -225,6 +254,33 @@ export default function PurchasesPage() {
           completeRequiredFields: "Please complete required fields.",
         };
 
+  const upsertPurchaseRow = (nextRow: PurchaseRow) => {
+    setRows((current) => {
+      let matched = false;
+
+      const nextRows = current.map((row) => {
+        const matchesById = Boolean(nextRow.id) && row.id === nextRow.id;
+        const matchesByPurchaseId =
+          Boolean(nextRow.purchaseId) && row.purchaseId === nextRow.purchaseId;
+
+        if (!matchesById && !matchesByPurchaseId) {
+          return row;
+        }
+
+        matched = true;
+        return {
+          ...row,
+          ...nextRow,
+          id: nextRow.id || row.id,
+          purchaseId: nextRow.purchaseId || row.purchaseId,
+          expectedArrivalDate: nextRow.expectedArrivalDate || row.expectedArrivalDate,
+        };
+      });
+
+      return matched ? nextRows : current;
+    });
+  };
+
   const refreshPurchases = async () => {
     setIsError(false);
     try {
@@ -246,8 +302,33 @@ export default function PurchasesPage() {
     const fetchCatalog = async () => {
       setCatalogLoading(true);
       try {
-        const [productsResponse, categoriesResponse, variantsResponse] = await Promise.all([
-          api.get<ApiListResponse<CatalogProduct[]>>("/products?page=1&limit=1000"),
+        const productRows: CatalogProduct[] = [];
+        let page = 1;
+        let totalPages = 1;
+
+        do {
+          const productsResponse = await api.get<ApiListResponse<CatalogProduct[]>>(
+            `/products?page=${page}&limit=100`
+          );
+          const payload = productsResponse.data?.data ?? productsResponse.data;
+          productRows.push(...extractList<CatalogProduct>(payload));
+
+          const pagination = extractPaginationMeta(productsResponse.data);
+          const nextTotalPages = Number(
+            pagination.totalPages ??
+              Math.ceil(
+                Number(pagination.totalItems ?? productRows.length) /
+                  Math.max(1, Number(pagination.limit ?? 100))
+              )
+          );
+          totalPages =
+            Number.isFinite(nextTotalPages) && nextTotalPages > 0
+              ? nextTotalPages
+              : page;
+          page += 1;
+        } while (page <= totalPages);
+
+        const [categoriesResponse, variantsResponse] = await Promise.all([
           api.get<ApiListResponse<CategoryOption[]>>("/categories"),
           api.get<ApiListResponse<VariantOption[]>>("/variants"),
         ]);
@@ -256,9 +337,7 @@ export default function PurchasesPage() {
           return;
         }
 
-        const productRows = extractList<CatalogProduct>(
-          productsResponse.data?.data ?? productsResponse.data
-        ).filter((product) => {
+        const activeProductRows = productRows.filter((product) => {
           if (typeof product.isActive === "boolean") {
             return product.isActive;
           }
@@ -266,7 +345,7 @@ export default function PurchasesPage() {
           return status ? status === "active" : true;
         });
 
-        setProducts(productRows);
+        setProducts(activeProductRows);
         setCategories(extractList<CategoryOption>(categoriesResponse.data?.data ?? categoriesResponse.data));
         setVariants(extractList<VariantOption>(variantsResponse.data?.data ?? variantsResponse.data));
       } catch {
@@ -603,8 +682,8 @@ export default function PurchasesPage() {
                 const nextStatus = nextStatusMap[row.status];
                 void purchasesApi
                   .patchStatus(row.id, nextStatus)
-                  .then(async () => {
-                    await refreshPurchases();
+                  .then((updatedRow) => {
+                    upsertPurchaseRow(updatedRow);
                     toast.success(text.purchaseStatusUpdated);
                   })
                   .catch(() => {
@@ -715,8 +794,8 @@ export default function PurchasesPage() {
                 }
                 void purchasesApi
                   .patchStatus(rowForStatusUpdate.id, "IN_TRANSIT", arrivalDateInput)
-                  .then(async () => {
-                    await refreshPurchases();
+                  .then((updatedRow) => {
+                    upsertPurchaseRow(updatedRow);
                     setArrivalDateModalOpen(false);
                     setRowForStatusUpdate(null);
                     toast.success(text.purchaseStatusUpdated);

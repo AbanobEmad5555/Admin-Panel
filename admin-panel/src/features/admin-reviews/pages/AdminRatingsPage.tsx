@@ -20,7 +20,6 @@ import {
   buildSearchParamsFromReviewsFilters,
   parseReviewsFiltersFromSearchParams,
 } from "@/features/admin-reviews/utils/adminReviewsUrlState";
-import { getCurrentAdminRole } from "@/features/admin-reviews/utils/adminRole";
 import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
 const DEFAULT_FILTERS: AdminReviewsFilters = {
@@ -50,8 +49,6 @@ export default function AdminRatingsPage() {
     return { ...DEFAULT_FILTERS, ...parsed };
   }, [searchParams]);
 
-  const role = useMemo(() => getCurrentAdminRole(), []);
-  const isAuthorized = role === "ADMIN";
   const text = useMemo(
     () =>
       language === "ar"
@@ -99,12 +96,6 @@ export default function AdminRatingsPage() {
           },
     [language],
   );
-
-  useEffect(() => {
-    if (!isAuthorized) {
-      router.replace("/403");
-    }
-  }, [isAuthorized, router]);
 
   const { data, isLoading, isError, error } = useAdminReviews(filters);
   const updateStatus = useUpdateReviewStatus();
@@ -219,12 +210,8 @@ export default function AdminRatingsPage() {
     setSelectedReview(refreshed);
   }, [reviews, selectedReview]);
 
-  if (!isAuthorized) {
-    return null;
-  }
-
   return (
-    <AdminLayout>
+    <AdminLayout requiredPermissions={["reviews.view"]}>
       <section className="space-y-4">
         <header className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <h1 className="text-xl font-semibold text-slate-900">{text.pageTitle}</h1>

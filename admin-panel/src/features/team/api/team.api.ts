@@ -1,4 +1,5 @@
 import api from "@/services/api";
+import type { StaffRoleSummary } from "@/features/admin-auth/types";
 import { getLocalizedValue } from "@/modules/localization/utils";
 import type {
   ApiEnvelope,
@@ -170,6 +171,20 @@ const withBilingualEmployeeAliases = <
     department: firstNonEmptyString(payload.departmentEn),
   }) as T;
 
+const normalizeStaffRoleSummary = (value: unknown): StaffRoleSummary | null => {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+  const row = value as Record<string, unknown>;
+  return {
+    id: toStringSafe(row.id),
+    code: toStringSafe(row.code),
+    name: toStringSafe(row.name),
+    isSystem: Boolean(row.isSystem),
+    legacyUserRole: toStringSafe(row.legacyUserRole, "") || null,
+  };
+};
+
 const normalizeEmployee = (value: unknown): Employee => {
   const row = (value ?? {}) as Record<string, unknown>;
   const fullNameEn = firstNonEmptyString(row.fullNameEn, row.full_name_en);
@@ -209,6 +224,10 @@ const normalizeEmployee = (value: unknown): Employee => {
     row.dept
   );
   const departmentAr = firstNonEmptyString(row.departmentAr, row.department_ar);
+  const authAccountRaw =
+    (row.authAccount ?? row.account ?? row.staffAccount ?? row.userAccount ?? null) as
+      | Record<string, unknown>
+      | null;
 
   return {
     id: toStringSafe(row.id),
@@ -252,6 +271,18 @@ const normalizeEmployee = (value: unknown): Employee => {
     statusReason: toStringSafe(row.statusReason ?? row.reason, "") || null,
     createdAt: toStringSafe(row.createdAt ?? row.created_at, "") || null,
     updatedAt: toStringSafe(row.updatedAt ?? row.updated_at, "") || null,
+    authAccount: authAccountRaw
+      ? {
+          userId: toStringSafe(authAccountRaw.userId ?? authAccountRaw.id),
+          email: toStringSafe(authAccountRaw.email, "") || null,
+          phone: toStringSafe(authAccountRaw.phone, "") || null,
+          staffAccountStatus:
+            (toStringSafe(authAccountRaw.staffAccountStatus ?? authAccountRaw.status, "") || null) as
+              NonNullable<Employee["authAccount"]>["staffAccountStatus"],
+          mustChangePassword: Boolean(authAccountRaw.mustChangePassword),
+          role: normalizeStaffRoleSummary(authAccountRaw.role),
+        }
+      : null,
   };
 };
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "@/components/layout/AdminLayout";
+import { extractList } from "@/lib/extractList";
 import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import api from "@/services/api";
 
@@ -173,7 +174,11 @@ const normalizeBestSellerPayload = (payload: unknown): BestSellerData => {
   };
 };
 
-const normalizeTopProductItem = (item: unknown, index: number): TopProduct => {
+const normalizeTopProductItem = (
+  item: unknown,
+  index: number,
+  unnamedProductLabel: string
+): TopProduct => {
   const record = (item ?? {}) as UnknownRecord;
   return {
     id: String(record.id ?? record.productId ?? record.sku ?? index),
@@ -183,7 +188,7 @@ const normalizeTopProductItem = (item: unknown, index: number): TopProduct => {
       (typeof record.title === "string" ? record.title : "") ||
       (typeof record.label === "string" ? record.label : "") ||
       (typeof record.product_title === "string" ? record.product_title : "") ||
-      text.unnamedProduct,
+      unnamedProductLabel,
     quantity: safeNumber(
       record.quantity ??
         record.qty ??
@@ -517,20 +522,10 @@ export default function SalesDashboardPage() {
           return;
         }
         const payload = response.data?.data ?? response.data;
-        let rawList: unknown[] = [];
-
-        if (Array.isArray(payload)) {
-          rawList = payload;
-        } else if (Array.isArray(payload?.items)) {
-          rawList = payload.items;
-        } else if (Array.isArray(payload?.products)) {
-          rawList = payload.products;
-        } else if (Array.isArray(payload?.data)) {
-          rawList = payload.data;
-        }
+        const rawList = extractList<unknown>(payload);
 
         const normalizedList = rawList.map((item, index) =>
-          normalizeTopProductItem(item, index)
+          normalizeTopProductItem(item, index, text.unnamedProduct)
         );
 
         if (!isMounted) {

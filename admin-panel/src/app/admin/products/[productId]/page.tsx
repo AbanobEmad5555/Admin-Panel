@@ -9,6 +9,7 @@ import Modal from "@/components/ui/Modal";
 import PurchaseStatusBadge from "@/components/purchases/PurchaseStatusBadge";
 import type { PurchaseRow } from "@/components/purchases/types";
 import { purchasesApi } from "@/features/purchases/api/purchases.api";
+import { extractList } from "@/lib/extractList";
 import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import api from "@/services/api";
 
@@ -461,11 +462,12 @@ export default function ProductDetailsPage() {
         const response = await api.get<ApiResponse<Product>>(
           `/admin/products/${productId}`
         );
-        const payload =
-          response.data?.data?.product ??
-          response.data?.product ??
-          response.data?.data ??
-          response.data;
+        const responseRecord = (response.data ?? {}) as Record<string, unknown>;
+        const dataRecord = (responseRecord.data ?? {}) as Record<string, unknown>;
+        const payload = ((dataRecord.product ??
+          responseRecord.product ??
+          responseRecord.data ??
+          responseRecord) ?? null) as Product | null;
         setProduct(payload ?? null);
         if (payload) {
           setNameInput(payload.name ?? "");
@@ -528,8 +530,8 @@ export default function ProductDetailsPage() {
           api.get<ApiResponse<Category[]>>("/categories"),
           api.get<ApiResponse<Variant[]>>("/variants"),
         ]);
-        setCategories(categoriesResponse.data?.data ?? []);
-        setVariants(variantsResponse.data?.data ?? []);
+        setCategories(extractList<Category>(categoriesResponse.data?.data ?? categoriesResponse.data));
+        setVariants(extractList<Variant>(variantsResponse.data?.data ?? variantsResponse.data));
       } catch {
         setCategories([]);
         setVariants([]);

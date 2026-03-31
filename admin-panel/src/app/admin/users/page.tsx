@@ -6,7 +6,9 @@ import AdminLayout from "@/components/layout/AdminLayout";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
+import { extractList } from "@/lib/extractList";
 import { useLocalization } from "@/modules/localization/LocalizationProvider";
+import BilingualControlledField from "@/modules/shared/components/BilingualControlledField";
 import api from "@/services/api";
 import LocalizedDisplayText from "@/modules/shared/components/LocalizedDisplayText";
 import { getLocalizedValue } from "@/modules/localization/utils";
@@ -294,17 +296,12 @@ export default function AdminUsersPage() {
         `/admin/users?${params.toString()}`
       );
       const payload = response.data?.data ?? response.data;
-      const list: User[] = Array.isArray(payload)
-        ? payload
-        : payload && typeof payload === "object" && "users" in payload
-          ? ((payload as UsersPayload).users ?? [])
-          : [];
+      const record = (payload ?? {}) as Record<string, unknown>;
+      const list = extractList<User>(payload);
       const filteredList = list.filter((user: User) => resolveStatus(user) !== "DELETED");
-      const pagination = Array.isArray(payload)
-        ? response.data?.pagination
-        : payload && typeof payload === "object" && "pagination" in payload
-          ? (payload as UsersPayload).pagination ?? response.data?.pagination
-          : response.data?.pagination;
+      const pagination =
+        (record.pagination as UsersPayload["pagination"] | undefined) ??
+        response.data?.pagination;
 
       setUsers(filteredList);
       setCurrentPage(pagination?.currentPage ?? safePage);
@@ -506,7 +503,7 @@ export default function AdminUsersPage() {
     resolveStatus(user) === "ACTIVE" ? text.suspend : text.activate;
 
   return (
-    <AdminLayout>
+    <AdminLayout requiredPermissions={["customers.view"]}>
       <div className="space-y-6">
         {toastMessage ? (
           <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-700">
@@ -743,24 +740,16 @@ export default function AdminUsersPage() {
         onClose={() => setIsAddOpen(false)}
       >
         <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">{text.nameEnglish}</label>
-            <Input
-              value={nameEnInput}
-              onChange={(event) => setNameEnInput(event.target.value)}
-              placeholder={text.enterEnglishName}
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">{text.nameArabic}</label>
-            <Input
-              value={nameArInput}
-              onChange={(event) => setNameArInput(event.target.value)}
-              placeholder={text.enterArabicName}
-              dir="rtl"
-              className="text-right"
-            />
-          </div>
+          <BilingualControlledField
+            label={language === "ar" ? "Ø§Ù„Ø§Ø³Ù…" : "Name"}
+            valueEn={nameEnInput}
+            valueAr={nameArInput}
+            onChangeEn={setNameEnInput}
+            onChangeAr={setNameArInput}
+            placeholderEn={text.enterEnglishName}
+            placeholderAr={text.enterArabicName}
+            requiredEn
+          />
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">{text.email}</label>
             <Input
@@ -829,24 +818,16 @@ export default function AdminUsersPage() {
         onClose={() => setIsEditOpen(false)}
       >
         <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">{text.nameEnglish}</label>
-            <Input
-              value={nameEnInput}
-              onChange={(event) => setNameEnInput(event.target.value)}
-              placeholder={text.enterEnglishName}
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">{text.nameArabic}</label>
-            <Input
-              value={nameArInput}
-              onChange={(event) => setNameArInput(event.target.value)}
-              placeholder={text.enterArabicName}
-              dir="rtl"
-              className="text-right"
-            />
-          </div>
+          <BilingualControlledField
+            label={language === "ar" ? "Ø§Ù„Ø§Ø³Ù…" : "Name"}
+            valueEn={nameEnInput}
+            valueAr={nameArInput}
+            onChangeEn={setNameEnInput}
+            onChangeAr={setNameArInput}
+            placeholderEn={text.enterEnglishName}
+            placeholderAr={text.enterArabicName}
+            requiredEn
+          />
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">{text.email}</label>
             <Input

@@ -1,21 +1,45 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
-import { clearAdminToken, getAdminToken } from "@/lib/auth";
+import { ADMIN_TOKEN_EVENT, clearAdminToken, getAdminToken } from "@/lib/auth";
+import { useHasHydrated } from "@/lib/useHasHydrated";
 import { useLocalization } from "@/modules/localization/LocalizationProvider";
+
+const subscribe = (onStoreChange: () => void) => {
+  if (typeof window === "undefined") {
+    return () => undefined;
+  }
+
+  const handleChange = () => onStoreChange();
+  window.addEventListener("storage", handleChange);
+  window.addEventListener(ADMIN_TOKEN_EVENT, handleChange);
+
+  return () => {
+    window.removeEventListener("storage", handleChange);
+    window.removeEventListener(ADMIN_TOKEN_EVENT, handleChange);
+  };
+};
 
 export default function HomeAuthAction() {
   const router = useRouter();
-  const [isSignedIn, setIsSignedIn] = useState(() => Boolean(getAdminToken()));
+  const mounted = useHasHydrated();
+  const isSignedIn = useSyncExternalStore(
+    subscribe,
+    () => Boolean(getAdminToken()),
+    () => false
+  );
   const { language } = useLocalization();
 
   const handleSignOut = () => {
     clearAdminToken();
-    setIsSignedIn(false);
     router.replace("/login");
   };
+
+  if (!mounted) {
+    return <div className="h-9 w-20 rounded-md border border-slate-300 bg-white" aria-hidden="true" />;
+  }
 
   if (isSignedIn) {
     return (

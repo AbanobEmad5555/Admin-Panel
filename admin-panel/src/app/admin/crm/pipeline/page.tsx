@@ -68,6 +68,12 @@ type ApiResponse<T> = {
   success?: boolean;
   message?: string;
   data?: T;
+  pagination?: {
+    totalItems?: number;
+    currentPage?: number;
+    totalPages?: number;
+    limit?: number;
+  };
 };
 
 type ColumnsState = Record<OrderStatus, OrderCard[]>;
@@ -218,6 +224,31 @@ const extractOrders = (payload: unknown): ApiOrder[] => {
   return [];
 };
 
+const extractPaginationMeta = (payload: unknown) => {
+  if (!payload || typeof payload !== "object") {
+    return {};
+  }
+
+  const record = payload as {
+    pagination?: {
+      totalItems?: number;
+      currentPage?: number;
+      totalPages?: number;
+      limit?: number;
+    };
+    data?: {
+      pagination?: {
+        totalItems?: number;
+        currentPage?: number;
+        totalPages?: number;
+        limit?: number;
+      };
+    };
+  };
+
+  return record.pagination ?? record.data?.pagination ?? {};
+};
+
 const formatCurrency = (amount: number) => {
   return `${new Intl.NumberFormat("en-EG", {
     minimumFractionDigits: 2,
@@ -293,6 +324,11 @@ const updateOrderStatus = async (
 
   if (apiStatus === "COMPLETED") {
     await api.put(`/orders/${orderId}/complete`);
+    return { deliveryDateAssigned: false };
+  }
+
+  if (apiStatus === "CANCELLED") {
+    await api.put(`/orders/${orderId}/cancel`);
     return { deliveryDateAssigned: false };
   }
 
@@ -376,30 +412,30 @@ export default function CrmPipelinePage() {
     setError("");
 
     try {
-      const candidates = [
-        "/orders?page=1&limit=1000",
-        "/orders?page=1&limit=200",
-        "/orders?page=1",
-        "/orders",
-      ];
+      const list: ApiOrder[] = [];
+      let page = 1;
+      let totalPages = 1;
 
-      let list: ApiOrder[] = [];
-      let lastError: unknown = null;
+      do {
+        const response = await api.get<ApiResponse<OrdersPayload>>(
+          `/orders?page=${page}&limit=100`
+        );
+        list.push(...extractOrders(response.data));
 
-      for (const endpoint of candidates) {
-        try {
-          const response = await api.get<ApiResponse<OrdersPayload>>(endpoint);
-          list = extractOrders(response.data);
-          lastError = null;
-          break;
-        } catch (err) {
-          lastError = err;
-        }
-      }
-
-      if (lastError) {
-        throw lastError;
-      }
+        const pagination = extractPaginationMeta(response.data);
+        const nextTotalPages = Number(
+          pagination.totalPages ??
+            Math.ceil(
+              Number(pagination.totalItems ?? list.length) /
+                Math.max(1, Number(pagination.limit ?? 100))
+            )
+        );
+        totalPages =
+          Number.isFinite(nextTotalPages) && nextTotalPages > 0
+            ? nextTotalPages
+            : page;
+        page += 1;
+      } while (page <= totalPages);
 
       const normalizedOrders = list
         .map(normalizeOrder)
@@ -493,7 +529,7 @@ export default function CrmPipelinePage() {
 
   if (!isMounted) {
     return (
-      <AdminLayout>
+      <AdminLayout requiredPermissions={["orders.view", "temp_orders.view"]}>
         <div className="flex min-h-[420px] items-center justify-center p-6">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-slate-600" />
         </div>
@@ -502,7 +538,7 @@ export default function CrmPipelinePage() {
   }
 
   return (
-    <AdminLayout>
+    <AdminLayout requiredPermissions={["orders.view", "temp_orders.view"]}>
       <div className="space-y-4">
         <div className="px-6 pt-2">
           <h1 className="text-3xl font-bold text-slate-900">{text.title}</h1>

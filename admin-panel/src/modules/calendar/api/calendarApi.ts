@@ -82,25 +82,10 @@ export const calendarApi = {
     month: string,
     pagination?: PaginationInput,
   ): Promise<CalendarOrder[]> {
-    try {
-      const response = await api.get("/api/admin/calendar/orders/canceled", {
-        params: buildMonthParams(month, pagination),
-      });
-      return mapCalendarOrdersResponse(response.data);
-    } catch (error) {
-      const status = (error as { response?: { status?: number } }).response?.status;
-      if (status !== 404) {
-        throw error;
-      }
-
-      const fallback = await api.get("/api/admin/calendar/orders", {
-        params: {
-          ...buildMonthParams(month, pagination),
-          status: "CANCELLED",
-        },
-      });
-      return mapCalendarOrdersResponse(fallback.data);
-    }
+    const response = await api.get("/api/admin/calendar/canceled-orders", {
+      params: buildMonthParams(month, pagination),
+    });
+    return mapCalendarOrdersResponse(response.data);
   },
 
   async getCalendarEvents(month: string): Promise<CalendarManualEvent[]> {

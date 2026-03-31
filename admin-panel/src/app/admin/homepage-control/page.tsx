@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "@/components/layout/AdminLayout";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import { extractList } from "@/lib/extractList";
 import api from "@/services/api";
 import Modal from "@/components/ui/Modal";
 import { ADMIN_TOKEN_KEY } from "@/lib/auth";
@@ -402,7 +403,7 @@ export default function HomepageControlPage() {
         const response = await adminFetch<ApiResponse<HeroStat[]>>(
           "/api/admin/homepage/hero-stats"
         );
-        const normalized = (response.data ?? [])
+        const normalized = extractList<HeroStat>(response.data)
           .map((stat) => ({ ...stat, id: Number(stat.id) }))
           .filter((stat) => Number.isFinite(stat.id));
         setHeroStats(normalized);
@@ -424,7 +425,7 @@ export default function HomepageControlPage() {
         const response = await adminFetch<ApiResponse<WhyShopCard[]>>(
           "/api/admin/homepage/why-shop"
         );
-        const normalized = (response.data ?? [])
+        const normalized = extractList<WhyShopCard>(response.data)
           .map((card) => ({ ...card, id: Number(card.id) }))
           .filter((card) => Number.isFinite(card.id));
         setWhyShopCards(normalized);
@@ -446,7 +447,7 @@ export default function HomepageControlPage() {
         const response = await api.get<ApiResponse<SocialLink[]>>(
           "/admin/social-links"
         );
-        const data = response.data?.data ?? [];
+        const data = extractList<SocialLink>(response.data?.data ?? response.data);
         const normalized = SOCIAL_PLATFORMS.map((platform) => {
           const match = data.find(
             (item) => item.platform?.toLowerCase() === platform.key

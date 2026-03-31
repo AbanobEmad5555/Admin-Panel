@@ -2,216 +2,205 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef } from "react";
+import { useAdminAuth } from "@/features/admin-auth/AdminAuthProvider";
 import { useLocalization } from "@/modules/localization/LocalizationProvider";
+import type { AdminNavigationLink, AdminNavigationModule } from "@/features/admin-auth/types";
 
-type NavSection = {
-  moduleKey: string;
-  items: { href: string; labelKey: string }[];
+const SIDEBAR_SCROLL_STORAGE_KEY = "admin-sidebar-scroll-top";
+
+const MODULE_DISPLAY_ORDER = [
+  "dashboards",
+  "inventory",
+  "crm",
+  "calendar",
+  "pos",
+  "invoices",
+  "purchases",
+  "website",
+  "promo-codes",
+  "team",
+  "loyalty-program",
+  "system",
+] as const;
+
+const LINK_DISPLAY_ORDER: Record<string, string[]> = {
+  dashboards: ["/dashboard", "/admin/sales"],
+  inventory: ["/admin/products", "/categories", "/variants"],
+  crm: ["/admin/orders", "/admin/crm/pipeline", "/admin/crm/leads", "/admin/users"],
+  calendar: ["/calendar"],
+  pos: ["/admin/pos", "/admin/pos/daily-report", "/admin/pos/session-report", "/admin/pos/top-products"],
+  invoices: ["/admin/invoices"],
+  purchases: ["/purchases/summary", "/purchases", "/purchases/costs", "/purchases/operational-costs"],
+  website: [
+    "/admin/homepage-control",
+    "/admin/faqs",
+    "/admin/footer-settings",
+    "/admin/social-links",
+    "/admin/ratings",
+    "/admin/terms-conditions",
+    "/admin/privacy-policy",
+  ],
+  "promo-codes": ["/admin/promo-codes"],
+  team: ["/admin/team", "/admin/team/roles"],
+  "loyalty-program": ["/admin/loyalty", "/admin/loyalty/settings", "/admin/loyalty/users"],
+  system: ["/admin/notifications", "/admin/notification-preferences", "/admin/settings/localization"],
 };
 
-const navSections: NavSection[] = [
+const LINK_PRESENTATION_OVERRIDES: Record<
+  string,
   {
-    moduleKey: "nav.dashboards",
-    items: [
-      { href: "/dashboard", labelKey: "nav.dashboard" },
-      { href: "/admin/sales", labelKey: "nav.salesDashboard" },
-    ],
+    href?: string;
+    label?: string;
+  }
+> = {
+  "/admin/team/employees": {
+    href: "/admin/team",
+    label: "Team",
   },
-  {
-    moduleKey: "nav.finance",
-    items: [
-      { href: "/admin/invoices", labelKey: "nav.invoices" },
-    ],
-  },
-  {
-    moduleKey: "nav.purchases",
-    items: [
-      { href: "/purchases", labelKey: "nav.purchases" },
-      { href: "/purchases/costs", labelKey: "nav.operationalCosts" },
-      { href: "/purchases/summary", labelKey: "nav.summary" },
-    ],
-  },
-  {
-    moduleKey: "nav.inventory",
-    items: [
-      { href: "/admin/products", labelKey: "nav.products" },
-      { href: "/admin/ratings", labelKey: "nav.ratings" },
-      { href: "/categories", labelKey: "nav.categories" },
-      { href: "/variants", labelKey: "nav.variants" },
-    ],
-  },
-  {
-    moduleKey: "nav.crm",
-    items: [
-      { href: "/admin/orders", labelKey: "nav.orders" },
-      { href: "/admin/crm/pipeline", labelKey: "nav.crmPipeline" },
-      { href: "/admin/crm/leads", labelKey: "nav.leads" },
-      { href: "/admin/users", labelKey: "nav.users" },
-    ],
-  },
-  {
-    moduleKey: "nav.adminPanel",
-    items: [
-      { href: "/calendar", labelKey: "nav.calendar" },
-    ],
-  },
-  {
-    moduleKey: "nav.team",
-    items: [
-      { href: "/admin/team", labelKey: "nav.team" },
-    ],
-  },
-  {
-    moduleKey: "nav.website",
-    items: [
-      { href: "/admin/homepage-control", labelKey: "nav.homepageControl" },
-      { href: "/admin/faqs", labelKey: "nav.faqCategories" },
-      { href: "/admin/terms-conditions", labelKey: "nav.termsConditions" },
-      { href: "/admin/privacy-policy", labelKey: "nav.privacyPolicy" },
-    ],
-  },
-  {
-    moduleKey: "nav.promoCodes",
-    items: [{ href: "/admin/promo-codes", labelKey: "nav.promoCodes" }],
-  },
-  {
-    moduleKey: "nav.pos",
-    items: [
-      { href: "/admin/pos", labelKey: "nav.posTerminal" },
-      { href: "/admin/pos/daily-report", labelKey: "nav.dailyReport" },
-      { href: "/admin/pos/session-report", labelKey: "nav.sessionReport" },
-      { href: "/admin/pos/top-products", labelKey: "nav.topProducts" },
-    ],
-  },
-];
+};
+
+const getModuleOrder = (moduleId: string) => {
+  const index = MODULE_DISPLAY_ORDER.indexOf(moduleId as (typeof MODULE_DISPLAY_ORDER)[number]);
+  return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+};
+
+const sortLinks = (moduleId: string, links: AdminNavigationLink[]) => {
+  const preferredOrder = LINK_DISPLAY_ORDER[moduleId] ?? [];
+  return [...links].sort((left, right) => {
+    const leftHref = getSidebarLinkHref(left);
+    const rightHref = getSidebarLinkHref(right);
+    const leftIndex = preferredOrder.indexOf(leftHref);
+    const rightIndex = preferredOrder.indexOf(rightHref);
+
+    if (leftIndex !== -1 || rightIndex !== -1) {
+      if (leftIndex === -1) {
+        return 1;
+      }
+      if (rightIndex === -1) {
+        return -1;
+      }
+      return leftIndex - rightIndex;
+    }
+
+    if (left.position !== right.position) {
+      return left.position - right.position;
+    }
+
+    return getSidebarLinkLabel(left).localeCompare(getSidebarLinkLabel(right));
+  });
+};
+
+const sortModules = (modules: AdminNavigationModule[]) =>
+  [...modules].sort((left, right) => {
+    const leftOrder = getModuleOrder(left.moduleId);
+    const rightOrder = getModuleOrder(right.moduleId);
+
+    if (leftOrder !== rightOrder) {
+      return leftOrder - rightOrder;
+    }
+
+    if (left.position !== right.position) {
+      return left.position - right.position;
+    }
+
+    return left.label.localeCompare(right.label);
+  });
+
+const normalizePathname = (value: string) => {
+  if (!value || value === "/") {
+    return value || "/";
+  }
+  return value.endsWith("/") ? value.slice(0, -1) : value;
+};
+
+export const getActiveSidebarHref = (
+  pathname: string,
+  links: Array<Pick<AdminNavigationLink, "href">>
+) => {
+  const normalizedPath = normalizePathname(pathname);
+
+  return (
+    links
+      .map((link) => getSidebarLinkHref(link))
+      .filter((href) => {
+        const normalizedHref = normalizePathname(href);
+        return (
+          normalizedPath === normalizedHref ||
+          (normalizedHref !== "/" && normalizedPath.startsWith(`${normalizedHref}/`))
+        );
+      })
+      .sort((left, right) => normalizePathname(right).length - normalizePathname(left).length)[0] ?? null
+  );
+};
+
+export const getSidebarLinkHref = (link: Pick<AdminNavigationLink, "href">) =>
+  LINK_PRESENTATION_OVERRIDES[link.href]?.href ?? link.href;
+
+export const getSidebarLinkLabel = (link: Pick<AdminNavigationLink, "href" | "label">) =>
+  LINK_PRESENTATION_OVERRIDES[link.href]?.label ?? link.label;
+
+export const getSortedSidebarModules = (modules: AdminNavigationModule[]) =>
+  sortModules(
+    modules
+      .filter((moduleItem) => moduleItem.isVisible)
+      .map((moduleItem) => ({
+        ...moduleItem,
+        links: sortLinks(
+          moduleItem.moduleId,
+          moduleItem.links.filter((link) => link.isAccessible)
+        ),
+      }))
+      .filter((moduleItem) => moduleItem.links.length > 0)
+  );
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { direction, t } = useLocalization();
+  const { profile } = useAdminAuth();
+  const navRef = useRef<HTMLElement | null>(null);
 
-  const isRouteActive = (href: string) => {
-    if (pathname === href) {
-      return true;
-    }
-    if (!pathname.startsWith(`${href}/`)) {
-      return false;
-    }
+  const modules = getSortedSidebarModules(profile?.navigation?.modules ?? []);
+  const activeHref = getActiveSidebarHref(
+    pathname,
+    modules.flatMap((moduleItem) => moduleItem.links)
+  );
 
-    const hasMoreSpecificMatch = navSections.some((section) =>
-      section.items.some(
-        (item) =>
-          item.href !== href &&
-          item.href.startsWith(`${href}/`) &&
-          (pathname === item.href || pathname.startsWith(`${item.href}/`))
-      )
-    );
-
-    return !hasMoreSpecificMatch;
-  };
-
-  const getSectionByPath = () => {
-    if (pathname === "/dashboard" || pathname.startsWith("/admin/sales")) {
-      return "nav.dashboards";
+  useEffect(() => {
+    const navElement = navRef.current;
+    if (!navElement || typeof window === "undefined") {
+      return;
     }
 
-    if (pathname === "/admin/sales" || pathname.startsWith("/admin/sales/")) {
-      return "nav.dashboards";
+    const storedValue = window.sessionStorage.getItem(SIDEBAR_SCROLL_STORAGE_KEY);
+    if (!storedValue) {
+      return;
     }
 
-    if (
-      pathname === "/admin/invoices" ||
-      pathname.startsWith("/admin/invoices/")
-    ) {
-      return "nav.finance";
+    const scrollTop = Number(storedValue);
+    if (Number.isFinite(scrollTop)) {
+      navElement.scrollTop = scrollTop;
+    }
+  }, [pathname]);
+
+  useEffect(() => {
+    const navElement = navRef.current;
+    if (!navElement || typeof window === "undefined") {
+      return;
     }
 
-    if (
-      pathname === "/purchases" ||
-      pathname.startsWith("/purchases/")
-    ) {
-      return "nav.purchases";
-    }
+    const handleScroll = () => {
+      window.sessionStorage.setItem(
+        SIDEBAR_SCROLL_STORAGE_KEY,
+        String(navElement.scrollTop)
+      );
+    };
 
-    if (
-      pathname === "/products" ||
-      pathname.startsWith("/products/") ||
-      pathname === "/categories" ||
-      pathname.startsWith("/categories/") ||
-      pathname === "/variants" ||
-      pathname.startsWith("/variants/") ||
-      pathname === "/admin/products" ||
-      pathname.startsWith("/admin/products/") ||
-      pathname === "/admin/ratings" ||
-      pathname.startsWith("/admin/ratings/")
-    ) {
-      return "nav.inventory";
-    }
-
-    if (
-      pathname === "/calendar" ||
-      pathname.startsWith("/calendar/")
-    ) {
-      return "nav.adminPanel";
-    }
-
-    if (
-      pathname === "/admin/team" ||
-      pathname.startsWith("/admin/team/")
-    ) {
-      return "nav.team";
-    }
-
-    if (
-      pathname === "/users" ||
-      pathname.startsWith("/users/") ||
-      pathname === "/admin/users" ||
-      pathname.startsWith("/admin/users/") ||
-      pathname === "/orders" ||
-      pathname.startsWith("/orders/") ||
-      pathname === "/admin/orders" ||
-      pathname.startsWith("/admin/orders/") ||
-      pathname === "/admin/crm/pipeline" ||
-      pathname.startsWith("/admin/crm/pipeline/") ||
-      pathname === "/admin/crm/leads" ||
-      pathname.startsWith("/admin/crm/leads/")
-    ) {
-      return "nav.crm";
-    }
-
-    if (
-      pathname === "/admin/homepage-control" ||
-      pathname.startsWith("/admin/homepage-control/") ||
-      pathname === "/admin/faqs" ||
-      pathname.startsWith("/admin/faqs/") ||
-      pathname === "/admin/terms-conditions" ||
-      pathname.startsWith("/admin/terms-conditions/") ||
-      pathname === "/admin/privacy-policy" ||
-      pathname.startsWith("/admin/privacy-policy/")
-    ) {
-      return "nav.website";
-    }
-
-    if (
-      pathname === "/admin/promo-codes" ||
-      pathname.startsWith("/admin/promo-codes/")
-    ) {
-      return "nav.promoCodes";
-    }
-
-    if (
-      pathname === "/admin/pos" ||
-      pathname.startsWith("/admin/pos/")
-    ) {
-      return "nav.pos";
-    }
-
-    return null;
-  };
-
-  const activeSection = getSectionByPath();
-  const visibleSections = activeSection
-    ? navSections.filter((section) => section.moduleKey === activeSection)
-    : navSections;
+    navElement.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      navElement.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
 
   return (
     <aside
@@ -225,26 +214,27 @@ export default function Sidebar() {
       >
         {t("app.name")}
       </Link>
-      <nav className="h-[calc(100vh-4rem)] overflow-y-auto px-3 pb-4">
-        {visibleSections.map((section) => (
-          <div key={section.moduleKey} className="mb-5">
-            <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
-              {t(section.moduleKey)}
+      <nav ref={navRef} className="h-[calc(100vh-4rem)] overflow-y-auto px-3 pb-4">
+        {modules.map((moduleItem) => (
+          <div key={moduleItem.moduleId} className="mb-5">
+            <p className="mb-2 px-3 text-base font-extrabold uppercase tracking-wide text-slate-800">
+              {moduleItem.label}
             </p>
             <div>
-              {section.items.map((item) => {
-                const isActive = isRouteActive(item.href);
+              {moduleItem.links.map((link) => {
+                const linkHref = getSidebarLinkHref(link);
+                const isActive = activeHref === linkHref;
                 return (
                   <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`mb-1 flex items-center rounded-md px-3 py-2 text-sm font-medium transition ${
+                    key={link.id}
+                    href={linkHref}
+                    className={`mb-1 flex items-center rounded-md px-3 py-2.5 text-[15px] font-medium leading-6 transition ${
                       isActive
                         ? "bg-slate-900 text-white"
                         : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                     }`}
                   >
-                    {t(item.labelKey)}
+                    {getSidebarLinkLabel(link)}
                   </Link>
                 );
               })}

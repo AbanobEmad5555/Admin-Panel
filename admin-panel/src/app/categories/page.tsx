@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -6,6 +6,7 @@ import AdminLayout from "@/components/layout/AdminLayout";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
+import BilingualControlledField from "@/modules/shared/components/BilingualControlledField";
 import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import api from "@/services/api";
 import LocalizedDisplayText from "@/modules/shared/components/LocalizedDisplayText";
@@ -26,6 +27,26 @@ type ApiListResponse<T> = {
   success: boolean;
   data: T;
   message?: string;
+};
+
+const extractCategories = (payload: unknown): Category[] => {
+  if (Array.isArray(payload)) {
+    return payload as Category[];
+  }
+
+  if (payload && typeof payload === "object") {
+    const record = payload as { items?: unknown; data?: unknown };
+
+    if (Array.isArray(record.items)) {
+      return record.items as Category[];
+    }
+
+    if (Array.isArray(record.data)) {
+      return record.data as Category[];
+    }
+  }
+
+  return [];
 };
 
 const formatDate = (value: string) => {
@@ -98,7 +119,7 @@ export default function CategoriesPage() {
       const response = await api.get<ApiListResponse<Category[]>>(
         `/categories${query ? `?${query}` : ""}`
       );
-      setCategories(response.data?.data ?? []);
+      setCategories(extractCategories(response.data?.data ?? response.data));
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -418,28 +439,16 @@ export default function CategoriesPage() {
           onClose={() => setIsAddOpen(false)}
         >
           <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">
-                {language === "ar" ? "اسم الفئة (بالإنجليزية)" : "Category Name (English)"}
-              </label>
-              <Input
-                value={nameEnInput}
-                onChange={(event) => setNameEnInput(event.target.value)}
-                placeholder={language === "ar" ? "أدخل اسم الفئة" : "Enter category name"}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">
-                {language === "ar" ? "اسم الفئة (بالعربية)" : "Category Name (Arabic)"}
-              </label>
-              <Input
-                value={nameArInput}
-                onChange={(event) => setNameArInput(event.target.value)}
-                placeholder={language === "ar" ? "أدخل اسم الفئة بالعربية" : "Enter Arabic category name"}
-                dir="rtl"
-                className="text-right"
-              />
-            </div>
+            <BilingualControlledField
+              label="Category Name"
+              valueEn={nameEnInput}
+              valueAr={nameArInput}
+              onChangeEn={setNameEnInput}
+              onChangeAr={setNameArInput}
+              placeholderEn="Enter category name"
+              placeholderAr="Enter Arabic category name"
+              requiredEn
+            />
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
                 {language === "ar" ? "صورة الفئة" : "Category Image"}
@@ -495,28 +504,16 @@ export default function CategoriesPage() {
           onClose={() => setIsEditOpen(false)}
         >
           <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">
-                {language === "ar" ? "اسم الفئة (بالإنجليزية)" : "Category Name (English)"}
-              </label>
-              <Input
-                value={nameEnInput}
-                onChange={(event) => setNameEnInput(event.target.value)}
-                placeholder={language === "ar" ? "أدخل اسم الفئة" : "Enter category name"}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">
-                {language === "ar" ? "اسم الفئة (بالعربية)" : "Category Name (Arabic)"}
-              </label>
-              <Input
-                value={nameArInput}
-                onChange={(event) => setNameArInput(event.target.value)}
-                placeholder={language === "ar" ? "أدخل اسم الفئة بالعربية" : "Enter Arabic category name"}
-                dir="rtl"
-                className="text-right"
-              />
-            </div>
+            <BilingualControlledField
+              label="Category Name"
+              valueEn={nameEnInput}
+              valueAr={nameArInput}
+              onChangeEn={setNameEnInput}
+              onChangeAr={setNameArInput}
+              placeholderEn="Enter category name"
+              placeholderAr="Enter Arabic category name"
+              requiredEn
+            />
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
                 {language === "ar" ? "صورة الفئة" : "Category Image"}

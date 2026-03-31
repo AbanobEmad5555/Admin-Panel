@@ -3,6 +3,12 @@ import { NextResponse } from "next/server";
 const getApiUrl = () => process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 const SOCIAL_PLATFORMS = ["facebook", "instagram", "x", "snapchat"] as const;
 
+type SocialLinkPayload = {
+  platform?: string;
+  url?: string;
+  isActive?: boolean;
+};
+
 export async function GET() {
   const apiUrl = getApiUrl();
   if (!apiUrl) {
@@ -29,7 +35,10 @@ export async function GET() {
   }
 
   const data = results.map(({ platform, payload }) => {
-    const link = (payload as { data?: any })?.data ?? payload ?? {};
+    const link =
+      ((payload as { data?: SocialLinkPayload })?.data ??
+        payload ??
+        {}) as SocialLinkPayload;
     return {
       platform:
         typeof link.platform === "string" ? link.platform : platform,

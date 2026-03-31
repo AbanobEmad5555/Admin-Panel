@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Modal from "@/components/ui/Modal";
 import EmployeeForm from "@/features/team/components/EmployeeForm";
@@ -24,7 +24,12 @@ export default function EditEmployeeDrawer({
   const { language } = useLocalization();
 
   return (
-    <Modal title={language === "ar" ? "تعديل الموظف" : "Edit Employee"} isOpen={open} onClose={onClose}>
+    <Modal
+      title={language === "ar" ? "تعديل الموظف" : "Edit Employee"}
+      isOpen={open}
+      onClose={onClose}
+      panelClassName="max-w-4xl"
+    >
       <div className="max-h-[75vh] overflow-y-auto pr-1">
         <EmployeeForm
           mode="edit"
@@ -37,3 +42,4 @@ export default function EditEmployeeDrawer({
     </Modal>
   );
 }
+

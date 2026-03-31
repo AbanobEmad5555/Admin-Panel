@@ -1,12 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 const getApiUrl = () => process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 type Params = {
-  params: { platform: string };
+  params: Promise<{ platform: string }>;
 };
 
-export async function PUT(request: Request, { params }: Params) {
+export async function PUT(request: NextRequest, context: Params) {
+  const { platform } = await context.params;
   const apiUrl = getApiUrl();
   if (!apiUrl) {
     return NextResponse.json(
@@ -17,7 +18,7 @@ export async function PUT(request: Request, { params }: Params) {
   const auth = request.headers.get("authorization");
   const body = await request.json();
   const response = await fetch(
-    `${apiUrl}/admin/social-links/${params.platform}`,
+    `${apiUrl}/admin/social-links/${platform}`,
     {
       method: "PUT",
       headers: {

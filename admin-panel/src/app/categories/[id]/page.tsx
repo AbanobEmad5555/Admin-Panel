@@ -7,6 +7,7 @@ import AdminLayout from "@/components/layout/AdminLayout";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
+import { extractList } from "@/lib/extractList";
 import api from "@/services/api";
 
 type Category = {
@@ -191,16 +192,17 @@ export default function CategoryDetailsPage() {
       const response = await api.get<ApiResponse<CategoryPayload>>(
         `/categories/${categoryId}`
       );
-      const payload = response.data?.data ?? {};
-      const resolvedCategory = payload.category ?? payload;
-      const resolvedProducts =
+      const payload = ((response.data?.data ?? {}) as Record<string, unknown>);
+      const resolvedCategory = ((payload.category ?? payload) ?? null) as Category | null;
+      const resolvedProducts = extractList<Product>(
         payload.products ??
-        (payload as CategoryPayload).products ??
-        (resolvedCategory as CategoryPayload).products ??
-        [];
+          (payload as CategoryPayload).products ??
+          (resolvedCategory as CategoryPayload).products ??
+          []
+      );
 
-      setCategory(resolvedCategory ?? null);
-      setProducts(Array.isArray(resolvedProducts) ? resolvedProducts : []);
+      setCategory(resolvedCategory);
+      setProducts(resolvedProducts);
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {

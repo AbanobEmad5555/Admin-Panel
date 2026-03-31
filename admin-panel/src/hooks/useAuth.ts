@@ -1,23 +1,44 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getAdminToken, syncAdminTokenCookie } from "@/lib/auth";
+import { syncAdminTokenCookie } from "@/lib/auth";
+import { useAdminAuth } from "@/features/admin-auth/AdminAuthProvider";
 
 export const useAuth = () => {
   const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const {
+    isAuthenticated,
+    isBootstrapping,
+    mustChangePassword,
+    profile,
+    permissions,
+    legacyRole,
+    isStaffAccount,
+    refreshAuth,
+    hasPermission,
+  } = useAdminAuth();
 
   useEffect(() => {
-    const token = getAdminToken();
-    if (!token) {
-      setIsAuthenticated(false);
+    if (isAuthenticated === false) {
       router.replace("/login");
       return;
     }
-    syncAdminTokenCookie();
-    setIsAuthenticated(true);
-  }, [router]);
 
-  return { isAuthenticated };
+    if (isAuthenticated === true) {
+      syncAdminTokenCookie();
+    }
+  }, [isAuthenticated, router]);
+
+  return {
+    isAuthenticated,
+    isBootstrapping,
+    mustChangePassword,
+    profile,
+    permissions,
+    legacyRole,
+    isStaffAccount,
+    refreshAuth,
+    hasPermission,
+  };
 };

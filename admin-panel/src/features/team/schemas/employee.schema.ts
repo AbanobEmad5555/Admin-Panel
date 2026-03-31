@@ -7,6 +7,7 @@ const isUrlOrData = (value?: string) =>
 
 export const employeeRoleSchema = z.enum(["ADMIN", "MANAGER", "CASHIER", "EMPLOYEE"]);
 export const employeeStatusSchema = z.enum(["ACTIVE", "SUSPENDED", "VACATION", "TERMINATED"]);
+export const staffAccountStatusSchema = z.enum(["ACTIVE", "INACTIVE", "SUSPENDED"]);
 export const employmentTypeSchema = z.enum(["FULL_TIME", "PART_TIME", "TRAINEE"]);
 export const employeeSortSchema = z.enum([
   "name_asc",
@@ -61,6 +62,43 @@ export const employeeFormSchema = z.object({
     .refine((value) => value === undefined || (!Number.isNaN(value) && value >= 0 && value <= 5), "Rating must be between 0 and 5")
     .refine((value) => value === undefined || Number.isInteger(value * 2), "Rating must use 0.5 steps"),
   notes: z.string().trim().optional().or(z.literal("")),
+  account: z
+    .object({
+      createLogin: z.boolean().default(false),
+      email: z
+        .string()
+        .trim()
+        .optional()
+        .or(z.literal(""))
+        .refine((value) => !value || z.string().email().safeParse(value).success, "Invalid login email"),
+      phone: z.string().trim().optional().or(z.literal("")),
+      roleId: z.string().trim().optional().or(z.literal("")),
+      staffAccountStatus: staffAccountStatusSchema.optional(),
+      activateLogin: z.boolean().optional(),
+      deactivateLogin: z.boolean().optional(),
+    })
+    .optional()
+    .superRefine((account, ctx) => {
+      if (!account?.createLogin && !account?.activateLogin && !account?.deactivateLogin) {
+        return;
+      }
+
+      if (!account.email) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["email"],
+          message: "Login email is required when account access is enabled.",
+        });
+      }
+
+      if (!account.roleId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["roleId"],
+          message: "Staff role is required when account access is enabled.",
+        });
+      }
+    }),
 });
 
 export const statusChangeSchema = z

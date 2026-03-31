@@ -1,12 +1,13 @@
-"use client";
+﻿"use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { AxiosError } from "axios";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import AdminLayout from "@/components/layout/AdminLayout";
 import Button from "@/components/ui/Button";
+import { useAssignStaffUserRole } from "@/features/admin-auth/hooks/useStaffRoles";
 import CreateEmployeeDrawer from "@/features/team/components/CreateEmployeeDrawer";
 import EditEmployeeDrawer from "@/features/team/components/EditEmployeeDrawer";
 import EmployeesFiltersBar, {
@@ -26,6 +27,7 @@ import {
   getCachedEmploymentType,
   setCachedEmploymentType,
 } from "@/features/team/utils/employmentTypeCache";
+import { useAuth } from "@/hooks/useAuth";
 import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import type { Employee, EmployeeListParams, EmploymentType } from "@/features/team/types";
 
@@ -43,8 +45,9 @@ const getStatus = (error: unknown) => (error as AxiosError)?.response?.status;
 const getErrorMessage = (error: unknown) =>
   ((error as AxiosError<{ message?: string }>)?.response?.data?.message ?? "Something went wrong.");
 
-export default function TeamPage() {
+function TeamPageContent() {
   const { language } = useLocalization();
+  const { hasPermission } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -96,6 +99,10 @@ export default function TeamPage() {
   const createMutation = useCreateEmployee();
   const updateMutation = useUpdateEmployee(editingEmployeeId ?? "");
   const statusMutation = useChangeEmployeeStatus(statusEmployee?.id ?? "");
+  const assignRoleMutation = useAssignStaffUserRole();
+
+  const canCreate = hasPermission(["team.create", "team.edit"]);
+  const canEdit = hasPermission(["team.edit", "team.manage_roles"]);
 
   const applyParams = (next: Partial<EmployeeListParams> & { employmentType?: EmploymentType | "" }) => {
     const result = new URLSearchParams(searchParams.toString());
@@ -144,6 +151,7 @@ export default function TeamPage() {
           shiftStart: details.shiftStart || row.shiftStart,
           shiftEnd: details.shiftEnd || row.shiftEnd,
           hireDate: details.hireDate || row.hireDate,
+          authAccount: details.authAccount || row.authAccount,
         };
       }),
     [detailMap, rows]
@@ -161,7 +169,7 @@ export default function TeamPage() {
   const totalPages = listQuery.data?.totalPages ?? 1;
 
   return (
-    <AdminLayout>
+    <AdminLayout requiredPermissions={["team.view"]}>
       <section className="space-y-4">
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -171,14 +179,15 @@ export default function TeamPage() {
               </h1>
               <p className="text-sm text-slate-900">
                 {language === "ar"
-                  ? "إدارة الموظفين والأدوار والمستندات والحالة."
-                  : "Manage employees, roles, documents and status."}
+                  ? "إدارة الموظفين والأدوار والمستندات والحالة." : "Manage employees, roles, documents and status."}
               </p>
             </div>
-            <Button type="button" className="gap-2" onClick={() => setCreateOpen(true)}>
-              <Plus className="h-4 w-4" />
-              {language === "ar" ? "إضافة موظف" : "Add Employee"}
-            </Button>
+            {canCreate ? (
+              <Button type="button" className="gap-2" onClick={() => setCreateOpen(true)}>
+                <Plus className="h-4 w-4" />
+                {language === "ar" ? "إضافة موظف" : "Add Employee"}
+              </Button>
+            ) : null}
           </div>
         </div>
 
@@ -205,8 +214,7 @@ export default function TeamPage() {
         {listQuery.isError && statusCode === 403 ? (
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-amber-800 shadow-sm">
             {language === "ar"
-              ? "ليس لديك صلاحية للوصول إلى إدارة الفريق."
-              : "You do not have permission to access team management."}
+              ? "ليس لديك صلاحية للوصول إلى إدارة الفريق." : "You do not have permission to access team management."}
           </div>
         ) : null}
 
@@ -229,8 +237,7 @@ export default function TeamPage() {
             </h2>
             <p className="mt-1 text-sm text-slate-900">
               {language === "ar"
-                ? "جرّب تغيير الفلاتر أو إضافة موظف جديد."
-                : "Try changing filters or add a new employee."}
+                ? "جرّب تغيير الفلاتر أو إضافة موظف جديد." : "Try changing filters or add a new employee."}
             </p>
           </div>
         ) : null}
@@ -239,6 +246,7 @@ export default function TeamPage() {
           <>
             <EmployeesTable
               rows={filteredRows}
+              canEdit={canEdit}
               onEdit={(row) => setEditingEmployeeId(row.id)}
               onChangeStatus={(row) => setStatusEmployee(row)}
             />
@@ -251,10 +259,7 @@ export default function TeamPage() {
               >
                 {language === "ar" ? "السابق" : "Previous"}
               </Button>
-              <p className="text-sm text-slate-900">
-                {language === "ar" ? "الصفحة" : "Page"} <span className="font-semibold">{page}</span> {language === "ar" ? "من" : "of"}{" "}
-                <span className="font-semibold">{totalPages}</span>
-              </p>
+              <p className="text-sm text-slate-900">{language === "ar" ? "الصفحة" : "Page"} <span className="font-semibold">{page}</span> {language === "ar" ? "من" : "of"}{" "}<span className="font-semibold">{totalPages}</span></p>
               <Button
                 type="button"
                 variant="secondary"
@@ -296,18 +301,56 @@ export default function TeamPage() {
       <EditEmployeeDrawer
         open={Boolean(editingEmployeeId)}
         employee={editingEmployee}
-        pending={updateMutation.isPending || editingEmployeeQuery.isLoading}
+        pending={updateMutation.isPending || editingEmployeeQuery.isLoading || assignRoleMutation.isPending}
         onClose={() => setEditingEmployeeId(null)}
         onSubmit={(values) => {
           if (!editingEmployeeId) return;
-          updateMutation.mutate(values, {
-            onSuccess: () => {
-              setCachedEmploymentType(editingEmployeeId, values.employmentType);
-              toast.success(language === "ar" ? "تم تحديث الموظف." : "Employee updated.");
-              setEditingEmployeeId(null);
+
+          const previousRoleId = editingEmployee?.authAccount?.role?.id
+            ? String(editingEmployee.authAccount.role.id)
+            : null;
+          const nextRoleId = values.account?.roleId ? String(values.account.roleId) : null;
+
+          updateMutation.mutate(
+            {
+              ...values,
+              account:
+                previousRoleId && nextRoleId && previousRoleId !== nextRoleId
+                  ? {
+                      createLogin: Boolean(values.account?.createLogin),
+                      email: values.account?.email,
+                      phone: values.account?.phone,
+                      roleId: undefined,
+                      staffAccountStatus: values.account?.staffAccountStatus,
+                      activateLogin: values.account?.activateLogin,
+                      deactivateLogin: values.account?.deactivateLogin,
+                    }
+                  : values.account,
             },
-            onError: (error) => toast.error(getErrorMessage(error)),
-          });
+            {
+              onSuccess: async () => {
+                try {
+                  if (
+                    editingEmployee?.authAccount?.userId &&
+                    previousRoleId &&
+                    nextRoleId &&
+                    previousRoleId !== nextRoleId
+                  ) {
+                    await assignRoleMutation.mutateAsync({
+                      userId: editingEmployee.authAccount.userId,
+                      payload: { roleId: nextRoleId },
+                    });
+                  }
+                  setCachedEmploymentType(editingEmployeeId, values.employmentType);
+                  toast.success(language === "ar" ? "تم تحديث الموظف." : "Employee updated.");
+                  setEditingEmployeeId(null);
+                } catch (error) {
+                  toast.error(getErrorMessage(error));
+                }
+              },
+              onError: (error) => toast.error(getErrorMessage(error)),
+            }
+          );
         }}
       />
 
@@ -330,3 +373,27 @@ export default function TeamPage() {
     </AdminLayout>
   );
 }
+
+export default function TeamPage() {
+  return (
+    <Suspense fallback={null}>
+      <TeamPageContent />
+    </Suspense>
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

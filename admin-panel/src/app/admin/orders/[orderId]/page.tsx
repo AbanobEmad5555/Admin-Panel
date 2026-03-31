@@ -38,6 +38,7 @@ type OrderItem = {
   image_path?: string | null;
   images?: string[] | string | null;
   product?: {
+    id?: number | string | null;
     name?: string | null;
     title?: string | null;
     image?: string | null;
@@ -479,11 +480,13 @@ export default function OrderDetailsPage() {
         const response = await api.get<ApiResponse<OrderDetail>>(
           `/admin/orders/${orderId}`
         );
+        const responseRecord = (response.data ?? {}) as Record<string, unknown>;
+        const dataRecord = (responseRecord.data ?? {}) as Record<string, unknown>;
         const payload =
-          response.data?.data?.order ??
-          response.data?.order ??
-          response.data?.data ??
-          response.data;
+          (dataRecord.order as OrderDetail | undefined) ??
+          (responseRecord.order as OrderDetail | undefined) ??
+          (responseRecord.data as OrderDetail | undefined) ??
+          (responseRecord as OrderDetail);
         setOrder(payload ?? null);
         setStatusInput(payload?.status ?? "");
         setResolvedCustomerId(resolveCustomerId(payload ?? {}));

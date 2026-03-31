@@ -19,6 +19,7 @@ import { usePosProducts } from "@/modules/pos/hooks/useProducts";
 import { useCloseSession, useCurrentSession, useOpenSession } from "@/modules/pos/hooks/useSession";
 import { posService } from "@/modules/pos/services/pos.service";
 import { usePosStore } from "@/modules/pos/store/pos.store";
+import type { PosProduct } from "@/modules/pos/store/pos.store";
 import type { PosOrder } from "@/modules/pos/types";
 import { getAdminToken } from "@/lib/auth";
 import { formatEGP } from "@/lib/currency";
@@ -119,6 +120,7 @@ export default function PosTerminalPage() {
           copyFailed: "فشل النسخ.",
           invoiceGenerated: "تم إنشاء الفاتورة بنجاح.",
           invoiceGenerateError: "فشل إنشاء فاتورة من طلب نقطة البيع.",
+          invoiceCustomerRequired: "يجب إدخال اسم العميل أو رقم هاتفه قبل إنشاء الفاتورة.",
           printViewError: "تعذر فتح معاينة الطباعة.",
           posTerminal: "محطة نقطة البيع",
           posDescription: "إنشاء الطلبات، قبول المدفوعات المجزأة، تنفيذ الاستردادات، وإغلاق الجلسات.",
@@ -162,6 +164,7 @@ export default function PosTerminalPage() {
           copyFailed: "Failed to copy.",
           invoiceGenerated: "Invoice generated successfully.",
           invoiceGenerateError: "Failed to generate invoice from POS order.",
+          invoiceCustomerRequired: "Customer name or mobile number is required before generating an invoice.",
           printViewError: "Unable to open print view.",
           posTerminal: "POS Terminal",
           posDescription: "Create orders, accept split payments, issue refunds, and close sessions.",
@@ -258,7 +261,7 @@ export default function PosTerminalPage() {
     };
   }, [text.adminPanel]);
 
-  const handleAddProduct = (product: (typeof products)[number]) => {
+  const handleAddProduct = (product: PosProduct) => {
     if ((product.stock ?? 0) <= 0) {
       toast.error(text.outOfStock);
       return;
@@ -356,14 +359,23 @@ export default function PosTerminalPage() {
       return;
     }
 
+    const hasCustomerName = Boolean(String(receiptOrder.customerName ?? "").trim());
+    const hasCustomerMobile = Boolean(String(receiptOrder.customerMobileNumber ?? "").trim());
+
+    if (!hasCustomerName && !hasCustomerMobile) {
+      toast.error(text.invoiceCustomerRequired);
+      return;
+    }
+
     setIsGeneratingInvoice(true);
     try {
       const response = await api.post("/api/pos/invoices/from-pos-order", {
-        orderId: receiptOrder.id,
+        posOrderId: receiptOrder.id,
         postNow: true,
       });
       const payload = (response.data?.data ?? response.data ?? {}) as Record<string, unknown>;
-      const invoiceId = String(payload.id ?? payload.invoiceId ?? payload.invoice?.id ?? "");
+      const invoiceRecord = (payload.invoice ?? {}) as Record<string, unknown>;
+      const invoiceId = String(payload.id ?? payload.invoiceId ?? invoiceRecord.id ?? "");
       toast.success(text.invoiceGenerated);
       if (invoiceId) {
         setReceiptOpen(false);

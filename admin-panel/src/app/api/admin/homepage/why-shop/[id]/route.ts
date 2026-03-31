@@ -1,12 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 const getApiUrl = () => process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 type Params = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
-export async function PUT(request: Request, { params }: Params) {
+export async function PUT(request: NextRequest, context: Params) {
+  const { id } = await context.params;
   const apiUrl = getApiUrl();
   if (!apiUrl) {
     return NextResponse.json(
@@ -16,7 +17,7 @@ export async function PUT(request: Request, { params }: Params) {
   }
   const auth = request.headers.get("authorization");
   const body = await request.json();
-  const response = await fetch(`${apiUrl}/admin/homepage/why-shop/${params.id}`, {
+  const response = await fetch(`${apiUrl}/admin/homepage/why-shop/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -28,7 +29,8 @@ export async function PUT(request: Request, { params }: Params) {
   return NextResponse.json(data, { status: response.status });
 }
 
-export async function DELETE(request: Request, { params }: Params) {
+export async function DELETE(request: NextRequest, context: Params) {
+  const { id } = await context.params;
   const apiUrl = getApiUrl();
   if (!apiUrl) {
     return NextResponse.json(
@@ -37,7 +39,7 @@ export async function DELETE(request: Request, { params }: Params) {
     );
   }
   const auth = request.headers.get("authorization");
-  const response = await fetch(`${apiUrl}/admin/homepage/why-shop/${params.id}`, {
+  const response = await fetch(`${apiUrl}/admin/homepage/why-shop/${id}`, {
     method: "DELETE",
     headers: auth ? { authorization: auth } : undefined,
   });

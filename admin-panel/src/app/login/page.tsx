@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import type { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import { useAdminAuth } from "@/features/admin-auth/AdminAuthProvider";
 import LanguageSwitcher from "@/modules/localization/components/LanguageSwitcher";
 import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import api from "@/services/api";
-import { setAdminToken } from "@/lib/auth";
+import { clearAdminToken, setAdminToken } from "@/lib/auth";
 
 type LoginResponse = {
   success: boolean;
@@ -50,9 +52,13 @@ const copy = {
   },
 } as const;
 
+const getApiErrorMessage = (error: unknown, fallback: string) =>
+  (error as AxiosError<{ message?: string }>)?.response?.data?.message ?? fallback;
+
 export default function LoginPage() {
   const router = useRouter();
   const { direction, language } = useLocalization();
+  const { refreshAuth } = useAdminAuth();
   const text = copy[language];
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -70,15 +76,10 @@ export default function LoginPage() {
         password,
       });
       const token = response.data?.data?.token;
-      const role = response.data?.data?.role;
       const status = response.data?.data?.status;
 
       if (!token) {
         setError(text.missingToken);
-        return;
-      }
-      if (role !== "ADMIN") {
-        setError(text.adminOnly);
         return;
       }
       if (status !== "ACTIVE") {
@@ -87,9 +88,24 @@ export default function LoginPage() {
       }
 
       setAdminToken(token);
-      router.replace("/");
-    } catch {
-      setError(text.invalidCredentials);
+      const profile = await refreshAuth();
+
+      if (!profile?.isStaffAccount) {
+        clearAdminToken();
+        setError(text.adminOnly);
+        return;
+      }
+
+      if (profile.staffAccountStatus && profile.staffAccountStatus !== "ACTIVE") {
+        clearAdminToken();
+        setError(text.inactive);
+        return;
+      }
+
+      router.replace(profile.mustChangePassword ? "/admin/change-password" : "/");
+    } catch (error) {
+      clearAdminToken();
+      setError(getApiErrorMessage(error, text.invalidCredentials));
     } finally {
       setIsSubmitting(false);
     }

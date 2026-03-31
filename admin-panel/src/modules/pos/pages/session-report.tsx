@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { isAxiosError } from "axios";
 import POSLayout from "@/modules/pos/components/POSLayout";
 import ReportsTable from "@/modules/pos/components/ReportsTable";
 import { useCurrentSession } from "@/modules/pos/hooks/useSession";
@@ -13,7 +14,7 @@ export default function PosSessionReportPage() {
   const { data: currentSession } = useCurrentSession();
   const [sessionId, setSessionId] = useState("");
   const effectiveSessionId = sessionId.trim() || currentSession?.id;
-  const { data, isLoading, isError } = useSessionReport(effectiveSessionId);
+  const { data, isLoading, isError, error } = useSessionReport(effectiveSessionId);
 
   const text =
     language === "ar"
@@ -50,6 +51,13 @@ export default function PosSessionReportPage() {
           total: "Total",
         };
 
+  const errorMessage =
+    isAxiosError(error) && typeof error.response?.data?.message === "string"
+      ? error.response.data.message
+      : error instanceof Error && error.message
+        ? error.message
+        : text.failed;
+
   return (
     <POSLayout title={text.title} description={text.description}>
       <div className="rounded-xl bg-white p-4 shadow-sm">
@@ -68,7 +76,7 @@ export default function PosSessionReportPage() {
         <div className="rounded-xl bg-white p-6 text-sm text-slate-500">{text.loading}</div>
       ) : null}
       {isError ? (
-        <div className="rounded-xl bg-rose-50 p-6 text-sm text-rose-700">{text.failed}</div>
+        <div className="rounded-xl bg-rose-50 p-6 text-sm text-rose-700">{errorMessage}</div>
       ) : null}
 
       {data ? (

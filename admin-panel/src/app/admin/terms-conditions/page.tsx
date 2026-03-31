@@ -5,6 +5,7 @@ import AdminLayout from "@/components/layout/AdminLayout";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
+import { extractList } from "@/lib/extractList";
 import LocalizedDisplayText from "@/modules/shared/components/LocalizedDisplayText";
 import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import api from "@/services/api";
@@ -166,7 +167,7 @@ export default function AdminTermsConditionsPage() {
       const response = await api.get<ApiResponse<TermRecord[]>>(
         "/admin/terms-conditions"
       );
-      setTerms(Array.isArray(response.data?.data) ? response.data.data : []);
+      setTerms(extractList<TermRecord>(response.data?.data ?? response.data));
     } catch (error) {
       setFetchError(getErrorMessage(error, text.genericError));
     } finally {

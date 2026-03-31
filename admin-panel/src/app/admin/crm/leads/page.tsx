@@ -156,7 +156,7 @@ export default function LeadsListPage() {
   const showingTo = Math.min(safePage * PAGE_SIZE, filteredLeads.length);
 
   return (
-    <AdminLayout>
+    <AdminLayout requiredPermissions={["leads.view"]}>
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>

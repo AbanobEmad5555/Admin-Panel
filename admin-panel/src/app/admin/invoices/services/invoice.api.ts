@@ -1,4 +1,5 @@
 import api from "@/services/api";
+import { extractList } from "@/lib/extractList";
 import type {
   AddInvoicePaymentInput,
   CreateInvoiceFromOrderInput,
@@ -508,11 +509,13 @@ export const invoiceApi = {
     const record = (payload ?? {}) as UnknownRecord;
 
     const rawItems =
-      (Array.isArray(payload) ? payload : null) ??
-      (Array.isArray(record.items) ? record.items : null) ??
-      (Array.isArray(record.invoices) ? record.invoices : null) ??
-      (Array.isArray(record.rows) ? record.rows : null) ??
-      [];
+      extractList<unknown>(payload).length > 0
+        ? extractList<unknown>(payload)
+        : Array.isArray(record.invoices)
+          ? record.invoices
+          : Array.isArray(record.rows)
+            ? record.rows
+            : [];
 
     const pagination = (record.pagination ?? {}) as UnknownRecord;
     const totalItems = toNumber(record.totalItems ?? pagination.totalItems ?? rawItems.length);
@@ -589,9 +592,12 @@ export const invoiceApi = {
 
     return {
       ...normalized,
-      customerName: needsName && sourceCustomer.name ? sourceCustomer.name : normalized.customerName,
-      customerEmail: needsEmail && sourceCustomer.email ? sourceCustomer.email : normalized.customerEmail,
-      customerMobile: needsMobile && sourceCustomer.mobile ? sourceCustomer.mobile : normalized.customerMobile,
+      customerName:
+        needsName && sourceCustomer?.name ? sourceCustomer.name : normalized.customerName,
+      customerEmail:
+        needsEmail && sourceCustomer?.email ? sourceCustomer.email : normalized.customerEmail,
+      customerMobile:
+        needsMobile && sourceCustomer?.mobile ? sourceCustomer.mobile : normalized.customerMobile,
       payments: needsPayments && sourcePayments.length > 0 ? sourcePayments : normalized.payments,
     };
   },

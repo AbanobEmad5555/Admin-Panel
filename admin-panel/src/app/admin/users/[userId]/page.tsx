@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import AdminLayout from "@/components/layout/AdminLayout";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
+import { extractList } from "@/lib/extractList";
 import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import api from "@/services/api";
 
@@ -323,19 +324,21 @@ export default function UserDetailsPage() {
         const response = await api.get<ApiResponse<UserDetail>>(
           `/admin/users/${userId}`
         );
-        const payload =
-          response.data?.data?.user ??
-          response.data?.user ??
-          response.data?.data ??
-          response.data;
-        setUser(payload ?? null);
-        setRootAddress(response.data?.data?.address ?? null);
-        setRootOrders(response.data?.data?.recentOrders ?? null);
-        setOrdersSummary(response.data?.data?.ordersSummary ?? null);
-        if (payload) {
-          setNameInput(resolveName(payload));
-          setEmailInput(payload.email ?? "");
-          setRoleInput(String(payload.role ?? "USER").toUpperCase());
+        const payload = (response.data?.data ?? response.data ?? {}) as UserDetail & {
+          user?: UserDetail | null;
+          address?: Address | null;
+          recentOrders?: Order[] | null;
+          ordersSummary?: UserDetail["ordersSummary"];
+        };
+        const nextUser = payload.user ?? payload;
+        setUser(nextUser ?? null);
+        setRootAddress(payload.address ?? null);
+        setRootOrders(extractList<Order>(payload.recentOrders ?? []));
+        setOrdersSummary(payload.ordersSummary ?? null);
+        if (nextUser) {
+          setNameInput(resolveName(nextUser));
+          setEmailInput(nextUser.email ?? "");
+          setRoleInput(String(nextUser.role ?? "USER").toUpperCase());
         }
       } catch (err) {
         setError(getErrorMessage(err));

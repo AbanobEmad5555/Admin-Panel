@@ -9,8 +9,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
 import { ChevronDown } from "lucide-react";
+import type { z } from "zod";
 import AdminLayout from "@/components/layout/AdminLayout";
 import Button from "@/components/ui/Button";
+import { extractList } from "@/lib/extractList";
 import api from "@/services/api";
 import { useCreateInvoiceFromOrder } from "@/app/admin/invoices/hooks/useCreateInvoiceFromOrder";
 import {
@@ -29,6 +31,8 @@ type OrderOption = {
   id: string;
   label: string;
 };
+
+type CreateInvoiceFromOrderFormInput = z.input<typeof createInvoiceFromOrderSchema>;
 
 const toStringSafe = (value: unknown) => {
   if (value === null || value === undefined) return "";
@@ -85,68 +89,71 @@ const getCustomerName = (row: Record<string, unknown>) => {
 const normalizeOrderOptions = (orderType: InvoiceSource, payload: unknown): OrderOption[] => {
   const record = (payload ?? {}) as Record<string, unknown>;
   const raw =
-    (Array.isArray(payload) ? payload : null) ??
-    (Array.isArray(record.orders) ? record.orders : null) ??
-    (Array.isArray(record.tempOrders) ? record.tempOrders : null) ??
-    (Array.isArray(record.posOrders) ? record.posOrders : null) ??
-    (Array.isArray(record.items) ? record.items : null) ??
-    (Array.isArray(record.data) ? record.data : null) ??
-    [];
+    extractList<unknown>(payload).length > 0
+      ? extractList<unknown>(payload)
+      : Array.isArray(record.options)
+        ? record.options
+        : Array.isArray(record.tempOrders)
+          ? record.tempOrders
+          : Array.isArray(record.posOrders)
+            ? record.posOrders
+            : [];
 
   return raw
     .map((entry) => {
       const row = (entry ?? {}) as Record<string, unknown>;
       const id = toStringSafe(row.id ?? row.orderId ?? row.uuid);
       if (!id) return null;
-      const customerName = getCustomerName(row);
+      const customerName = toStringSafe(row.label) || getCustomerName(row);
       return {
         id,
-        label: `${id} - ${customerName}`,
+        label: customerName.includes(id) ? customerName : `${id} - ${customerName}`,
       } satisfies OrderOption;
     })
     .filter((entry): entry is OrderOption => Boolean(entry));
 };
 
 const loadOrderOptions = async (orderType: InvoiceSource): Promise<OrderOption[]> => {
-  if (orderType === "ORDER") {
-    const endpoints = [
-      "/orders?page=1&limit=1000",
-      "/admin/orders?page=1&limit=1000",
-    ];
-    let lastError: unknown = null;
+  const options: OrderOption[] = [];
+  let page = 1;
+  let totalPages = 1;
 
-    for (const endpoint of endpoints) {
-      try {
-        const response = await api.get(endpoint);
-        const payload = response.data?.data ?? response.data ?? {};
-        return normalizeOrderOptions(orderType, payload);
-      } catch (error) {
-        lastError = error;
-      }
-    }
-
-    throw lastError ?? new Error("Failed to load orders.");
-  }
-
-  if (orderType === "TEMP_ORDER") {
-    const response = await api.get("/admin/temp-orders");
+  do {
+    const response = await api.get("/admin/orders/source-options", {
+      params: {
+        orderType,
+        page,
+        limit: 20,
+      },
+    });
     const payload = response.data?.data ?? response.data ?? {};
-    return normalizeOrderOptions(orderType, payload);
-  }
+    options.push(...normalizeOrderOptions(orderType, payload));
 
-  const endpoints = ["/api/pos/order?page=1&limit=1000", "/api/pos/orders?page=1&limit=1000", "/admin/pos/orders?page=1&limit=1000"];
-  let lastError: unknown = null;
-  for (const endpoint of endpoints) {
-    try {
-      const response = await api.get(endpoint);
-      const payload = response.data?.data ?? response.data ?? {};
-      return normalizeOrderOptions(orderType, payload);
-    } catch (error) {
-      lastError = error;
-    }
-  }
+    const record = (payload ?? {}) as Record<string, unknown>;
+    const pagination =
+      (record.pagination as Record<string, unknown> | undefined) ??
+      ({
+        page: record.page,
+        limit: record.limit,
+        totalItems: record.totalItems,
+        totalPages: record.totalPages,
+      } as Record<string, unknown>);
 
-  throw lastError ?? new Error("Failed to load POS orders.");
+    const nextTotalPages = Number(
+      pagination?.totalPages ??
+        pagination?.pages ??
+        Math.ceil(
+          Number(pagination?.totalItems ?? 0) /
+            Math.max(1, Number(pagination?.limit ?? 20))
+        ) ??
+        1
+    );
+
+    totalPages = Number.isFinite(nextTotalPages) && nextTotalPages > 0 ? nextTotalPages : 1;
+    page += 1;
+  } while (page <= totalPages);
+
+  return options;
 };
 
 export default function CreateInvoiceFromOrderPage() {
@@ -156,7 +163,7 @@ export default function CreateInvoiceFromOrderPage() {
   const [isOrderDropdownOpen, setIsOrderDropdownOpen] = useState(false);
   const orderDropdownRef = useRef<HTMLDivElement | null>(null);
 
-  const form = useForm<CreateInvoiceFromOrderSchema>({
+  const form = useForm<CreateInvoiceFromOrderFormInput, unknown, CreateInvoiceFromOrderSchema>({
     resolver: zodResolver(createInvoiceFromOrderSchema),
     defaultValues: {
       orderType: "ORDER",

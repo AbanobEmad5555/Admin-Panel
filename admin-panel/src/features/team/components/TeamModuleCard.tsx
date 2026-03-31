@@ -4,14 +4,19 @@ import Link from "next/link";
 import { Users } from "lucide-react";
 import { useLocalization } from "@/modules/localization/LocalizationProvider";
 
-export default function TeamModuleCard() {
+type TeamModuleCardProps = {
+  renderContentOnly?: boolean;
+  className?: string;
+};
+
+export default function TeamModuleCard({
+  renderContentOnly = false,
+  className = "",
+}: TeamModuleCardProps) {
   const { language } = useLocalization();
 
-  return (
-    <Link
-      href="/admin/team"
-      className="group rounded-xl bg-white p-8 text-center shadow-sm transition duration-300 hover:scale-105 hover:shadow-lg"
-    >
+  const content = (
+    <>
       <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-sky-100 via-indigo-100 to-cyan-100">
         <Users className="h-10 w-10 text-slate-900" />
       </div>
@@ -23,6 +28,19 @@ export default function TeamModuleCard() {
           ? "إدارة الموظفين والأدوار والمستندات والحالة."
           : "Manage employees, roles, documents and status."}
       </p>
+    </>
+  );
+
+  if (renderContentOnly) {
+    return <div className={className}>{content}</div>;
+  }
+
+  return (
+    <Link
+      href="/admin/team"
+      className={`group rounded-xl bg-white p-8 text-center shadow-sm transition duration-300 hover:scale-105 hover:shadow-lg [&_h2]:!text-center [&_p]:!text-center ${className}`}
+    >
+      {content}
     </Link>
   );
 }

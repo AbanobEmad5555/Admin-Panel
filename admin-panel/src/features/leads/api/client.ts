@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosHeaders } from "axios";
 import { toast } from "sonner";
 import { ADMIN_TOKEN_KEY } from "@/lib/auth";
 
@@ -22,10 +22,9 @@ leadsApiClient.interceptors.request.use((config) => {
     localStorage.getItem(ADMIN_TOKEN_KEY) || localStorage.getItem("token");
 
   if (token) {
-    if (!config.headers) {
-      config.headers = {};
-    }
-    (config.headers as Record<string, string>).Authorization = `Bearer ${token}`;
+    const headers = AxiosHeaders.from(config.headers);
+    headers.set("Authorization", `Bearer ${token}`);
+    config.headers = headers;
   }
 
   return config;

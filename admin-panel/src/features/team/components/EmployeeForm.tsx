@@ -1,9 +1,10 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Button from "@/components/ui/Button";
+import { useStaffRolesList } from "@/features/admin-auth/hooks/useStaffRoles";
 import { teamApi } from "@/features/team/api/team.api";
 import {
   employeeFormSchema,
@@ -25,7 +26,7 @@ type EmployeeFormProps = {
 const dayOptions: WorkingDay[] = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 const ratingOptions = Array.from({ length: 10 }, (_, index) => ((index + 1) * 0.5).toFixed(1));
 
-const toDefaults = (employee?: Employee | null): EmployeeFormValues => ({
+const toDefaults = (mode: "create" | "edit", employee?: Employee | null): EmployeeFormValues => ({
   fullNameEn: employee?.fullNameEn ?? employee?.fullName ?? "",
   fullNameAr: employee?.fullNameAr ?? "",
   role: (employee?.role as TeamRole) ?? "EMPLOYEE",
@@ -46,6 +47,21 @@ const toDefaults = (employee?: Employee | null): EmployeeFormValues => ({
   workingDays: employee?.workingDays?.length ? employee.workingDays : ["SUN", "MON", "TUE", "WED", "THU"],
   rating: employee?.rating ?? undefined,
   notes: employee?.notes ?? "",
+  account: employee?.authAccount
+    ? {
+        createLogin: true,
+        email: employee.authAccount.email ?? employee.email ?? "",
+        phone: employee.authAccount.phone ?? employee.phone ?? "",
+        roleId: employee.authAccount.role?.id ? String(employee.authAccount.role.id) : "",
+        staffAccountStatus: employee.authAccount.staffAccountStatus ?? "ACTIVE",
+      }
+    : {
+        createLogin: mode === "create",
+        email: employee?.email ?? "",
+        phone: employee?.phone ?? "",
+        roleId: "",
+        staffAccountStatus: "ACTIVE",
+      },
 });
 
 export default function EmployeeForm({
@@ -56,7 +72,7 @@ export default function EmployeeForm({
   onSubmit,
 }: EmployeeFormProps) {
   const { language, t } = useLocalization();
-  const defaults = useMemo(() => toDefaults(initial), [initial]);
+  const defaults = useMemo(() => toDefaults(mode, initial), [initial, mode]);
   const form = useForm<EmployeeFormValues>({
     resolver: zodResolver(employeeFormSchema) as never,
     defaultValues: defaults,
@@ -67,6 +83,9 @@ export default function EmployeeForm({
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const selectedDays = form.watch("workingDays");
+  const accountEnabled = Boolean(form.watch("account.createLogin"));
+  const accountStatus = form.watch("account.staffAccountStatus");
+  const rolesQuery = useStaffRolesList();
   const roleOptions = [
     { value: "ADMIN", en: "Admin", ar: "مسؤول" },
     { value: "MANAGER", en: "Manager", ar: "مدير" },
@@ -120,7 +139,30 @@ export default function EmployeeForm({
             setIsUploadingImage(false);
           }
         }
-        await onSubmit(nextValues);
+        const currentAccount = nextValues.account;
+        const initialAccount = initial?.authAccount ?? null;
+
+        await onSubmit({
+          ...nextValues,
+          account:
+            currentAccount?.createLogin || initialAccount
+              ? {
+                  createLogin: Boolean(currentAccount?.createLogin),
+                  email: currentAccount?.email?.trim() || undefined,
+                  phone: currentAccount?.phone?.trim() || undefined,
+                  roleId: currentAccount?.roleId?.trim() || undefined,
+                  staffAccountStatus: currentAccount?.staffAccountStatus,
+                  activateLogin:
+                    Boolean(initialAccount) &&
+                    initialAccount?.staffAccountStatus !== "ACTIVE" &&
+                    currentAccount?.staffAccountStatus === "ACTIVE",
+                  deactivateLogin:
+                    Boolean(initialAccount) &&
+                    initialAccount?.staffAccountStatus === "ACTIVE" &&
+                    currentAccount?.staffAccountStatus !== "ACTIVE",
+                }
+              : undefined,
+        });
       })}
       className="space-y-4 text-slate-900"
     >
@@ -359,23 +401,125 @@ export default function EmployeeForm({
         <textarea {...form.register("notes")} className="mt-1 min-h-20 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
       </div>
 
+      <section className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <div>
+          <h3 className="text-sm font-semibold text-slate-900">
+            {language === "ar" ? "حساب الطاقم" : "Staff Account"}
+          </h3>
+          <p className="text-xs text-slate-500">
+            {language === "ar"
+              ? "احتفظ بحالة الموظف وحالة حساب الدخول كحقلين منفصلين." : "Keep employee status and auth account status as separate fields."}
+          </p>
+        </div>
+
+        <label className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+          <input type="checkbox" {...form.register("account.createLogin")} />
+          <span>
+            {language === "ar"
+              ? "إنشاء أو تفعيل حساب دخول لهذا الموظف" : "Create or enable a login account for this employee"}
+          </span>
+        </label>
+
+        {initial?.authAccount ? (
+          <div className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700 md:grid-cols-2">
+            <div>
+              <span className="font-medium text-slate-900">
+                {language === "ar" ? "حالة الحساب الحالية:" : "Current account status:"}
+              </span>{" "}
+              {initial.authAccount.staffAccountStatus ?? "-"}
+            </div>
+            <div>
+              <span className="font-medium text-slate-900">
+                {language === "ar" ? "الدور الحالي:" : "Current role:"}
+              </span>{" "}
+              {initial.authAccount.role?.name ?? "-"}
+            </div>
+          </div>
+        ) : null}
+
+        {accountEnabled ? (
+          <>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="text-sm font-medium text-slate-900">
+                  {language === "ar" ? "بريد تسجيل الدخول" : "Login email"}
+                </label>
+                <input
+                  type="email"
+                  {...form.register("account.email")}
+                  className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                />
+                <p className="mt-1 text-xs text-rose-600">
+                  {form.formState.errors.account?.email?.message}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-900">
+                  {language === "ar" ? "هاتف تسجيل الدخول" : "Login phone"}
+                </label>
+                <input
+                  {...form.register("account.phone")}
+                  className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="text-sm font-medium text-slate-900">
+                  {language === "ar" ? "دور الطاقم" : "Staff role"}
+                </label>
+                <select
+                  {...form.register("account.roleId")}
+                  className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                >
+                  <option value="">{language === "ar" ? "اختر دورًا" : "Select a role"}</option>
+                  {(rolesQuery.data?.items ?? []).map((role) => (
+                    <option key={String(role.id)} value={String(role.id)}>
+                      {role.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-rose-600">
+                  {form.formState.errors.account?.roleId?.message}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-900">
+                  {language === "ar" ? "حالة حساب الدخول" : "Staff account status"}
+                </label>
+                <select
+                  {...form.register("account.staffAccountStatus")}
+                  className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                >
+                  <option value="ACTIVE">{language === "ar" ? "نشط" : "ACTIVE"}</option>
+                  <option value="INACTIVE">{language === "ar" ? "غير نشط" : "INACTIVE"}</option>
+                  <option value="SUSPENDED">{language === "ar" ? "موقوف" : "SUSPENDED"}</option>
+                </select>
+              </div>
+            </div>
+
+            {initial?.authAccount && accountStatus && accountStatus !== initial.authAccount.staffAccountStatus ? (
+              <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
+                {language === "ar"
+                  ? "سيتم تحديث حالة حساب الدخول دون تغيير حالة الموظف." : "The login status will update without changing the employee status."}
+              </div>
+            ) : null}
+          </>
+        ) : null}
+      </section>
+
       <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onCancel} disabled={pending}>
             {language === "ar" ? "إلغاء" : "Cancel"}
           </Button>
         <Button type="submit" disabled={pending || isUploadingImage}>
           {isUploadingImage
-            ? language === "ar"
-              ? "جارٍ رفع الصورة..."
-              : "Uploading image..."
+            ? language === "ar" ? "جارٍ رفع الصورة..." : "Uploading image..."
             : pending
-              ? language === "ar"
-                ? "جارٍ الحفظ..."
-                : "Saving..."
+              ? language === "ar" ? "جارٍ الحفظ..." : "Saving..."
               : mode === "create"
-                ? language === "ar"
-                  ? "إنشاء موظف"
-                  : "Create Employee"
+                ? language === "ar" ? "إنشاء موظف" : "Create Employee"
                 : language === "ar"
                   ? "حفظ التغييرات"
                   : "Save Changes"}
@@ -384,3 +528,39 @@ export default function EmployeeForm({
     </form>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -142,7 +142,20 @@ const toOptionalNumber = (value: unknown) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
-const toText = (value: unknown) => (typeof value === "string" ? value.trim() : "");
+const toText = (value: unknown) => {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  const trimmed = value.trim();
+  const normalized = trimmed.replace(/[{}]/g, "").trim().toLowerCase();
+
+  if (!trimmed || normalized === "null" || normalized === "undefined" || normalized === "nil") {
+    return "";
+  }
+
+  return trimmed;
+};
 
 const normalizePurchaseStatus = (value: unknown): PurchaseStatus => {
   const normalized = String(value ?? "")
@@ -376,7 +389,20 @@ export const purchasesApi = {
       }
     );
     const payload = response.data?.data ?? response.data;
-    return normalizePurchase((payload ?? {}) as PurchaseApiRecord);
+    const normalized = normalizePurchase((payload ?? {}) as PurchaseApiRecord);
+
+    if (
+      status === "IN_TRANSIT" &&
+      expectedArrivalDate &&
+      !normalized.expectedArrivalDate
+    ) {
+      return {
+        ...normalized,
+        expectedArrivalDate,
+      };
+    }
+
+    return normalized;
   },
 
   async remove(id: string) {

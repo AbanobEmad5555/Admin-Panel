@@ -1,17 +1,13 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  localizationApi,
-  readStoredLocalizationSettings,
-} from "@/modules/localization/api";
+import { localizationApi } from "@/modules/localization/api";
 import { LOCALIZATION_QUERY_KEY } from "@/modules/localization/constants";
 
 export const useAdminLocalization = () =>
   useQuery({
     queryKey: LOCALIZATION_QUERY_KEY,
     queryFn: localizationApi.getSettings,
-    initialData: readStoredLocalizationSettings,
   });
 
 export const useUpdateAdminLocalization = () => {

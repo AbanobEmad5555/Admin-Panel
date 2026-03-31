@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import AdminLayout from "@/components/layout/AdminLayout";
 import Button from "@/components/ui/Button";
+import { extractList } from "@/lib/extractList";
 import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import promoCodesApi, {
   PromoCodeRecord,
@@ -113,8 +114,7 @@ export default function AdminPromoCodesPage() {
           : activeTab === "expired"
           ? await promoCodesApi.getExpiredPromoCodes()
           : await promoCodesApi.getSuspendedPromoCodes();
-      const payload = response.data?.data;
-      setPromoCodes(Array.isArray(payload) ? payload : []);
+      setPromoCodes(extractList<PromoCodeRecord>(response.data?.data ?? response.data));
     } catch {
       setFetchError(
         activeTab === "valid"

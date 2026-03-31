@@ -6,6 +6,7 @@ import AdminLayout from "@/components/layout/AdminLayout";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
+import { extractList } from "@/lib/extractList";
 import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import api from "@/services/api";
 
@@ -233,7 +234,7 @@ export default function VariantsPage() {
       const response = await api.get<ApiListResponse<Variant[]>>(
         `/variants${query ? `?${query}` : ""}`
       );
-      setVariants(response.data?.data ?? []);
+      setVariants(extractList<Variant>(response.data?.data ?? response.data));
     } catch (err) {
       const message = getErrorMessage(err);
       setError(message);

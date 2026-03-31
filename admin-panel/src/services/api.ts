@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosHeaders } from "axios";
 import { ADMIN_TOKEN_KEY, clearAdminToken } from "@/lib/auth";
 
 const api = axios.create({
@@ -12,10 +12,9 @@ api.interceptors.request.use((config) => {
 
   const token = localStorage.getItem(ADMIN_TOKEN_KEY);
   if (token) {
-    if (!config.headers) {
-      config.headers = {};
-    }
-    (config.headers as Record<string, string>).Authorization = `Bearer ${token}`;
+    const headers = AxiosHeaders.from(config.headers);
+    headers.set("Authorization", `Bearer ${token}`);
+    config.headers = headers;
   }
 
   return config;
@@ -25,7 +24,12 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const status = error?.response?.status;
-    if (status === 401 && typeof window !== "undefined") {
+    const requestUrl = String(error?.config?.url ?? "");
+    const isLoginRequest = requestUrl.includes("/api/auth/login");
+    const hasToken =
+      typeof window !== "undefined" && Boolean(localStorage.getItem(ADMIN_TOKEN_KEY));
+
+    if (status === 401 && hasToken && !isLoginRequest && typeof window !== "undefined") {
       clearAdminToken();
       window.location.href = "/login";
     }

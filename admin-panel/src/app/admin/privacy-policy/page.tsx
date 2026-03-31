@@ -5,6 +5,7 @@ import AdminLayout from "@/components/layout/AdminLayout";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
+import { extractList } from "@/lib/extractList";
 import privacyPolicyApi, {
   PrivacyPolicyRecord,
 } from "@/services/privacyPolicyApi";
@@ -182,13 +183,7 @@ export default function AdminPrivacyPolicyPage() {
         page,
         limit,
       });
-      const raw = response.data?.data;
-      const items = Array.isArray(raw)
-        ? raw
-        : raw && typeof raw === "object" && "items" in raw
-          ? ((raw as { items?: PrivacyPolicyRecord[] }).items ?? [])
-          : [];
-      setPolicies(Array.isArray(items) ? items : []);
+      setPolicies(extractList<PrivacyPolicyRecord>(response.data?.data ?? response.data));
     } catch {
       setFetchError(text.loadFailed);
     } finally {

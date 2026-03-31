@@ -1,28 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-const PUBLIC_PATHS = ["/login"];
-
-const getRoleFromToken = (token: string) => {
-  try {
-    const [, payloadPart] = token.split(".");
-    if (!payloadPart) {
-      return null;
-    }
-
-    const base64 = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
-    const payload = JSON.parse(atob(padded)) as Record<string, unknown>;
-    const nested = (payload.data ?? null) as Record<string, unknown> | null;
-    const role = payload.role ?? payload.userRole ?? nested?.role;
-    if (typeof role !== "string") {
-      return null;
-    }
-    return role.toUpperCase();
-  } catch {
-    return null;
-  }
-};
+const PUBLIC_PATHS = ["/login", "/403"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -39,13 +18,18 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (pathname === "/calendar" || pathname.startsWith("/calendar/")) {
-    const role = getRoleFromToken(token);
-    if (role !== "ADMIN") {
-      const dashboardUrl = request.nextUrl.clone();
-      dashboardUrl.pathname = "/dashboard";
-      return NextResponse.redirect(dashboardUrl);
-    }
+  const mustChangePassword = request.cookies.get("admin_must_change_password")?.value === "1";
+
+  if (mustChangePassword && pathname !== "/admin/change-password") {
+    const changePasswordUrl = request.nextUrl.clone();
+    changePasswordUrl.pathname = "/admin/change-password";
+    return NextResponse.redirect(changePasswordUrl);
+  }
+
+  if (!mustChangePassword && pathname === "/admin/change-password") {
+    const homeUrl = request.nextUrl.clone();
+    homeUrl.pathname = "/";
+    return NextResponse.redirect(homeUrl);
   }
 
   return NextResponse.next();

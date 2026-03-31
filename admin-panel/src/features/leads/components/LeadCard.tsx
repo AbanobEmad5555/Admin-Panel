@@ -1,4 +1,7 @@
-import type { HTMLAttributes } from "react";
+import type {
+  DraggableProvidedDragHandleProps,
+  DraggableProvidedDraggableProps,
+} from "@hello-pangea/dnd";
 import Link from "next/link";
 import { CalendarDays, Phone } from "lucide-react";
 import PriorityBadge from "@/features/leads/components/PriorityBadge";
@@ -9,8 +12,8 @@ import { useLocalization } from "@/modules/localization/LocalizationProvider";
 type LeadCardProps = {
   lead: Lead;
   innerRef?: (element: HTMLDivElement | null) => void;
-  draggableProps?: HTMLAttributes<HTMLDivElement>;
-  dragHandleProps?: HTMLAttributes<HTMLDivElement>;
+  draggableProps?: DraggableProvidedDraggableProps;
+  dragHandleProps?: DraggableProvidedDragHandleProps | null;
   isDragging?: boolean;
 };
 

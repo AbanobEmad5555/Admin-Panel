@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import AdminLayout from "@/components/layout/AdminLayout";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
+import { extractList } from "@/lib/extractList";
 import api from "@/services/api";
 import { useLocalization } from "@/modules/localization/LocalizationProvider";
+import BilingualControlledField from "@/modules/shared/components/BilingualControlledField";
 import LocalizedDisplayText from "@/modules/shared/components/LocalizedDisplayText";
 import { getLocalizedValue } from "@/modules/localization/utils";
 
@@ -97,16 +99,21 @@ const toNumberValue = (value: unknown) => {
   return null;
 };
 
-const normalizeProduct = (product: Product) => ({
-  ...product,
-  priceBeforeDiscount: toNumberValue(product.priceBeforeDiscount),
-  priceAfterDiscount: toNumberValue(product.priceAfterDiscount),
-  price: toNumberValue(product.price),
-  variantId:
-    toNumberValue(product.variantId) ??
-    toNumberValue(product.variant?.id) ??
-    null,
-});
+const normalizeProduct = (product: unknown): Product => {
+  const record = (product && typeof product === "object"
+    ? product
+    : {}) as Product;
+  return ({
+    ...record,
+    priceBeforeDiscount: toNumberValue(record.priceBeforeDiscount),
+    priceAfterDiscount: toNumberValue(record.priceAfterDiscount),
+    price: toNumberValue(record.price),
+    variantId:
+      toNumberValue(record.variantId) ??
+      toNumberValue(record.variant?.id) ??
+      null,
+  });
+};
 
 const extractImageValue = (images: unknown) => {
   if (Array.isArray(images)) {
@@ -182,7 +189,7 @@ const getErrorMessage = (error: unknown) => {
   return "Something went wrong.";
 };
 
-export default function ProductsPage() {
+function ProductsPageContent() {
   const { direction, language } = useLocalization();
   const searchParams = useSearchParams();
   const editParam = searchParams.get("edit");
@@ -367,10 +374,8 @@ export default function ProductsPage() {
       const response = await api.get<ApiListResponse<unknown>>(
         `/products${query ? `?${query}` : ""}`
       );
-      const payload = response.data?.data ?? {};
-      const raw = Array.isArray(payload) ? payload : payload.orders ?? payload.products ?? payload.items ?? payload.data ?? payload.productsList ?? payload.results ?? payload.list ?? payload.ordersList ?? payload.productList ?? payload.productsData ?? payload.itemsList ?? payload.product ?? payload?.products;
-      const data = Array.isArray(raw) ? raw : payload.orders ?? payload.products ?? payload.items ?? payload.data ?? [];
-      const normalized = Array.isArray(data) ? data.map(normalizeProduct) : [];
+      const payload = response.data?.data ?? response.data ?? {};
+      const normalized = extractList<unknown>(payload).map(normalizeProduct);
       setProducts(normalized);
       setStockEdits(
         normalized.reduce<Record<number, string>>((acc, product) => {
@@ -381,14 +386,18 @@ export default function ProductsPage() {
           return acc;
         }, {})
       );
-      const pagination = payload.pagination ?? payload.meta ?? null;
+      const record = payload as Record<string, unknown>;
+      const pagination =
+        (record.pagination as Record<string, unknown> | undefined) ??
+        (record.meta as Record<string, unknown> | undefined) ??
+        null;
       const nextCurrent =
-        pagination?.currentPage ?? pagination?.page ?? safePage;
+        toNumberValue(pagination?.currentPage ?? pagination?.page) ?? safePage;
       const nextTotalItems =
-        pagination?.totalItems ?? pagination?.count ?? normalized.length;
+        toNumberValue(pagination?.totalItems ?? pagination?.count) ??
+        normalized.length;
       const nextTotalPages =
-        pagination?.totalPages ??
-        pagination?.pages ??
+        toNumberValue(pagination?.totalPages ?? pagination?.pages) ??
         Math.max(1, Math.ceil(nextTotalItems / limit));
       setCurrentPage(nextCurrent);
       setTotalPages(nextTotalPages);
@@ -405,7 +414,7 @@ export default function ProductsPage() {
       const response = await api.get<ApiListResponse<Category[]>>(
         "/categories"
       );
-      setCategories(response.data?.data ?? []);
+      setCategories(extractList<Category>(response.data?.data ?? response.data));
     } catch {
       setCategories([]);
     }
@@ -416,7 +425,7 @@ export default function ProductsPage() {
       const response = await api.get<ApiListResponse<Variant[]>>(
         "/variants"
       );
-      setVariants(response.data?.data ?? []);
+      setVariants(extractList<Variant>(response.data?.data ?? response.data));
     } catch {
       setVariants([]);
     }
@@ -1130,28 +1139,18 @@ export default function ProductsPage() {
 
         <Modal title={text.addProduct} isOpen={isAddOpen} onClose={() => setIsAddOpen(false)}>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">
-                {text.productNameEn}
-              </label>
-              <Input
-                value={nameEnInput}
-                onChange={(event) => setNameEnInput(event.target.value)}
-                placeholder={text.productName}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">
-                {text.productNameAr}
-              </label>
-              <Input
-                value={nameArInput}
-                onChange={(event) => setNameArInput(event.target.value)}
-                placeholder={text.productNameAr}
-                dir="rtl"
-                className="text-right"
-              />
-            </div>
+            <BilingualControlledField
+              label={language === "ar" ? "Ø§Ø³Ù… Ø§Ù„Ù…Ù†ØªØ¬" : "Product Name"}
+              valueEn={nameEnInput}
+              valueAr={nameArInput}
+              onChangeEn={setNameEnInput}
+              onChangeAr={setNameArInput}
+              placeholderEn={text.productName}
+              placeholderAr={
+                language === "ar" ? "Ø£Ø¯Ø®Ù„ Ø§Ø³Ù… Ø§Ù„Ù…Ù†ØªØ¬ Ø¨Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©" : "Enter Arabic product name"
+              }
+              requiredEn
+            />
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
@@ -1355,28 +1354,18 @@ export default function ProductsPage() {
 
         <Modal title={text.editProduct} isOpen={isEditOpen} onClose={() => setIsEditOpen(false)}>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">
-                {text.productNameEn}
-              </label>
-              <Input
-                value={nameEnInput}
-                onChange={(event) => setNameEnInput(event.target.value)}
-                placeholder={text.productName}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">
-                {text.productNameAr}
-              </label>
-              <Input
-                value={nameArInput}
-                onChange={(event) => setNameArInput(event.target.value)}
-                placeholder={text.productNameAr}
-                dir="rtl"
-                className="text-right"
-              />
-            </div>
+            <BilingualControlledField
+              label={language === "ar" ? "Ø§Ø³Ù… Ø§Ù„Ù…Ù†ØªØ¬" : "Product Name"}
+              valueEn={nameEnInput}
+              valueAr={nameArInput}
+              onChangeEn={setNameEnInput}
+              onChangeAr={setNameArInput}
+              placeholderEn={text.productName}
+              placeholderAr={
+                language === "ar" ? "Ø£Ø¯Ø®Ù„ Ø§Ø³Ù… Ø§Ù„Ù…Ù†ØªØ¬ Ø¨Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©" : "Enter Arabic product name"
+              }
+              requiredEn
+            />
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
@@ -1636,5 +1625,13 @@ export default function ProductsPage() {
         </Modal>
       </div>
     </AdminLayout>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={null}>
+      <ProductsPageContent />
+    </Suspense>
   );
 }

@@ -30,7 +30,7 @@ export default function EmployeesFiltersBar({
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
         <Input
           value={value.search}
-          placeholder={language === "ar" ? "ابحث بالاسم أو كود الموظف" : "Search name or employee code"}
+          placeholder={language === "ar" ? 'ابحث بالاسم أو كود الموظف' : "Search name or employee code"}
           onChange={(event) => onChange({ ...value, search: event.target.value })}
         />
         <select

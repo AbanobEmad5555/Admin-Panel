@@ -1,12 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import AdminLayout from "@/components/layout/AdminLayout";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import { assignOrderDeliveryDateForOutForDelivery } from "@/lib/deliveryScheduling";
+import { extractList } from "@/lib/extractList";
 import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import api from "@/services/api";
 
@@ -45,6 +47,12 @@ type ApiListResponse<T> = {
   success: boolean;
   data: T;
   message?: string;
+  pagination?: {
+    totalItems?: number;
+    currentPage?: number;
+    totalPages?: number;
+    limit?: number;
+  };
 };
 
 type OrdersResponse = {
@@ -105,6 +113,7 @@ const TEMP_STATUS_FLOW = [
   "COMPLETED",
   "CANCELLED",
 ] as const;
+type TempStatus = (typeof TEMP_STATUS_FLOW)[number];
 
 const TEMP_STATUS_DROPDOWN = TEMP_STATUS_FLOW.filter(
   (status) => status !== "TEMP" && status !== "PENDING"
@@ -146,6 +155,29 @@ const getErrorMessage = (error: unknown) => {
     return anyError.response?.data?.message ?? "Something went wrong.";
   }
   return "Something went wrong.";
+};
+
+const extractPaginationMeta = (payload: unknown) => {
+  if (!payload || typeof payload !== "object") {
+    return {};
+  }
+  const record = payload as {
+    pagination?: {
+      totalItems?: number;
+      currentPage?: number;
+      totalPages?: number;
+      limit?: number;
+    };
+    data?: {
+      pagination?: {
+        totalItems?: number;
+        currentPage?: number;
+        totalPages?: number;
+        limit?: number;
+      };
+    };
+  };
+  return record.pagination ?? record.data?.pagination ?? {};
 };
 
 const getAddressObject = (address: Order["address"]) => {
@@ -285,8 +317,10 @@ const isRecordActive = (record: Record<string, unknown>) => {
   return true;
 };
 
-const normalizeTempStatus = (status?: string) =>
-  (status ?? "TEMP").replace(/\s+/g, "_").toUpperCase();
+const normalizeTempStatus = (status?: string | null): TempStatus =>
+  (((status ?? "TEMP").replace(/\s+/g, "_").toUpperCase() === "CANCELED"
+    ? "CANCELLED"
+    : (status ?? "TEMP").replace(/\s+/g, "_").toUpperCase()) as TempStatus);
 
 const TEMP_STATUS_ENDPOINTS: Record<string, string> = {
   CONFIRMED: "confirm",
@@ -297,7 +331,7 @@ const TEMP_STATUS_ENDPOINTS: Record<string, string> = {
 };
 
 const isTempStatusOptionDisabled = (
-  currentStatus: string | undefined,
+  currentStatus: string | null | undefined,
   targetStatus: string
 ) => {
   const normalizedCurrent = normalizeTempStatus(currentStatus);
@@ -324,6 +358,7 @@ const isTempStatusOptionDisabled = (
 
 export default function AdminOrdersPage() {
   const { language } = useLocalization();
+  const searchParams = useSearchParams();
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isPageLoading, setIsPageLoading] = useState(false);
@@ -365,6 +400,11 @@ export default function AdminOrdersPage() {
   const [isPosOrdersLoading, setIsPosOrdersLoading] = useState(true);
   const [posOrdersError, setPosOrdersError] = useState("");
   const [posOrdersPage, setPosOrdersPage] = useState(1);
+  const onlineSectionRef = useRef<HTMLDivElement | null>(null);
+  const tempSectionRef = useRef<HTMLDivElement | null>(null);
+  const posSectionRef = useRef<HTMLDivElement | null>(null);
+  const sectionParam = searchParams.get("section");
+  const focusedOrderId = searchParams.get("orderId")?.trim() ?? "";
   const text =
     language === "ar"
       ? {
@@ -506,10 +546,9 @@ export default function AdminOrdersPage() {
           case "COMPLETED":
             return "مكتمل";
           case "CANCELLED":
-          case "CANCELED":
             return "ملغي";
           default:
-            return normalized.replace(/_/g, " ");
+            return String(normalized).replace(/_/g, " ");
         }
       }
 
@@ -575,6 +614,45 @@ export default function AdminOrdersPage() {
     }
   }, [posOrdersPage, posOrdersTotalPages]);
 
+  useEffect(() => {
+    if (sectionParam === "online") {
+      onlineSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+
+    if (sectionParam === "pos" && !isPosOrdersLoading) {
+      posSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+
+    if (sectionParam !== "temp" || isTempOrdersLoading) {
+      return;
+    }
+
+    if (focusedOrderId) {
+      const targetIndex = tempOrders.findIndex(
+        (order) => String(order.orderId).trim() === focusedOrderId,
+      );
+      if (targetIndex >= 0) {
+        const targetPage = Math.floor(targetIndex / SECONDARY_TABLE_PAGE_SIZE) + 1;
+        if (targetPage !== tempOrdersPage) {
+          setTempOrdersPage(targetPage);
+          return;
+        }
+      }
+    }
+
+    tempSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [
+    focusedOrderId,
+    isPosOrdersLoading,
+    isTempOrdersLoading,
+    posOrders,
+    sectionParam,
+    tempOrders,
+    tempOrdersPage,
+  ]);
+
   const fetchOrders = async (page: number, initial = false) => {
     if (initial) {
       setIsLoading(true);
@@ -603,7 +681,7 @@ export default function AdminOrdersPage() {
         `/orders?${params.toString()}`
       );
       const payload = response.data?.data;
-      setOrders(payload?.orders ?? []);
+      setOrders(extractList<Order>(payload));
       setCurrentPage(payload?.pagination?.currentPage ?? safePage);
       setTotalPages(payload?.pagination?.totalPages ?? 1);
       setTotalItems(payload?.pagination?.totalItems ?? 0);
@@ -620,7 +698,7 @@ export default function AdminOrdersPage() {
       const response = await api.get<ApiListResponse<Category[]>>(
         "/categories"
       );
-      setCategories(response.data?.data ?? []);
+      setCategories(extractList<Category>(response.data?.data ?? response.data));
     } catch {
       setCategories([]);
     }
@@ -630,36 +708,32 @@ export default function AdminOrdersPage() {
     setIsActiveProductsLoading(true);
     setActiveProductsError("");
     try {
-      const response = await api.get<ApiListResponse<unknown>>(
-        "/products?isActive=true&limit=1000"
-      );
-      const payload = response.data?.data ?? response.data ?? {};
-      const record = payload as Record<string, unknown>;
-      const raw =
-        Array.isArray(payload)
-          ? payload
-          : record.orders ??
-            record.products ??
-            record.items ??
-            record.data ??
-            record.productsList ??
-            record.results ??
-            record.list ??
-            record.ordersList ??
-            record.productList ??
-            record.productsData ??
-            record.itemsList ??
-            record.product ??
-            record.products;
-      const data =
-        Array.isArray(raw)
-          ? raw
-          : record.orders ??
-            record.products ??
-            record.items ??
-            record.data ??
-            [];
-      const records = Array.isArray(data) ? data : [];
+      const records: unknown[] = [];
+      let page = 1;
+      let totalPages = 1;
+
+      do {
+        const response = await api.get<ApiListResponse<unknown>>(
+          `/products?page=${page}&limit=100`
+        );
+        const payload = response.data?.data ?? response.data ?? {};
+        records.push(...extractList<unknown>(payload));
+
+        const pagination = extractPaginationMeta(response.data);
+        const nextTotalPages = Number(
+          pagination.totalPages ??
+            Math.ceil(
+              Number(pagination.totalItems ?? records.length) /
+                Math.max(1, Number(pagination.limit ?? 100))
+            )
+        );
+        totalPages =
+          Number.isFinite(nextTotalPages) && nextTotalPages > 0
+            ? nextTotalPages
+            : page;
+        page += 1;
+      } while (page <= totalPages);
+
       const activeIds = records.reduce<number[]>((acc, entry) => {
         if (typeof entry !== "object" || entry === null) {
           return acc;
@@ -688,21 +762,41 @@ export default function AdminOrdersPage() {
     setIsTempOrdersLoading(true);
     setTempOrdersError("");
     try {
-      const response = await api.get<ApiListResponse<unknown>>(
-        "/admin/temp-orders"
-      );
-      const payload = response.data?.data ?? response.data ?? {};
-      const record = payload as Record<string, unknown>;
-      const raw =
-        Array.isArray(payload)
-          ? payload
-          : record.orders ??
-            record.tempOrders ??
-            record.items ??
-            record.data ??
-            [];
-      const data = Array.isArray(raw) ? raw : [];
-      setTempOrders(data as TempOrder[]);
+      const rows: TempOrder[] = [];
+      let page = 1;
+      let totalPages = 1;
+
+      do {
+        const response = await api.get<ApiListResponse<unknown>>(
+          `/admin/temp-orders?page=${page}&limit=100`
+        );
+        const payload = response.data?.data ?? response.data ?? {};
+        const record = payload as Record<string, unknown>;
+        rows.push(
+          ...extractList<TempOrder>(payload).length > 0
+            ? extractList<TempOrder>(payload)
+            : Array.isArray(record.tempOrders)
+              ? (record.tempOrders as TempOrder[])
+              : []
+        );
+
+        const pagination =
+          (record.pagination as Record<string, unknown> | undefined) ??
+          response.data?.pagination ??
+          {};
+        const nextTotalPages = Number(
+          pagination.totalPages ??
+            Math.ceil(
+              Number(pagination.totalItems ?? 0) /
+                Math.max(1, Number(pagination.limit ?? 100))
+            ) ??
+            1
+        );
+        totalPages = Number.isFinite(nextTotalPages) && nextTotalPages > 0 ? nextTotalPages : 1;
+        page += 1;
+      } while (page <= totalPages);
+
+      setTempOrders(rows);
       setTempOrdersPage(1);
     } catch (err) {
       setTempOrders([]);
@@ -716,36 +810,45 @@ export default function AdminOrdersPage() {
     setIsPosOrdersLoading(true);
     setPosOrdersError("");
     try {
-      const endpoints = ["/api/pos/order", "/api/pos/orders", "/admin/pos/orders"];
-      let lastError: unknown = null;
+      const rows: PosOrderRow[] = [];
+      let page = 1;
+      let totalPages = 1;
 
-      for (const endpoint of endpoints) {
-        try {
-          const response = await api.get<ApiListResponse<unknown>>(`${endpoint}?page=1&limit=1000`);
-          const payload = response.data?.data ?? response.data ?? {};
-          const record = payload as Record<string, unknown>;
-          const raw =
-            Array.isArray(payload)
-              ? payload
-              : record.orders ??
-                record.posOrders ??
-                record.items ??
-                record.data ??
-                [];
-          const rows = Array.isArray(raw) ? (raw as PosOrderRow[]) : [];
-          setPosOrders(rows);
-          setPosOrdersPage(1);
-          setIsPosOrdersLoading(false);
-          return;
-        } catch (error) {
-          lastError = error;
-        }
-      }
+      do {
+        const response = await api.get<ApiListResponse<unknown>>(`/api/pos/orders?page=${page}&limit=10`);
+        const payload = response.data?.data ?? response.data ?? {};
+        const record = payload as Record<string, unknown>;
+        rows.push(
+          ...extractList<PosOrderRow>(payload).length > 0
+            ? extractList<PosOrderRow>(payload)
+            : Array.isArray(record.posOrders)
+              ? (record.posOrders as PosOrderRow[])
+              : []
+        );
 
-      throw lastError ?? new Error("Failed to load POS orders.");
+        const pagination =
+          (record.pagination as Record<string, unknown> | undefined) ??
+          response.data?.pagination ??
+          {};
+        const nextTotalPages = Number(
+          pagination.totalPages ??
+            Math.ceil(
+              Number(pagination.totalItems ?? 0) /
+                Math.max(1, Number(pagination.limit ?? 10))
+            ) ??
+            1
+        );
+        totalPages = Number.isFinite(nextTotalPages) && nextTotalPages > 0 ? nextTotalPages : 1;
+        page += 1;
+      } while (page <= totalPages);
+
+      setPosOrders(rows);
+      setPosOrdersPage(1);
     } catch (error) {
       setPosOrders([]);
       setPosOrdersError(getErrorMessage(error));
+    }
+    finally {
       setIsPosOrdersLoading(false);
     }
   }, []);
@@ -932,13 +1035,15 @@ export default function AdminOrdersPage() {
         } else {
           setToastMessage("Order status updated and delivery date assigned.");
         }
-      } else if (nextStatus === "DELIVERED") {
-        await api.put(`/orders/${order.id}/delivered`);
-      } else if (nextStatus === "COMPLETED") {
-        await api.put(`/orders/${order.id}/complete`);
-      } else {
-        await api.patch(`/orders/${order.id}/status`, { status: nextStatus });
-      }
+        } else if (nextStatus === "DELIVERED") {
+          await api.put(`/orders/${order.id}/delivered`);
+        } else if (nextStatus === "COMPLETED") {
+          await api.put(`/orders/${order.id}/complete`);
+        } else if (nextStatus === "CANCELLED") {
+          await api.put(`/orders/${order.id}/cancel`);
+        } else {
+          await api.patch(`/orders/${order.id}/status`, { status: nextStatus });
+        }
       if (nextStatus !== "OUT_FOR_DELIVERY") {
         setToastMessage("Order status updated.");
       }
@@ -997,7 +1102,7 @@ export default function AdminOrdersPage() {
   };
 
   return (
-    <AdminLayout>
+    <AdminLayout requiredPermissions={["orders.view"]}>
       <div className="space-y-6">
         {toastMessage ? (
           <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-700">
@@ -1021,7 +1126,11 @@ export default function AdminOrdersPage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div
+          ref={onlineSectionRef}
+          id="online-orders-section"
+          className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+        >
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">{text.status}</label>
@@ -1256,7 +1365,11 @@ export default function AdminOrdersPage() {
         ) : null}
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div
+        ref={tempSectionRef}
+        id="temp-orders-section"
+        className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+      >
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-xl font-semibold text-slate-900">{text.tempOrders}</h2>
@@ -1307,7 +1420,14 @@ export default function AdminOrdersPage() {
               </thead>
               <tbody className="divide-y divide-slate-200 text-slate-700">
                 {pagedTempOrders.map((order) => (
-                  <tr key={String(order.orderId) + order.createdAt}>
+                  <tr
+                    key={String(order.orderId) + order.createdAt}
+                    className={
+                      focusedOrderId && String(order.orderId).trim() === focusedOrderId
+                        ? "bg-amber-50"
+                        : undefined
+                    }
+                  >
                     <td className="py-3 pr-4">{order.orderId ?? "-"}</td>
                     <td className="py-3 pr-4">
                       {getTempOrderDisplayName(order)}
@@ -1412,7 +1532,11 @@ export default function AdminOrdersPage() {
         ) : null}
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div
+        ref={posSectionRef}
+        id="pos-orders-section"
+        className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+      >
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-xl font-semibold text-slate-900">{text.posOrders}</h2>

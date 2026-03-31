@@ -1,3 +1,5 @@
+import type { StaffAccountStatus, StaffRoleSummary } from "@/features/admin-auth/types";
+
 export type ApiEnvelope<T> = {
   success: boolean;
   data: T;
@@ -43,6 +45,14 @@ export type Employee = {
   statusReason?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
+  authAccount?: {
+    userId: string | number;
+    email?: string | null;
+    phone?: string | null;
+    staffAccountStatus?: StaffAccountStatus | null;
+    mustChangePassword?: boolean;
+    role: StaffRoleSummary | null;
+  } | null;
 };
 
 export type EmployeeListParams = {
@@ -83,10 +93,25 @@ export type CreateEmployeeInput = {
   workingDays: WorkingDay[];
   rating?: number | null;
   notes?: string;
+  account?: {
+    createLogin: boolean;
+    email?: string;
+    phone?: string;
+    roleId?: string | number;
+    staffAccountStatus?: StaffAccountStatus;
+  };
 };
 
 export type UpdateEmployeeInput = Partial<CreateEmployeeInput> & {
   salaryChangeReason?: string;
+  account?: {
+    email?: string;
+    phone?: string;
+    roleId?: string | number;
+    staffAccountStatus?: StaffAccountStatus;
+    activateLogin?: boolean;
+    deactivateLogin?: boolean;
+  };
 };
 
 export type ChangeEmployeeStatusInput = {

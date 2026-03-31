@@ -1,101 +1,209 @@
 "use client";
 
-import Link from "next/link";
+import { useMemo, useState } from "react";
+import { Loader2, Settings2 } from "lucide-react";
+import { toast } from "sonner";
 import HomeAuthAction from "@/components/layout/HomeAuthAction";
-import TeamModuleCard from "@/features/team/components/TeamModuleCard";
+import { useAdminAuth } from "@/features/admin-auth/AdminAuthProvider";
+import {
+  canRenderDashboardModuleEntry,
+  getDashboardModuleRoute,
+} from "@/features/admin-auth/permissions";
+import NotificationBell from "@/modules/notifications/components/NotificationBell";
+import DashboardGrid from "@/modules/dashboard-layout/components/DashboardGrid";
+import DashboardLayoutSkeleton from "@/modules/dashboard-layout/components/DashboardLayoutSkeleton";
+import CustomizeDashboardPanel from "@/modules/dashboard-layout/components/CustomizeDashboardPanel";
+import { useDashboardLayout } from "@/modules/dashboard-layout/hooks/useDashboardLayout";
+import { useSaveDashboardLayout } from "@/modules/dashboard-layout/hooks/useSaveDashboardLayout";
+import { useUpdateDashboardModuleVisibility } from "@/modules/dashboard-layout/hooks/useUpdateDashboardModuleVisibility";
+import { useAdminTokenPresence } from "@/lib/useAdminTokenPresence";
+import type { DashboardLayoutItem } from "@/modules/dashboard-layout/types/dashboardLayout.types";
+import {
+  ensureLayoutHasNavigationModules,
+  getHiddenModules,
+  getNavigationDashboardLayout,
+  getVisibleModules,
+  mergeLayoutWithNavigation,
+  reorderVisibleLayout,
+  setModuleVisibility,
+  toDashboardModuleRecords,
+} from "@/modules/dashboard-layout/utils/layoutHelpers";
 import LanguageSwitcher from "@/modules/localization/components/LanguageSwitcher";
 import { useLocalization } from "@/modules/localization/LocalizationProvider";
-import {
-  BarChart3,
-  Boxes,
-  CalendarDays,
-  CreditCard,
-  FileText,
-  Globe,
-  PackageCheck,
-  ShoppingCart,
-  Tag,
-  type LucideIcon,
-} from "lucide-react";
-
-type ModuleItem = {
-  key: string;
-  href: string;
-  icon: LucideIcon;
-};
-
-const modules: ModuleItem[] = [
-  { key: "dashboards", href: "/dashboard", icon: BarChart3 },
-  { key: "inventory", href: "/products", icon: Boxes },
-  { key: "crm", href: "/admin/crm/pipeline", icon: ShoppingCart },
-  { key: "calendar", href: "/calendar", icon: CalendarDays },
-  { key: "pos", href: "/admin/pos", icon: CreditCard },
-  { key: "invoices", href: "/admin/invoices", icon: FileText },
-  { key: "purchases", href: "/purchases", icon: PackageCheck },
-  { key: "website", href: "/admin/homepage-control", icon: Globe },
-  { key: "promoCodes", href: "/admin/promo-codes", icon: Tag },
-];
 
 const copy = {
   en: {
     title: "Admin Modules",
     subtitle: "Manage and control all system modules from one place",
-    dashboardsTitle: "Dashboards",
-    dashboardsDescription: "Revenue analytics, sales insights and performance tracking.",
-    inventoryTitle: "Inventory",
-    inventoryDescription: "Manage products, stock, categories and variants.",
-    crmTitle: "CRM",
-    crmDescription: "View and manage customer orders.",
-    calendarTitle: "Calendar",
-    calendarDescription: "Manage delivery schedules and operational events.",
-    posTitle: "POS",
-    posDescription: "Retail sales and cash register.",
-    invoicesTitle: "Invoices",
-    invoicesDescription: "Manage customer invoices, payments and credit notes.",
-    purchasesTitle: "Purchases",
-    purchasesDescription: "Manage product purchases, suppliers, and operational costs.",
-    websiteTitle: "Website",
-    websiteDescription: "Control website content and static pages.",
-    promoCodesTitle: "Promo Codes",
-    promoCodesDescription: "Manage discounts and promotional campaigns.",
+    customize: "Customize",
+    saving: "Saving...",
+    saved: "Dashboard layout saved",
+    loadError: "Unable to load your dashboard layout.",
+    saveError: "Unable to save dashboard layout.",
+    visibilityError: "Unable to update module visibility.",
+    retry: "Retry",
   },
   ar: {
     title: "وحدات الإدارة",
     subtitle: "أدر وتحكم في جميع وحدات النظام من مكان واحد",
-    dashboardsTitle: "لوحات المعلومات",
-    dashboardsDescription: "تحليلات الإيرادات ورؤى المبيعات وتتبع الأداء.",
-    inventoryTitle: "المخزون",
-    inventoryDescription: "إدارة المنتجات والمخزون والفئات والمتغيرات.",
-    crmTitle: "إدارة العملاء",
-    crmDescription: "عرض وإدارة طلبات العملاء.",
-    calendarTitle: "التقويم",
-    calendarDescription: "إدارة جداول التسليم والفعاليات التشغيلية.",
-    posTitle: "نقطة البيع",
-    posDescription: "مبيعات المتجر ونقطة التحصيل.",
-    invoicesTitle: "الفواتير",
-    invoicesDescription: "إدارة فواتير العملاء والمدفوعات والإشعارات الدائنة.",
-    purchasesTitle: "المشتريات",
-    purchasesDescription: "إدارة مشتريات المنتجات والموردين والمصاريف التشغيلية.",
-    websiteTitle: "الموقع",
-    websiteDescription: "التحكم في محتوى الموقع والصفحات الثابتة.",
-    promoCodesTitle: "أكواد الخصم",
-    promoCodesDescription: "إدارة الخصومات والحملات الترويجية.",
+    customize: "تخصيص",
+    saving: "جارٍ الحفظ...",
+    saved: "تم حفظ تخطيط اللوحة",
+    loadError: "تعذر تحميل تخطيط اللوحة.",
+    saveError: "تعذر حفظ تخطيط اللوحة.",
+    visibilityError: "تعذر تحديث ظهور الوحدة.",
+    retry: "إعادة المحاولة",
   },
 } as const;
 
 export default function HomePage() {
-  const { direction, language } = useLocalization();
+  const { language } = useLocalization();
   const text = copy[language];
+  const { profile, hasPermission } = useAdminAuth();
+  const hasToken = useAdminTokenPresence();
+  const dashboardLayoutQuery = useDashboardLayout();
+  const saveDashboardLayoutMutation = useSaveDashboardLayout();
+  const updateDashboardModuleVisibilityMutation = useUpdateDashboardModuleVisibility();
+  const [optimisticLayout, setOptimisticLayout] = useState<DashboardLayoutItem[] | null>(null);
+  const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
+  const navigationLayout = useMemo(
+    () => getNavigationDashboardLayout(profile?.navigation),
+    [profile?.navigation]
+  );
+  const queryLayout = useMemo(() => {
+    const serverLayout = (dashboardLayoutQuery.data as DashboardLayoutItem[] | undefined) ?? [];
+    return ensureLayoutHasNavigationModules(
+      mergeLayoutWithNavigation(serverLayout, navigationLayout),
+      navigationLayout
+    );
+  }, [dashboardLayoutQuery.data, navigationLayout]);
+  const layout = useMemo(
+    () =>
+      (optimisticLayout ?? queryLayout).filter((item) =>
+        canRenderDashboardModuleEntry(item.moduleId, profile)
+      ),
+    [optimisticLayout, profile, queryLayout]
+  );
+
+  const isSaving =
+    saveDashboardLayoutMutation.isPending || updateDashboardModuleVisibilityMutation.isPending;
+  const canCustomizeDashboard = !hasToken || !dashboardLayoutQuery.isError;
+  const visibleModules = useMemo(
+    () =>
+      toDashboardModuleRecords(getVisibleModules(layout)).map((module) => ({
+        ...module,
+        route: getDashboardModuleRoute(module.moduleId, profile),
+      })),
+    [layout, profile]
+  );
+  const hiddenModules = useMemo(
+    () => toDashboardModuleRecords(getHiddenModules(layout)),
+    [layout]
+  );
+
+  const handleReorder = (
+    activeId: DashboardLayoutItem["moduleId"],
+    overId: DashboardLayoutItem["moduleId"]
+  ) => {
+    if (isSaving) {
+      return;
+    }
+
+    const previousLayout = layout;
+    const nextLayout = reorderVisibleLayout(layout, activeId, overId);
+
+    if (JSON.stringify(previousLayout) === JSON.stringify(nextLayout)) {
+      return;
+    }
+
+    setOptimisticLayout(nextLayout);
+
+    if (!hasToken) {
+      return;
+    }
+
+    saveDashboardLayoutMutation.mutate(nextLayout, {
+      onSuccess: () => {
+        setOptimisticLayout(null);
+        toast.success(text.saved);
+      },
+      onError: () => {
+        setOptimisticLayout(previousLayout);
+        toast.error(text.saveError);
+      },
+    });
+  };
+
+  const handleToggleVisibility = (
+    moduleId: DashboardLayoutItem["moduleId"],
+    isVisible: boolean
+  ) => {
+    if (isSaving) {
+      return;
+    }
+
+    const previousLayout = layout;
+    const nextLayout = setModuleVisibility(layout, moduleId, isVisible);
+    setOptimisticLayout(nextLayout);
+
+    if (!hasToken) {
+      return;
+    }
+
+    updateDashboardModuleVisibilityMutation.mutate(
+      { moduleId, isVisible, fallbackModules: nextLayout },
+      {
+        onSuccess: () => {
+          setOptimisticLayout(null);
+          toast.success(text.saved);
+        },
+        onError: () => {
+          setOptimisticLayout(previousLayout);
+          toast.error(text.visibilityError);
+        },
+      }
+    );
+  };
+
+  const renderContent = () => {
+    if (hasToken && dashboardLayoutQuery.isLoading && queryLayout.length === 0) {
+      return <DashboardLayoutSkeleton />;
+    }
+
+    return (
+      <DashboardGrid
+        key={visibleModules.map((module) => module.moduleId).join("-")}
+        modules={visibleModules}
+        language={language}
+        isSaving={isSaving}
+        onReorder={handleReorder}
+      />
+    );
+  };
 
   return (
     <main className="min-h-screen bg-slate-50/80 px-6 py-10 md:px-10 lg:px-14">
       <div className="mx-auto w-full max-w-7xl">
-        <div
-          className={`mb-6 flex flex-wrap items-center gap-3 ${
-            direction === "rtl" ? "justify-between" : "justify-between"
-          }`}
-        >
-          <HomeAuthAction />
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <HomeAuthAction />
+            {hasPermission(["notifications.view", "notifications.preferences"]) ? <NotificationBell /> : null}
+            <button
+              type="button"
+              onClick={() => setIsCustomizeOpen(true)}
+              disabled={!canCustomizeDashboard}
+              className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 transition hover:bg-slate-100"
+            >
+              <Settings2 className="h-4 w-4" />
+              {text.customize}
+            </button>
+            {isSaving ? (
+              <span className="inline-flex items-center gap-2 text-sm text-slate-500">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {text.saving}
+              </span>
+            ) : null}
+          </div>
           <LanguageSwitcher />
         </div>
 
@@ -108,29 +216,24 @@ export default function HomePage() {
           </p>
         </header>
 
-        <section className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {modules.map((module) => {
-            const Icon = module.icon;
-            const title = text[`${module.key}Title` as keyof typeof text] as string;
-            const description = text[`${module.key}Description` as keyof typeof text] as string;
+        {renderContent()}
 
-            return (
-              <Link
-                key={module.key}
-                href={module.href}
-                className="group rounded-xl bg-white p-8 text-center shadow-sm transition duration-300 hover:scale-105 hover:shadow-lg"
-              >
-                <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-sky-100 via-indigo-100 to-cyan-100">
-                  <Icon className="h-10 w-10 text-slate-700" />
-                </div>
-                <h2 className="text-2xl font-bold text-slate-900">{title}</h2>
-                <p className="mt-3 text-sm leading-relaxed text-slate-500">{description}</p>
-              </Link>
-            );
-          })}
-          <TeamModuleCard />
-        </section>
+        {hasToken && dashboardLayoutQuery.isError && navigationLayout.length === 0 ? (
+          <div className="mx-auto mt-6 max-w-2xl rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            {text.loadError}
+          </div>
+        ) : null}
       </div>
+
+      <CustomizeDashboardPanel
+        isOpen={isCustomizeOpen}
+        onClose={() => setIsCustomizeOpen(false)}
+        language={language}
+        visibleModules={visibleModules}
+        hiddenModules={hiddenModules}
+        isSaving={isSaving}
+        onToggleVisibility={handleToggleVisibility}
+      />
     </main>
   );
 }

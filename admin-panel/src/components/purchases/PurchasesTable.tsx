@@ -1,4 +1,5 @@
 import { CheckCircle2, Pencil, RefreshCcw, Trash2 } from "lucide-react";
+import { format, isValid, parseISO } from "date-fns";
 import { formatEGP } from "@/lib/currency";
 import PurchaseStatusBadge from "@/components/purchases/PurchaseStatusBadge";
 import type { PurchaseRow } from "@/components/purchases/types";
@@ -21,6 +22,22 @@ export default function PurchasesTable({
   onApproveProduct,
 }: PurchasesTableProps) {
   const { language } = useLocalization();
+  const formatExpectedArrivalDate = (value: string) => {
+    const trimmed = value.trim();
+    const normalized = trimmed.replace(/[{}]/g, "").trim().toLowerCase();
+
+    if (!trimmed || normalized === "null" || normalized === "undefined" || normalized === "nil") {
+      return "-";
+    }
+
+    const parsed = parseISO(trimmed);
+    if (isValid(parsed)) {
+      return format(parsed, "yyyy-MM-dd");
+    }
+
+    return trimmed;
+  };
+
   const text =
     language === "ar"
       ? {
@@ -101,7 +118,9 @@ export default function PurchasesTable({
                       {text.delivered}
                     </span>
                   ) : row.status === "IN_TRANSIT" ? (
-                    <span className="text-slate-600">{text.expected}: {row.expectedArrivalDate || "-"}</span>
+                    <span className="text-slate-600">
+                      {text.expected}: {formatExpectedArrivalDate(row.expectedArrivalDate)}
+                    </span>
                   ) : (
                     <span className="text-slate-400">-</span>
                   )}

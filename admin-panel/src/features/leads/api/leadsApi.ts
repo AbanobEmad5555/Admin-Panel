@@ -247,16 +247,7 @@ const normalizeAdminList = (payload: unknown): User[] => {
         ? data.rows
         : [];
 
-  const isAdmin = (value: unknown) => {
-    if (!value || typeof value !== "object") {
-      return false;
-    }
-    const row = value as Record<string, unknown>;
-    return String(row.role ?? "").toUpperCase() === "ADMIN";
-  };
-
   return usersRaw
-    .filter((item) => isAdmin(item))
     .map((item) => normalizeUser(item))
     .filter((user): user is User => Boolean(user && user.id));
 };
@@ -362,17 +353,9 @@ export const leadsApi = {
     });
 
     const payload = response.data?.data;
-    const isAdmin = (value: unknown) => {
-      if (!value || typeof value !== "object") {
-        return false;
-      }
-      const row = value as Record<string, unknown>;
-      return String(row.role ?? "").toUpperCase() === "ADMIN";
-    };
 
     if (Array.isArray(payload)) {
       return payload
-        .filter((item) => isAdmin(item))
         .map((item) => normalizeUser(item))
         .filter((user): user is User => Boolean(user && user.id));
     }

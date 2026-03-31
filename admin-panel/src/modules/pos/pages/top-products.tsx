@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { isAxiosError } from "axios";
 import POSLayout from "@/modules/pos/components/POSLayout";
 import ReportsTable from "@/modules/pos/components/ReportsTable";
 import { useTopProducts } from "@/modules/pos/hooks/useReports";
@@ -16,7 +17,7 @@ export default function PosTopProductsPage() {
   const [page, setPage] = useState(1);
   const limit = 20;
 
-  const { data, isLoading, isError } = useTopProducts({ from, to, page, limit });
+  const { data, isLoading, isError, error } = useTopProducts({ from, to, page, limit });
 
   const text =
     language === "ar"
@@ -50,6 +51,13 @@ export default function PosTopProductsPage() {
           previous: "Previous",
           next: "Next",
         };
+
+  const errorMessage =
+    isAxiosError(error) && typeof error.response?.data?.message === "string"
+      ? error.response.data.message
+      : error instanceof Error && error.message
+        ? error.message
+        : text.failed;
 
   return (
     <POSLayout title={text.title} description={text.description}>
@@ -88,7 +96,7 @@ export default function PosTopProductsPage() {
         <div className="rounded-xl bg-white p-6 text-sm text-slate-500">{text.loading}</div>
       ) : null}
       {isError ? (
-        <div className="rounded-xl bg-rose-50 p-6 text-sm text-rose-700">{text.failed}</div>
+        <div className="rounded-xl bg-rose-50 p-6 text-sm text-rose-700">{errorMessage}</div>
       ) : null}
 
       <ReportsTable

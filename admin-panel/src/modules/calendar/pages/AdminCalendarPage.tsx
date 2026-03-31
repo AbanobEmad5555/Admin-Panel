@@ -1,13 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type FullCalendar from "@fullcalendar/react";
 import type { DatesSetArg, EventClickArg } from "@fullcalendar/core";
 import { format } from "date-fns";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import AdminLayout from "@/components/layout/AdminLayout";
-import { getCurrentAdminRole } from "@/features/admin-reviews/utils/adminRole";
 import { useLocalization } from "@/modules/localization/LocalizationProvider";
 import CalendarToolbar from "@/modules/calendar/components/CalendarToolbar";
 import DeliverySettingsPanel from "@/modules/calendar/components/DeliverySettingsPanel";
@@ -54,10 +52,7 @@ type CalendarMutationArg = {
 };
 
 export default function AdminCalendarPage() {
-  const router = useRouter();
   const { language } = useLocalization();
-  const role = useMemo(() => getCurrentAdminRole(), []);
-  const isAuthorized = role === "ADMIN";
   const text = useMemo(
     () =>
       language === "ar"
@@ -106,17 +101,6 @@ export default function AdminCalendarPage() {
           },
     [language],
   );
-
-  useEffect(() => {
-    if (role === "ADMIN") {
-      return;
-    }
-    if (!role) {
-      router.replace("/login");
-      return;
-    }
-    router.replace("/dashboard");
-  }, [role, router]);
 
   const calendarRef = useRef<FullCalendar | null>(null);
   const [month, setMonth] = useState(toMonthParam(INITIAL_DATE));
@@ -349,12 +333,8 @@ export default function AdminCalendarPage() {
     }
   };
 
-  if (!isAuthorized) {
-    return null;
-  }
-
   return (
-    <AdminLayout>
+    <AdminLayout requiredPermissions={["calendar.view"]}>
       <section className="space-y-4">
         <header className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <h1 className="text-2xl font-semibold text-slate-900">{text.title}</h1>

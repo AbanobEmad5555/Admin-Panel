@@ -101,6 +101,9 @@ export default function ManualEventModal({
     reset(values);
   }, [reset, values, isOpen]);
 
+  const startDateField = register("startDate");
+  const endDateField = register("endDate");
+
   const openNativePicker = (input: HTMLInputElement | null) => {
     if (!input) {
       return;
@@ -159,9 +162,12 @@ export default function ManualEventModal({
           <div className="space-y-1">
             <label className="block text-sm font-semibold text-slate-900">{text.startDate}</label>
             <input
-              ref={startDateRef}
+              {...startDateField}
+              ref={(element) => {
+                startDateRef.current = element;
+                startDateField.ref(element);
+              }}
               type="datetime-local"
-              {...register("startDate")}
               className="w-full cursor-pointer rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
               onClick={() => openNativePicker(startDateRef.current)}
               onFocus={() => openNativePicker(startDateRef.current)}
@@ -174,9 +180,12 @@ export default function ManualEventModal({
           <div className="space-y-1">
             <label className="block text-sm font-semibold text-slate-900">{text.endDate}</label>
             <input
-              ref={endDateRef}
+              {...endDateField}
+              ref={(element) => {
+                endDateRef.current = element;
+                endDateField.ref(element);
+              }}
               type="datetime-local"
-              {...register("endDate")}
               className="w-full cursor-pointer rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
               onClick={() => openNativePicker(endDateRef.current)}
               onFocus={() => openNativePicker(endDateRef.current)}

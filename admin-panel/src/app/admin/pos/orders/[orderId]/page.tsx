@@ -154,6 +154,7 @@ export default function PosOrderDetailsPage() {
           no: "لا",
           generateInvoiceSuccess: "تم إنشاء الفاتورة بنجاح.",
           generateInvoiceFailed: "فشل إنشاء فاتورة من طلب نقطة البيع.",
+          generateInvoiceCustomerRequired: "يجب إدخال اسم العميل أو رقم هاتفه قبل إنشاء الفاتورة.",
           title: "تفاصيل طلب نقطة البيع",
           description: "تفاصيل الطلب الكاملة من نقطة البيع.",
           posOrderId: "رقم طلب نقطة البيع",
@@ -209,6 +210,7 @@ export default function PosOrderDetailsPage() {
           no: "No",
           generateInvoiceSuccess: "Invoice generated successfully.",
           generateInvoiceFailed: "Failed to generate invoice from POS order.",
+          generateInvoiceCustomerRequired: "Customer name or mobile number is required before generating an invoice.",
           title: "POS Order Details",
           description: "Full order details from POS endpoint.",
           posOrderId: "POS Order ID",
@@ -262,14 +264,24 @@ export default function PosOrderDetailsPage() {
 
   const handleGenerateInvoice = async () => {
     if (!orderId || isGeneratingInvoice) return;
+
+    const hasCustomerName = Boolean(String(order.customerName ?? "").trim());
+    const hasCustomerMobile = Boolean(String(order.customerMobileNumber ?? "").trim());
+
+    if (!hasCustomerName && !hasCustomerMobile) {
+      toast.error(text.generateInvoiceCustomerRequired);
+      return;
+    }
+
     setIsGeneratingInvoice(true);
     try {
       const response = await api.post("/api/pos/invoices/from-pos-order", {
-        orderId,
+        posOrderId: orderId,
         postNow: true,
       });
       const payload = (response.data?.data ?? response.data ?? {}) as Record<string, unknown>;
-      const invoiceId = String(payload.id ?? payload.invoiceId ?? payload.invoice?.id ?? "");
+      const invoiceRecord = (payload.invoice ?? {}) as Record<string, unknown>;
+      const invoiceId = String(payload.id ?? payload.invoiceId ?? invoiceRecord.id ?? "");
       toast.success(text.generateInvoiceSuccess);
       if (invoiceId) {
         router.push(`/admin/invoices/${invoiceId}`);
@@ -302,7 +314,11 @@ export default function PosOrderDetailsPage() {
           <button
             type="button"
             onClick={() => void handleGenerateInvoice()}
-            disabled={isGeneratingInvoice}
+            disabled={
+              isGeneratingInvoice ||
+              (!String(order.customerName ?? "").trim() &&
+                !String(order.customerMobileNumber ?? "").trim())
+            }
             className="rounded-md bg-violet-600 px-3 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isGeneratingInvoice ? text.generating : text.generateInvoice}

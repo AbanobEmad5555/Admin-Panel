@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import type { z } from "zod";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import RefreshFromSourceButton from "@/app/admin/invoices/components/RefreshFromSourceButton";
@@ -24,6 +25,8 @@ type Props = {
   onAddPayment: (payload: AddInvoicePaymentSchema) => Promise<void>;
   onCancel: () => Promise<void>;
 };
+
+type AddInvoicePaymentFormInput = z.input<typeof addInvoicePaymentSchema>;
 
 export default function InvoiceActions({
   invoice,
@@ -80,7 +83,7 @@ export default function InvoiceActions({
           savePayment: "Save Payment",
         };
 
-  const form = useForm<AddInvoicePaymentSchema>({
+  const form = useForm<AddInvoicePaymentFormInput, unknown, AddInvoicePaymentSchema>({
     resolver: zodResolver(addInvoicePaymentSchema),
     defaultValues: {
       method: "CASH",
