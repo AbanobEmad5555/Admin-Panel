@@ -18,7 +18,6 @@ import CustomizeDashboardPanel from "@/modules/dashboard-layout/components/Custo
 import { useDashboardLayout } from "@/modules/dashboard-layout/hooks/useDashboardLayout";
 import { useSaveDashboardLayout } from "@/modules/dashboard-layout/hooks/useSaveDashboardLayout";
 import { useUpdateDashboardModuleVisibility } from "@/modules/dashboard-layout/hooks/useUpdateDashboardModuleVisibility";
-import { useAdminTokenPresence } from "@/lib/useAdminTokenPresence";
 import type {
   DashboardLayoutItem,
   DashboardModuleRecord,
@@ -35,6 +34,7 @@ import {
 } from "@/modules/dashboard-layout/utils/layoutHelpers";
 import LanguageSwitcher from "@/modules/localization/components/LanguageSwitcher";
 import { useLocalization } from "@/modules/localization/LocalizationProvider";
+import { useAdminTokenPresence } from "@/lib/useAdminTokenPresence";
 
 const copy = {
   en: {
@@ -203,7 +203,7 @@ export default function HomePage() {
       />
 
       <div className="relative mx-auto w-full max-w-7xl space-y-6">
-        <GradientCard padding="md" glow className="rounded-[2rem]">
+        <GradientCard padding="md" glow className="overflow-visible rounded-[2rem]">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-3">
               <HomeAuthAction />

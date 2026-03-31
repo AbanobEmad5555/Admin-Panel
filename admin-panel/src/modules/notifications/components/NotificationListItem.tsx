@@ -45,9 +45,9 @@ export default function NotificationListItem({
     <div
       className={`relative rounded-2xl border p-4 text-left transition-all duration-300 ${
         notification.isRead
-          ? "border-white/10 bg-white/5"
-          : "border-cyan-300/20 bg-[linear-gradient(135deg,rgba(34,211,238,0.1),rgba(168,85,247,0.12))] shadow-[0_16px_36px_rgba(2,6,23,0.28)]"
-      } ${clickable ? "hover:-translate-y-0.5 hover:bg-white/8" : ""}`}
+          ? "border-white/10 bg-[rgba(15,23,42,0.82)] shadow-[0_12px_28px_rgba(2,6,23,0.34)]"
+          : "border-cyan-300/24 bg-[linear-gradient(135deg,rgba(17,24,39,0.96),rgba(17,24,39,0.9),rgba(30,41,59,0.92))] shadow-[0_18px_40px_rgba(2,6,23,0.42),0_0_24px_rgba(56,189,248,0.08)]"
+      } ${clickable ? "hover:-translate-y-0.5 hover:bg-[rgba(30,41,59,0.92)]" : ""}`}
     >
       {!notification.isRead ? (
         <span
@@ -63,23 +63,23 @@ export default function NotificationListItem({
             <div className="flex items-center gap-2">
               <h3 className="truncate text-sm font-semibold text-slate-50">{localizedContent.title}</h3>
               {notification.redirectUrl ? (
-                <ExternalLink className="h-3.5 w-3.5 shrink-0 text-slate-500" aria-hidden="true" />
+                <ExternalLink className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden="true" />
               ) : null}
             </div>
-            <p className={`mt-1 text-sm ${notification.isRead ? "text-slate-400" : "text-slate-200"}`}>
+            <p className={`mt-1 text-sm ${notification.isRead ? "text-slate-300" : "text-slate-100"}`}>
               {localizedContent.message}
             </p>
           </div>
           <div className="shrink-0 text-right">
             <p
-              className="text-xs font-medium text-slate-500"
+              className="text-xs font-medium text-slate-400"
               title={formatNotificationDateTime(notification.createdAt, language)}
             >
               {compact
                 ? formatNotificationRelativeTime(notification.createdAt, language)
                 : formatNotificationDateTime(notification.createdAt, language)}
             </p>
-            {actionLabel ? <p className="mt-1 text-xs text-slate-500">{actionLabel}</p> : null}
+            {actionLabel ? <p className="mt-1 text-xs text-slate-400">{actionLabel}</p> : null}
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">

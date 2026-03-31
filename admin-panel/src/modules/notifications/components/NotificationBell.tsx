@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Bell } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -28,6 +29,7 @@ export default function NotificationBell() {
   const { language, t } = useLocalization();
   const mounted = useHasHydrated();
   const [open, setOpen] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; right: number } | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const latestLimit = 10;
@@ -64,6 +66,35 @@ export default function NotificationBell() {
       document.removeEventListener("keydown", handleEscape);
     };
   }, []);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const updateDropdownPosition = () => {
+      const button = buttonRef.current;
+      if (!button) {
+        return;
+      }
+
+      const rect = button.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 12,
+        right: Math.max(window.innerWidth - rect.right, 16),
+      });
+    };
+
+    updateDropdownPosition();
+
+    window.addEventListener("resize", updateDropdownPosition);
+    window.addEventListener("scroll", updateDropdownPosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updateDropdownPosition);
+      window.removeEventListener("scroll", updateDropdownPosition, true);
+    };
+  }, [open]);
 
   useEffect(() => {
     const status = (latestQuery.error as { response?: { status?: number } } | undefined)?.response?.status;
@@ -104,7 +135,7 @@ export default function NotificationBell() {
   }
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className="relative z-[60]">
       <button
         ref={buttonRef}
         type="button"
@@ -128,18 +159,27 @@ export default function NotificationBell() {
         ) : null}
       </button>
 
-      {open ? (
-        <div className="absolute right-0 z-50 mt-3">
-          <NotificationsDropdown
-            notifications={notifications}
-            isLoading={latestQuery.isLoading}
-            isError={latestQuery.isError}
-            onNotificationClick={handleDropdownItemClick}
-            onMarkAllAsRead={handleMarkAllAsRead}
-            isMarkingAllAsRead={markAll.isPending}
-          />
-        </div>
-      ) : null}
+      {open && dropdownPosition
+        ? createPortal(
+            <div
+              className="fixed z-[120]"
+              style={{
+                top: dropdownPosition.top,
+                right: dropdownPosition.right,
+              }}
+            >
+              <NotificationsDropdown
+                notifications={notifications}
+                isLoading={latestQuery.isLoading}
+                isError={latestQuery.isError}
+                onNotificationClick={handleDropdownItemClick}
+                onMarkAllAsRead={handleMarkAllAsRead}
+                isMarkingAllAsRead={markAll.isPending}
+              />
+            </div>,
+            document.body
+          )
+        : null}
     </div>
   );
 }

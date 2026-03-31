@@ -29,11 +29,15 @@ export default function NotificationsDropdown({
   const { t } = useLocalization();
 
   return (
-    <GradientCard glow padding="none" className="w-[min(92vw,26rem)] overflow-hidden">
-      <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
+    <GradientCard
+      glow
+      padding="none"
+      className="w-[min(92vw,26rem)] overflow-hidden border-white/15 bg-[rgba(8,15,30,0.94)] shadow-[0_26px_70px_rgba(2,6,23,0.72),0_0_36px_rgba(56,189,248,0.12)]"
+    >
+      <div className="flex items-center justify-between border-b border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] px-4 py-4">
         <div>
           <h2 className="text-sm font-semibold text-slate-50">{t("notifications.title")}</h2>
-          <p className="text-xs text-slate-400">{t("notifications.latestActivity")}</p>
+          <p className="text-xs text-slate-300">{t("notifications.latestActivity")}</p>
         </div>
         <Button
           type="button"
@@ -46,7 +50,7 @@ export default function NotificationsDropdown({
         </Button>
       </div>
 
-      <div className="admin-scrollbar max-h-[26rem] overflow-y-auto p-3">
+      <div className="admin-scrollbar max-h-[26rem] overflow-y-auto bg-[linear-gradient(180deg,rgba(15,23,42,0.72),rgba(2,6,23,0.88))] p-3">
         {isLoading ? <NotificationsSkeleton compact rows={4} /> : null}
         {!isLoading && isError ? (
           <NotificationsEmptyState
@@ -77,7 +81,7 @@ export default function NotificationsDropdown({
         ) : null}
       </div>
 
-      <div className="border-t border-white/10 px-4 py-4">
+      <div className="border-t border-white/12 bg-[rgba(255,255,255,0.02)] px-4 py-4">
         <Link href="/admin/notifications" className="block">
           <Button className="w-full">{t("notifications.viewAll")}</Button>
         </Link>
